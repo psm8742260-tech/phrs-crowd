@@ -51,7 +51,7 @@ export default function App() {
   const [shaFingerprint, setShaFingerprint] = useState('03:5E:59:45:3B:C0:77:9B:27:16:D5:E5:C3:54:1C:A7:EC:94:9E:BE:72:F7:F9:09:94:00:6A:B9:00:01:4A:E3');
 
   // Navigation and active project
-  const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'google_maps' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'phrs_maps' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console'>('home');
   const [snippetFormat, setSnippetFormat] = useState('Module');
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
@@ -61,7 +61,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
-      // Data recovery logic for fresh deployments
+      console.error("Project recovery failed, resetting to defaults.");
     }
     return [];
   });
@@ -163,7 +163,7 @@ export default function App() {
       const saved = localStorage.getItem('phrs_db_data');
       if (saved) return JSON.parse(saved);
     } catch (e) {
-      // Initial database seeding logic
+      console.warn("DB seed missing, initializing empty cloud node.");
     }
     return {};
   });
@@ -182,7 +182,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
-      // Runtime deployment recovery
+      console.error("Deployment sync interrupted. Using internal registry.");
     }
     return [
       { id: 'dep-1', name: 'PHRS Web Dashboard', subdomain: 'dashboard', port: 3001, techStack: 'React Vite', status: 'ONLINE', cpu: 1.2, memory: 34, visitors: 142, githubUrl: 'https://github.com/phrscrowd/web-dash' },
@@ -235,7 +235,7 @@ export default function App() {
   // VPS Export file state
   const [activeExportFile, setActiveExportFile] = useState<'server' | 'readme' | 'package'>('server');
 
-  // NEW GCP-STYLE FEATURES DYNAMIC STATES
+  // NEW PHRS-STYLE FEATURES DYNAMIC STATES
   // Billing states
   const [billingBudget, setBillingBudget] = useState(300);
   const [billingAlertAmount, setBillingAlertAmount] = useState(250);
@@ -244,8 +244,8 @@ export default function App() {
 
   // Secret Manager states
   const [envTranslationMappings, setEnvTranslationMappings] = useState<Array<{external: string; internal: string; active: boolean}>>([
-    { external: 'FIREBASE_API_KEY', internal: 'PHRS_API_KEY', active: true },
-    { external: 'GOOGLE_APPLICATION_CREDENTIALS', internal: 'PHRS_VPC_CREDENTIALS', active: true },
+    { external: 'PHRS_API_KEY', internal: 'PHRS_API_KEY', active: true },
+    { external: 'PHRS_VPC_CREDENTIALS', internal: 'PHRS_VPC_CREDENTIALS', active: true },
     { external: 'STRIPE_SECRET_KEY', internal: 'PHRS_PAYMENT_TOKEN', active: false },
     { external: 'TWILIO_AUTH_TOKEN', internal: 'PHRS_SMS_AUTH', active: true }
   ]);
@@ -266,7 +266,7 @@ export default function App() {
   const [customSystemPrompt, setCustomSystemPrompt] = useState('You are an expert autonomous server operator routing payloads dynamically.');
   const [agentChatInput, setAgentChatInput] = useState('');
   const [agentChatHistory, setAgentChatHistory] = useState<Array<{role: 'user' | 'model'; text: string}>>([
-    { role: 'model', text: 'Hello Prasad! I am your autonomous GCP router agent. Send me any instructions to query the database or test proxy connections.' }
+    { role: 'model', text: 'Hello Master Admin! I am your autonomous PHRS VPC agent. Send me any instructions to query the database or test proxy connections.' }
   ]);
 
   // Kubernetes states
@@ -347,7 +347,7 @@ export default function App() {
   const [modificationCount, setModificationCount] = useState(0);
   const [showSystemRules, setShowSystemRules] = useState(false);
   const [protocolStep, setProtocolStep] = useState<'password' | 'confirm'>('password');
-  const ADMIN_PASSWORD = '50 సెకండ్స్6606.0k';
+  const ADMIN_PASSWORD = '6606.0k';
 
   // Auto-detect mobile/user IP
   const detectIp = async () => {
@@ -376,7 +376,7 @@ export default function App() {
     { id: 'bk-2', date: '2026-08-24 00:00:00', size: '1.3 MB' }
   ]);
 
-  // Google Maps states
+  // PHRS Maps states
   const [mapsApiKey, setMapsApiKey] = useState('AIzaSyDemoMapsKey_PHRS_2026');
   const [mapsSelectedEndpoint, setMapsSelectedEndpoint] = useState('Geocoding API');
   const [mapsActiveTrackingId, setMapsActiveTrackingId] = useState('map-id-9812');
@@ -415,6 +415,20 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('phrs_db_data', JSON.stringify(dbData));
     setDbRawText(JSON.stringify(dbData, null, 2));
+  }, [dbData]);
+
+  // Mandatory Identity Migration (Agent Rule #6 & #14)
+  // Ensures privacy by scrubbing any lingering old names from local state
+  useEffect(() => {
+    if (dbData?.users?.usr_9812?.name === 'Prasad Rao') {
+      setDbData(prev => ({
+        ...prev,
+        users: {
+          ...prev.users,
+          usr_9812: { ...prev.users.usr_9812, name: 'Master Admin' }
+        }
+      }));
+    }
   }, [dbData]);
 
   useEffect(() => {
@@ -823,8 +837,8 @@ export default function App() {
       subMenus: ['Gateway Dashboard', 'Recharge (₹25) Config', 'OTP Logs', 'API Access']
     },
     {
-      id: 'firebase_console',
-      label: 'Firebase (App Platform)',
+      id: 'phrs_db_console',
+      label: 'PHRS DB (App Platform)',
       icon: Database,
       subMenus: ['Project Overview', 'Authentication', 'Firestore Database', 'Realtime Database', 'Storage', 'Hosting', 'Cloud Functions']
     },
@@ -847,8 +861,8 @@ export default function App() {
       subMenus: ['Get Started', 'Instances', 'Backups']
     },
     {
-      id: 'google_maps',
-      label: 'Google Maps Platform',
+      id: 'phrs_maps',
+      label: 'PHRS Maps Platform',
       icon: MapPin,
       subMenus: ['Overview', 'APIs & Services', 'Metrics', 'Quotas', 'Keys & Credentials', 'Support', 'Solution Library', 'Map Management', 'Map Styles', 'Datasets']
     }
@@ -921,9 +935,9 @@ export default function App() {
       setActiveTab('sms_gateway' as any);
       setHomeToast(`SMS Service: ${subMenu} launched successfully`);
       setTimeout(() => setHomeToast(null), 2500);
-    } else if (sectionId === 'firebase_console') {
+    } else if (sectionId === 'phrs_db_console') {
       setActiveTab('database');
-      setHomeToast(`Firebase Service: ${subMenu} launched successfully`);
+      setHomeToast(`PHRS DB Service: ${subMenu} launched successfully`);
       setTimeout(() => setHomeToast(null), 2500);
     } else if (sectionId === 'console') {
       setActiveTab('console' as any);
@@ -933,8 +947,8 @@ export default function App() {
       setActiveTab('database');
     } else if (sectionId === 'cloud_sql') {
       setActiveTab('cloud_sql');
-    } else if (sectionId === 'google_maps') {
-      setActiveTab('google_maps');
+    } else if (sectionId === 'phrs_maps') {
+      setActiveTab('phrs_maps');
     }
     
     setHomeToast(`Navigated to ${subMenu}`);
@@ -948,18 +962,8 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 font-sans">
-        {loginView === 'user' && (
-          <div className="max-w-sm w-full bg-white rounded-3xl shadow-xl p-8 text-center border border-slate-100 relative overflow-hidden group">
-            {/* Hidden admin trigger button in the corner */}
-            <button 
-              onClick={() => setLoginView('admin')} 
-              className="absolute top-4 right-4 p-2 text-slate-200 hover:text-slate-400 hover:bg-slate-50 rounded-full transition-all"
-              title="Admin Login"
-            >
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <div className="w-28 h-28 flex items-center justify-center mx-auto mb-6 mt-2">
+        <div className="max-w-sm w-full bg-white rounded-3xl shadow-xl p-8 text-center border border-slate-100 relative overflow-hidden group">
+          <div className="w-28 h-28 flex items-center justify-center mx-auto mb-6 mt-2">
                {appIconUrl ? (
                  <img src={appIconUrl} alt="App Logo" className="w-full h-full object-contain drop-shadow-xl" />
                ) : (
@@ -979,35 +983,12 @@ export default function App() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              Continue with Google
+              Sign in with Google
             </button>
             <div className="mt-8 text-[11px] text-slate-400">
               Secured by PHRS Crowd
             </div>
           </div>
-        )}
-
-        {loginView === 'admin' && (
-          <div className="max-w-xs w-full bg-white rounded-3xl shadow-xl p-8 border border-slate-200 text-center relative">
-            <button onClick={() => setLoginView('user')} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 transition hover:bg-slate-50 rounded-full">
-              <ArrowRight className="w-4 h-4 rotate-180" />
-            </button>
-            
-            <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100 mt-2">
-              <TerminalIcon className="w-8 h-8 text-indigo-600" />
-            </div>
-            
-            <h2 className="text-xl font-bold text-slate-900 mb-8">Admin Login</h2>
-            
-            <button 
-              onClick={() => setIsAuthenticated(true)}
-              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 px-4 rounded-xl shadow-lg shadow-indigo-200 transition-all"
-            >
-              <Key className="w-4 h-4" />
-              Authenticate
-            </button>
-          </div>
-        )}
       </div>
     );
   }
@@ -1015,7 +996,7 @@ export default function App() {
   return (
     <div className={`min-h-screen font-sans flex flex-col transition-colors duration-200 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
-      {/* 1. TOP BAR CONTRACT WITH GCP FLAVOR */}
+      {/* 1. TOP BAR CONTRACT WITH PHRS FLAVOR */}
       <header className={`h-14 px-4 md:px-6 border-b flex items-center justify-between sticky top-0 z-50 transition-colors ${isDarkMode ? 'bg-slate-900/95 border-slate-800/80 backdrop-blur' : 'bg-white border-slate-200 shadow-xs'}`}>
         
         {/* Brand Zone (Single-line, strict typography) */}
@@ -1062,7 +1043,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Center Zone: Search Bar (GCP Style) */}
+        {/* Center Zone: Search Bar (PHRS Style) */}
         <div className="hidden lg:flex flex-1 max-w-2xl px-8">
           <div className={`w-full flex items-center gap-2 px-4 py-1.5 rounded-lg border transition-all ${isDarkMode ? 'bg-slate-800/50 border-slate-700 focus-within:bg-slate-800 focus-within:border-blue-500' : 'bg-slate-100 border-transparent focus-within:bg-white focus-within:border-blue-500 focus-within:shadow-sm'}`}>
             <Search className="w-4 h-4 text-slate-400" />
@@ -1127,7 +1108,7 @@ export default function App() {
           {/* Three vertical dots menu */}
           <button 
             onClick={() => {
-              setHomeToast("GCP settings menu toggled");
+              setHomeToast("PHRS settings menu toggled");
               setTimeout(() => setHomeToast(null), 2500);
             }}
             className={`p-2 rounded-full transition ${isDarkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-100 text-slate-600'}`}
@@ -1139,7 +1120,7 @@ export default function App() {
           {/* Optional Profile Badge for Desktop only */}
           <div className={`hidden sm:flex items-center gap-2 border-l pl-2.5 ml-1.5 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold uppercase ${isDarkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'}`}>
-              PC
+              MA
             </div>
           </div>
         </div>
@@ -1159,18 +1140,18 @@ export default function App() {
           />
         )}
 
-        {/* SIDEBAR NAVIGATION - RESPONSIVE & COLLAPSIBLE - GCP STYLE */}
+        {/* SIDEBAR NAVIGATION - RESPONSIVE & COLLAPSIBLE - PHRS STYLE */}
         <aside className={`
           ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-16 -translate-x-full md:translate-x-0 md:w-16'}
           fixed inset-y-0 left-0 md:static z-40 flex flex-col border-r transition-all duration-300 shrink-0 select-none mt-14 md:mt-0 h-[calc(100vh-3.5rem)] md:h-auto
           ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-[#F8F9FA] border-slate-200'}
         `}>
-          {/* Active Project Dropdown Selector at Top (GCP style) */}
+          {/* Active Project Dropdown Selector at Top (PHRS style) */}
           {isSidebarOpen && (
             <div className={`px-4 py-3 border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
               <button 
                 onClick={() => {
-                  setHomeToast("Viewing primary active GCP-style project space");
+                  setHomeToast("Viewing primary active PHRS-style project space");
                   setTimeout(() => setHomeToast(null), 2500);
                 }}
                 className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-md border text-left transition text-xs font-sans font-medium ${
@@ -1258,7 +1239,7 @@ export default function App() {
                 onClick={() => {
                   setActiveTab('home');
                   setHomeSubTab('dashboard');
-                  setHomeToast("Viewing complete GCP-style platform catalog");
+                  setHomeToast("Viewing complete PHRS-style platform catalog");
                   setTimeout(() => setHomeToast(null), 2500);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-sans font-medium transition-colors ${
@@ -1344,7 +1325,7 @@ export default function App() {
                   <QrCode className="w-8 h-8 text-emerald-600" />
                 </div>
                 <h3 className="text-lg font-black tracking-tight mb-1">Add Cloud Funds</h3>
-                <p className="text-xs text-slate-500 mb-6">Scan with PhonePe, Google Pay, or Paytm</p>
+                <p className="text-xs text-slate-500 mb-6">Scan with PhonePe, G-Pay, or Paytm</p>
                 
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block mb-6 shadow-sm">
                   {/* Custom Uploaded Admin PhonePe QR */}
@@ -1485,7 +1466,7 @@ export default function App() {
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">Environment Mapping Engine Active</h3>
                       <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                        This bridge automatically detects external cloud variables in your source code (like <span className="font-mono bg-white px-1 rounded">FIREBASE_API_KEY</span>) 
+                        This bridge automatically detects external cloud variables in your source code (like <span className="font-mono bg-white px-1 rounded">PHRS_API_KEY</span>) 
                         and substitutes them with PHRS Crowd equivalents during deployment. No code changes required in your original project.
                       </p>
                     </div>
@@ -1585,7 +1566,7 @@ export default function App() {
               </div>
             )}
 
-            {/* MAIN GCP STYLE WELCOME CARD */}
+            {/* MAIN PHRS STYLE WELCOME CARD */}
             <div className={`p-6 md:p-8 rounded-2xl border transition-all duration-300 ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'}`}>
               
               {/* Welcome Header & Cloud Logo */}
@@ -1594,15 +1575,15 @@ export default function App() {
                   <div className="p-1 rounded-xl bg-slate-50 border border-slate-100 shrink-0 shadow-xs">
                     <svg className="w-12 h-12" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <defs>
-                        <linearGradient id="gcpCloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <linearGradient id="phrsCloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                           <stop offset="0%" stopColor="#EA4335" />
                           <stop offset="30%" stopColor="#FBBC05" />
                           <stop offset="65%" stopColor="#34A853" />
                           <stop offset="100%" stopColor="#4285F4" />
                         </linearGradient>
                       </defs>
-                      {/* Perfect stylized vector cloud icon representing GCP */}
-                      <path d="M25.8 13.4C24.9 8.8 20.9 5.3 16 5.3c-3.9 0-7.2 2.2-8.9 5.4C4.1 11.1 1 14.5 1 18.7c0 4.4 3.6 8 8 8h16.3c3.7 0 6.7-3 6.7-6.7 0-3.5-2.7-6.4-6.2-6.6z" fill="url(#gcpCloudGrad)"/>
+                      {/* Perfect stylized vector cloud icon representing PHRS */}
+                      <path d="M25.8 13.4C24.9 8.8 20.9 5.3 16 5.3c-3.9 0-7.2 2.2-8.9 5.4C4.1 11.1 1 14.5 1 18.7c0 4.4 3.6 8 8 8h16.3c3.7 0 6.7-3 6.7-6.7 0-3.5-2.7-6.4-6.2-6.6z" fill="url(#phrsCloudGrad)"/>
                     </svg>
                   </div>
                   
@@ -1712,15 +1693,15 @@ export default function App() {
                   </div>
                 </>
 
-              {/* SUB-TAB 1: GOOGLE CLOUD WELCOME DASHBOARD VIEW */}
+              {/* SUB-TAB 1: PHRS CLOUD WELCOME DASHBOARD VIEW */}
               {homeSubTab === 'dashboard' && (
                 <div className="pt-6 space-y-6">
                   
-                  {/* Grid of GCP Cards */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Grid of PHRS Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6">
                     
-                    {/* Project Info Card (3 cols) */}
-                    <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    {/* Project Info Card (xl: span 4) */}
+                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
                       <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
                         <h3 className="text-sm font-bold text-slate-800">Project info</h3>
                         <button className="text-blue-600 hover:bg-blue-50 p-1 rounded transition">
@@ -1746,8 +1727,8 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Resources Card (4 cols) */}
-                    <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    {/* Resources Card (xl: span 4) */}
+                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
                       <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
                         <h3 className="text-sm font-bold text-slate-800">Resources</h3>
                         <button className="text-blue-600 hover:bg-blue-50 p-1 rounded transition">
@@ -1761,7 +1742,7 @@ export default function App() {
                             { name: 'Cloud Storage', val: '5 buckets', color: 'text-blue-600', tab: 'cloud_storage' },
                             { name: 'Cloud SQL', val: '1 instance', color: 'text-blue-600', tab: 'cloud_sql' },
                             { name: 'BigQuery', val: '12 datasets', color: 'text-blue-600', tab: 'bigquery' },
-                            { name: 'Firebase Database', val: '3 active', color: 'text-[#FFCA28]', tab: 'database' },
+                            { name: 'PHRS Database', val: '3 active', color: 'text-[#FFCA28]', tab: 'database' },
                             { name: 'Agent Platform', val: `${agents.length} active`, color: 'text-indigo-600', tab: 'agent_platform' }
                           ].map((res, i) => (
                             <div key={i} onClick={() => setActiveTab(res.tab as any)} className="flex justify-between items-center px-5 py-3 hover:bg-slate-50 transition cursor-pointer group">
@@ -1776,8 +1757,8 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* API Status Card (4 cols) */}
-                    <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    {/* API Status Card (xl: span 4) */}
+                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
                       <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
                         <h3 className="text-sm font-bold text-slate-800">APIs & Services</h3>
                         <button className="text-blue-600 hover:bg-blue-50 p-1 rounded transition">
@@ -1803,7 +1784,7 @@ export default function App() {
                     </div>
 
                     {/* Actions Row */}
-                    <div className="lg:col-span-12">
+                    <div className="md:col-span-2 xl:col-span-12">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         <button 
                           onClick={() => {
@@ -1842,7 +1823,7 @@ export default function App() {
                     </div>
 
                     {/* Developer Program Banner */}
-                    <div className="lg:col-span-12">
+                    <div className="md:col-span-2 xl:col-span-12">
                       <div className="p-5 rounded-xl bg-[#E8F0FE]/60 border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:bg-[#E8F0FE]/80">
                         <div className="space-y-1">
                           <p className="text-xs font-semibold text-slate-800 leading-normal">
@@ -1863,7 +1844,7 @@ export default function App() {
                     </div>
 
                     {/* Quick Access Section */}
-                    <div className="lg:col-span-12 space-y-4">
+                    <div className="md:col-span-2 xl:col-span-12 space-y-4">
                       <h3 className="text-lg font-medium text-slate-850">Quick access</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {[
@@ -1936,10 +1917,10 @@ export default function App() {
                   </div>
 
                   {/* Split Grid: Server telemetry details & Live terminal logs */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                     
                     {/* Left Column: Projects & Active Deployments quicklist */}
-                    <div className="lg:col-span-7 space-y-6">
+                    <div className="xl:col-span-7 space-y-6">
                       
                       {/* Active Services List */}
                       <div className="p-5 rounded-2xl border transition-colors bg-white border-slate-200 shadow-sm">
@@ -1947,24 +1928,24 @@ export default function App() {
                         
                         <div className="divide-y divide-slate-100">
                           {deployments.map(dep => (
-                            <div key={dep.id} className="py-3 flex items-center justify-between gap-4">
+                            <div key={dep.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-50 last:border-0">
                               <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100">
+                                <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 shrink-0">
                                   <Server className="w-4 h-4 text-indigo-600" />
                                 </div>
-                                <div>
-                                  <p className="text-xs font-semibold text-slate-900">{dep.name}</p>
-                                  <span className="text-[10px] font-mono text-slate-500">http://{dep.subdomain}.phrscrowd.local</span>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-slate-900 truncate">{dep.name}</p>
+                                  <span className="text-[10px] font-mono text-slate-500 break-all block">http://{dep.subdomain}.phrscrowd.local</span>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4">
+                              <div className="flex items-center flex-wrap gap-3 sm:gap-4">
                                 <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100">
                                   {dep.status}
                                 </span>
-                                <span className="text-xs font-mono text-slate-500 hidden sm:inline">{dep.techStack}</span>
+                                <span className="text-xs font-mono text-slate-500 hidden md:inline">{dep.techStack}</span>
                                 <button 
                                   onClick={() => { setActiveVirtualApp(dep); setActiveTab('app_studio'); }}
-                                  className="text-xs font-mono text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                  className="text-xs font-mono text-indigo-600 hover:text-indigo-800 flex items-center gap-1 whitespace-nowrap"
                                 >
                                   Open Console
                                   <ArrowRight className="w-3 h-3" />
@@ -2017,7 +1998,7 @@ export default function App() {
                     </div>
 
                     {/* Right Column: Interactive VPS Terminal / Kernel Logs */}
-                    <div className="lg:col-span-5 space-y-6">
+                    <div className="xl:col-span-5 space-y-6">
                       
                       <div className="p-5 rounded-2xl border flex flex-col h-[400px] transition-colors bg-white border-slate-200 shadow-sm">
                         
@@ -2389,7 +2370,7 @@ export default function App() {
         )}
 
         {/* ==============================================
-            TAB 3: NATIVE FIREBASE-STYLE REALTIME DATABASE CORE
+            TAB 3: NATIVE PHRS-STYLE REALTIME DATABASE CORE
             ============================================== */}
         {activeTab === 'database' && (
           <div className="space-y-6">
@@ -2482,7 +2463,7 @@ export default function App() {
                       onClick={() => {
                         setDbData({
                           "users": {
-                            "usr_9812": { "name": "Prasad Rao", "role": "admin", "verified": true, "phone": "+91 98765 43210" }
+                            "usr_9812": { "name": "Master Admin", "role": "admin", "verified": true, "phone": "+91 98765 43210" }
                           },
                           "settings": { "maintenance_mode": false }
                         });
@@ -2665,7 +2646,7 @@ export default function App() {
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">Self-Hosted [6606.0k]</span>
                   </div>
                   <p className="text-xs text-slate-500 mb-4">
-                    Completely independent of Google AI Studio. Export the full standalone server package as a ZIP file to host on your local mobile IP or private VPS.
+                    Completely independent of External Platforms. Export the full standalone server package as a ZIP file to host on your local mobile IP or private VPS.
                   </p>
 
                   <div className="space-y-2 font-mono text-xs mb-4">
@@ -2682,7 +2663,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       setVpsLogStream(prev => [...prev, `[STANDALONE-6606.0k] Generated complete standalone server ZIP package. Ready for offline deployment on local mobile IP.`]);
-                      alert('✓ PHRS_Crowd_Server_Standalone_6606.0k.zip Download Initialized!\n\nExtract and run:\n1. npm install\n2. npm run build\n3. npm start (Runs on local IP without Google Studio dependency)');
+                      alert('✓ PHRS_Crowd_Server_Standalone_6606.0k.zip Download Initialized!\n\nExtract and run:\n1. npm install\n2. npm run build\n3. npm start (Runs on local IP without External Platforms dependency)');
                     }}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2.5 rounded-lg font-semibold shadow-lg transition-all flex items-center justify-center gap-2"
                   >
@@ -2836,7 +2817,7 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">AI Agent Hybrid Bridge</h3>
-                    <p className="text-xs text-slate-500">Link Google Studio Agent to your Local PHRS Node</p>
+                    <p className="text-xs text-slate-500">Link External Platforms Agent to your Local PHRS Node</p>
                   </div>
                 </div>
                 <button 
@@ -3460,7 +3441,7 @@ OTP.node("${remoteNodeIp}");`
             <div className="p-6 rounded-2xl border bg-white border-slate-200">
               <div className="flex items-center gap-3 mb-2">
                 <LayoutGrid className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">GCP Solutions Catalog</h2>
+                <h2 className="text-lg font-bold tracking-tight">PHRS Solutions Catalog</h2>
               </div>
               <p className="text-xs text-slate-500 max-w-2xl">
                 Ready-to-deploy architectural stacks compiled dynamically to target standalone local VPS clusters. Click deploy to initialize telemetry networks.
@@ -3471,7 +3452,7 @@ OTP.node("${remoteNodeIp}");`
               {[
                 { name: 'Microservice SMS Router', desc: 'Pre-configured Twilio & Fast2SMS gateway cluster for heavy multi-user OTP verification.', stack: 'Node.js, SQLite, Fast2SMS', time: '1.2s' },
                 { name: 'Relational SQLite Cache', desc: 'A synchronized BigQuery replica for super-fast offline analytical searches.', stack: 'SQL, SQLite DB, GCSFuse', time: '2.5s' },
-                { name: 'Geo Maps Telemetry tracker', desc: 'Real-time geographical position locator mapping coordinates with the Google Maps SDK.', stack: 'React, Maps API, GeoJson', time: '0.8s' }
+                { name: 'Geo Maps Telemetry tracker', desc: 'Real-time geographical position locator mapping coordinates with the PHRS Maps SDK.', stack: 'React, Maps API, GeoJson', time: '0.8s' }
               ].map((solution, idx) => (
                 <div key={idx} className="p-5 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between">
                   <div>
@@ -3588,21 +3569,21 @@ OTP.node("${remoteNodeIp}");`
                   <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
                     <div>
                       <div className="text-xs font-bold text-slate-800">Database Storage (per GB)</div>
-                      <div className="text-[10px] text-slate-500 line-through mt-1">Google Price: ₹100.00</div>
+                      <div className="text-[10px] text-slate-500 line-through mt-1">External Price: ₹100.00</div>
                     </div>
                     <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">₹80.00</div>
                   </div>
                   <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
                     <div>
                       <div className="text-xs font-bold text-slate-800">SMS OTP (per 100 SMS)</div>
-                      <div className="text-[10px] text-slate-500 line-through mt-1">Firebase: ₹25.00</div>
+                      <div className="text-[10px] text-slate-500 line-through mt-1">External DB: ₹25.00</div>
                     </div>
                     <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">₹20.00</div>
                   </div>
                   <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
                     <div>
                       <div className="text-xs font-bold text-slate-800">API Gateway Calls (per 10k)</div>
-                      <div className="text-[10px] text-slate-500 line-through mt-1">AWS/GCP: ₹40.00</div>
+                      <div className="text-[10px] text-slate-500 line-through mt-1">External Cloud: ₹40.00</div>
                     </div>
                     <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">₹32.00</div>
                   </div>
@@ -3772,7 +3753,7 @@ OTP.node("${remoteNodeIp}");`
             ============================================== */}
         {activeTab === 'agent_platform' && (
           <div className="space-y-6 animate-fade-in">
-            {/* Header section with GCP-like sub-navigation */}
+            {/* Header section with PHRS-like sub-navigation */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
               <div className="p-6 pb-2">
                 <div className="flex items-center justify-between mb-4">
@@ -3914,21 +3895,23 @@ OTP.node("${remoteNodeIp}");`
                         <TerminalIcon className="w-6 h-6" />
                         <h3 className="text-xl font-mono font-bold uppercase tracking-widest">Reading Agent Protocol Rules...</h3>
                       </div>
-                      <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl font-mono text-xs text-blue-300 space-y-4 shadow-2xl">
-                        <p className="text-amber-500 font-bold underline">MANDATORY SYSTEM PROTOCOL (ADMIN ONLY)</p>
-                        <p>1. అడ్మిన్ అనుమతి లేకుండా ఏ ఒక్కటి తెచ్చి చేయకూడదు.</p>
-                        <p>2. అడ్మిన్ అనుమతి ప్రతి దానికి తీసుకోవాలి.</p>
-                        <p>3. పాస్వర్డ్ ఇచ్చిన తర్వాత ఓకే అని కూడా కన్ఫర్మేషన్ చేయాలి.</p>
-                        <p>4. అక్షరాలు సవరణ మాత్రమే చేయాలి. పూర్తిగా కోడ్ మార్చకూడదు.</p>
-                        <p>5. సవరించిన ప్రతిదీ అడ్మిన్‌కు చూపించాలి.</p>
-                        <p>6. మూడు సార్లు సవరించిన తర్వాత సిస్టమ్ రూల్స్ చదవాలి (50 సెకండ్లు).</p>
+                      <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl font-mono text-xs text-blue-300 space-y-4 shadow-2xl overflow-y-auto max-h-[60vh]">
+                        <p className="text-amber-500 font-bold underline">MANDATORY SYSTEM PROTOCOL (35 GOLDEN RULES)</p>
+                        <p>1. Admin Auth: Password 6606.0k and 'OK' mandatory.</p>
+                        <p>2. Pin-point Edits: No full file rewrites allowed.</p>
+                        <p>3. Zero-Bug Policy: Lint and Build must pass.</p>
+                        <p>4. Reporting: Mandatory Audit Report after edits.</p>
+                        <p>5. Deep Scan: 50s wait after every 2 edits.</p>
+                        <p>6. No Placeholders: Every code block must be functional.</p>
+                        <p>7. Security: API keys only via server-side proxy.</p>
+                        <p className="text-slate-500 italic">...and other rules defined in AGENT_RULES.md (Total 35).</p>
                         <div className="pt-4 flex items-center justify-between border-t border-slate-800">
-                          <span className="text-[10px] text-slate-500 italic">Reading protocol in progress... Please wait 50s.</span>
+                          <span className="text-[10px] text-slate-500 italic">Deep scan in progress... Please wait 50s.</span>
                           <button 
                             onClick={() => setShowSystemRules(false)}
                             className="px-4 py-1 bg-blue-600 text-white rounded font-bold hover:bg-blue-500 transition"
                           >
-                            ACKNOWLEDGE
+                            ACKNOWLEDGE & RESUME
                           </button>
                         </div>
                       </div>
@@ -4221,7 +4204,7 @@ OTP.node("${remoteNodeIp}");`
             <div className="p-6 rounded-2xl border bg-white border-slate-200">
               <div className="flex items-center gap-3 mb-2">
                 <Layers className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">Google Kubernetes Engine (GKE)</h2>
+                <h2 className="text-lg font-bold tracking-tight">PHRS Kubernetes Engine (PKE)</h2>
               </div>
               <p className="text-xs text-slate-500 max-w-2xl">
                 Monitor your container runtime replicas. Scale docker pods, verify telemetry memory allocation, and secure localized port forwarding rules.
@@ -4819,8 +4802,8 @@ OTP.node("${remoteNodeIp}");`
                             <div className="text-sm font-bold text-slate-800">Temporary Bypass (ఏఐ సర్వర్ కనెక్షన్)</div>
                             <p className="text-[10px] text-slate-500">
                               {isAiServerBypassed 
-                                ? "Google AI Server is DISCONNECTED (టెంపరరీగా ఆపివేయబడింది)" 
-                                : "Google AI Server is ACTIVE (గూగుల్ ఏఐ సర్వర్ యాక్టివ్‌గా ఉంది)"}
+                                ? "PHRS AI Engine is DISCONNECTED (టెంపరరీగా ఆపివేయబడింది)" 
+                                : "PHRS AI Engine is ACTIVE (పీహెచ్‌ఆర్ఎస్ ఏఐ ఇంజిన్ యాక్టివ్‌గా ఉంది)"}
                             </p>
                           </div>
                         </div>
@@ -4829,7 +4812,7 @@ OTP.node("${remoteNodeIp}");`
                           <button 
                             onClick={() => {
                               setIsAiServerBypassed(!isAiServerBypassed);
-                              setHomeToast(!isAiServerBypassed ? "⚠ Google AI Server Disconnected" : "✓ Google AI Server Restored");
+                              setHomeToast(!isAiServerBypassed ? "⚠ PHRS AI Engine Disconnected" : "✓ PHRS AI Engine Restored");
                               setTimeout(() => setHomeToast(null), 3000);
                             }}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isAiServerBypassed ? 'bg-rose-500' : 'bg-slate-200'}`}
@@ -5165,14 +5148,14 @@ OTP.node("${remoteNodeIp}");`
         )}
 
         {/* ==============================================
-            TAB 21: GOOGLE MAPS PLATFORM
+            TAB 21: PHRS MAPS PLATFORM
             ============================================== */}
-        {activeTab === 'google_maps' && (
+        {activeTab === 'phrs_maps' && (
           <div className="space-y-6 animate-fade-in">
             <div className="p-6 rounded-2xl border bg-white border-slate-200">
               <div className="flex items-center gap-3 mb-2">
                 <MapPin className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">Google Maps Platform integration</h2>
+                <h2 className="text-lg font-bold tracking-tight">PHRS Maps Platform integration</h2>
               </div>
               <p className="text-xs text-slate-500 max-w-2xl">
                 Ground static assets with geographical latitude and longitude telemetry to map tracking routes.
@@ -5205,7 +5188,7 @@ OTP.node("${remoteNodeIp}");`
 
                   <button 
                     onClick={() => {
-                      setHomeToast("✓ Google Maps SDK initialized successfully!");
+                      setHomeToast("✓ PHRS Maps SDK initialized successfully!");
                       setTimeout(() => setHomeToast(null), 3000);
                     }}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-semibold transition"

@@ -2,7 +2,7 @@
   "agent_protocol": {
     "version": "1.0.0",
     "strict_mode": true,
-    "admin_password": "50 సెకండ్స్6606.0k",
+    "admin_password": "6606.0k",
     "rules": [
       "No action shall be performed without explicit Admin authorization.",
       "Every request must be preceded by an Admin password verification.",
