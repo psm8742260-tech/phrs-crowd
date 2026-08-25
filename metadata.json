@@ -1,0 +1,6 @@
+{
+  "name": "PHRS Crowd",
+  "description": "Self-hosted cloud platform dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

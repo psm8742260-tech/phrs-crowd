@@ -1,0 +1,18 @@
+{
+  "agent_protocol": {
+    "version": "1.0.0",
+    "strict_mode": true,
+    "admin_password": "50 సెకండ్స్6606.0k",
+    "rules": [
+      "No action shall be performed without explicit Admin authorization.",
+      "Every request must be preceded by an Admin password verification.",
+      "A final confirmation (OK/Confirm) is mandatory after password verification.",
+      "Only precise character-level edits are allowed; full file rewrites are prohibited.",
+      "Every modification must be logged and displayed to the Admin.",
+      "After every 3 modifications, the Agent must re-read and display the System Rules.",
+      "Timer: 50 seconds verification window."
+    ],
+    "confirmation_required": true,
+    "audit_logging": true
+  }
+}
