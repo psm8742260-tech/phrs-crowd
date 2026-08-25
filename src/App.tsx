@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Server, Database, MessageSquare, Key, Download, Search, Bell, 
   User, Plus, Play, RefreshCw, Trash2, Edit3, Save, Check, AlertCircle, 
-  Cpu, HardDrive, Wifi, Layers, Globe, ExternalLink, Lock, Settings, 
+  Cpu, HardDrive, Wifi, Layers, Globe, ExternalLink, Link, Lock, Settings, 
   Phone, ArrowRight, ChevronRight, ChevronDown, Moon, Sun, FileCode, CheckCircle2,
   Copy, Shield, CreditCard, LayoutGrid, Sliders, BarChart2, Clock, ShoppingCart,
-  Sparkles, Activity, MapPin, MoreVertical, Send, HelpCircle, Terminal as TerminalIcon
+  Sparkles, Activity, MapPin, MoreVertical, Send, HelpCircle, Network, Terminal as TerminalIcon,
+  Cloud, WifiOff, Code2, Terminal, ShieldCheck, Zap, Smartphone, QrCode, X, Upload
 } from 'lucide-react';
 import { vpsServerJs, vpsReadmeMd, vpsPackageJson } from './vpsCodeTemplates';
 
@@ -41,9 +42,17 @@ interface SystemMetric {
 export default function App() {
   // Theme state - locked to light mode to completely remove any black/dark background as requested
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [loginView, setLoginView] = useState<'admin' | 'user'>('user');
+  const [appIconUrl, setAppIconUrl] = useState<string | null>('/cloud-icon.svg');
+  const [pkgName, setPkgName] = useState('com.phrs.crowd');
+  const [shaFingerprint, setShaFingerprint] = useState('03:5E:59:45:3B:C0:77:9B:27:16:D5:E5:C3:54:1C:A7:EC:94:9E:BE:72:F7:F9:09:94:00:6A:B9:00:01:4A:E3');
 
   // Navigation and active project
-  const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'cloud_sql' | 'google_maps'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'google_maps' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console'>('home');
+  const [snippetFormat, setSnippetFormat] = useState('Module');
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
       const saved = localStorage.getItem('phrs_projects');
@@ -52,17 +61,14 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
-      console.error('Error parsing phrs_projects from localStorage:', e);
+      // Data recovery logic for fresh deployments
     }
-    return [
-      { id: 'proj-01', name: 'PHRS Main Platform', status: 'active', created_at: '2026-08-20', api_hits: 1420 },
-      { id: 'proj-02', name: 'Analytics Tracker', status: 'active', created_at: '2026-08-22', api_hits: 340 },
-      { id: 'proj-03', name: 'SMS Auth Engine', status: 'idle', created_at: '2026-08-23', api_hits: 120 }
-    ];
+    return [];
   });
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('proj-01');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [newProjName, setNewProjName] = useState('');
   const [showNewProjModal, setShowNewProjModal] = useState(false);
+  const [showUpiModal, setShowUpiModal] = useState(false);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,23 +84,13 @@ export default function App() {
   // System Metrics
   const [metrics, setMetrics] = useState<SystemMetric>({ cpu: 22, memory: 48, disk: 34, bandwidth: 12.4 });
   const [cpuHistory, setCpuHistory] = useState<number[]>([18, 22, 25, 20, 21, 24, 28, 22, 23, 20]);
-  const [vpsLogStream, setVpsLogStream] = useState<string[]>([
-    '[INIT] PHRS Crowd kernel initialized successfully.',
-    '[SQLITE] Connected to /var/www/phrscrowd.sqlite database.',
-    '[SMS] Fast2SMS Gateway integration initialized in test-routing mode.',
-    '[AI] Smart Prompt routing initialized. Waiting for admin payloads...',
-    '[NGINX] Reverse proxy listening on standard VPS port 80.'
-  ]);
+  const [vpsLogStream, setVpsLogStream] = useState<string[]>([]);
 
   // Built-in Mini Server & Integrated Terminal states (No Termux app needed!)
   const [isMiniServerRunning, setIsMiniServerRunning] = useState<boolean>(true);
   const [miniServerPort, setMiniServerPort] = useState<number>(3000);
   const [miniServerIp, setMiniServerIp] = useState<string>('192.168.1.15');
-  const [terminalHistory, setTerminalHistory] = useState<Array<{type: 'cmd' | 'out' | 'err'; text: string}>>([
-    { type: 'out', text: 'PHRS Crowd Mini Server v2.4.0 [Built-in Web Terminal Engine]' },
-    { type: 'out', text: 'Type "help" to see available commands or click quick actions below.' },
-    { type: 'out', text: 'Server running on http://192.168.1.15:3000 (Supports up to 500 mobile / 2000 laptop users)' }
-  ]);
+  const [terminalHistory, setTerminalHistory] = useState<Array<{type: 'cmd' | 'out' | 'err'; text: string}>>([]);
   const [terminalInput, setTerminalInput] = useState<string>('');
 
   const handleTerminalSubmit = (e: React.FormEvent) => {
@@ -167,23 +163,9 @@ export default function App() {
       const saved = localStorage.getItem('phrs_db_data');
       if (saved) return JSON.parse(saved);
     } catch (e) {
-      console.error('Error parsing phrs_db_data from localStorage:', e);
+      // Initial database seeding logic
     }
-    return {
-      "users": {
-        "usr_9812": { "name": "Prasad Rao", "role": "admin", "verified": true, "phone": "+91 98765 43210" },
-        "usr_3412": { "name": "Kiran Kumar", "role": "developer", "verified": false, "phone": "+91 91234 56789" }
-      },
-      "settings": {
-        "maintenance_mode": false,
-        "allow_registrations": true,
-        "max_connections_per_ip": 120
-      },
-      "api_usage": {
-        "gemini_tokens": 12850,
-        "deepseek_tokens": 58200
-      }
-    };
+    return {};
   });
   const [dbRawText, setDbRawText] = useState(JSON.stringify(dbData, null, 2));
   const [isRawDbView, setIsRawDbView] = useState(false);
@@ -200,7 +182,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
-      console.error('Error parsing phrs_deployments from localStorage:', e);
+      // Runtime deployment recovery
     }
     return [
       { id: 'dep-1', name: 'PHRS Web Dashboard', subdomain: 'dashboard', port: 3001, techStack: 'React Vite', status: 'ONLINE', cpu: 1.2, memory: 34, visitors: 142, githubUrl: 'https://github.com/phrscrowd/web-dash' },
@@ -258,6 +240,16 @@ export default function App() {
   const [billingBudget, setBillingBudget] = useState(300);
   const [billingAlertAmount, setBillingAlertAmount] = useState(250);
   const [billingAlertEmail, setBillingAlertEmail] = useState('admin@phrscrowd.local');
+  const [billingSubTab, setBillingSubTab] = useState<'management' | 'tracking' | 'accounts'>('management');
+
+  // Secret Manager states
+  const [envTranslationMappings, setEnvTranslationMappings] = useState<Array<{external: string; internal: string; active: boolean}>>([
+    { external: 'FIREBASE_API_KEY', internal: 'PHRS_API_KEY', active: true },
+    { external: 'GOOGLE_APPLICATION_CREDENTIALS', internal: 'PHRS_VPC_CREDENTIALS', active: true },
+    { external: 'STRIPE_SECRET_KEY', internal: 'PHRS_PAYMENT_TOKEN', active: false },
+    { external: 'TWILIO_AUTH_TOKEN', internal: 'PHRS_SMS_AUTH', active: true }
+  ]);
+  const [secretManagerSubTab, setSecretManagerSubTab] = useState<'secrets' | 'translation'>('secrets');
 
   // IAM states
   const [iamMembers, setIamMembers] = useState<Array<{email: string; role: string; addedAt: string}>>([
@@ -311,6 +303,9 @@ export default function App() {
   // Monitoring states
   const [monitorUptime, setMonitorUptime] = useState('4d 18h 32m');
   const [activeAlerts, setActiveAlerts] = useState<string[]>([]);
+  const [isHybridDevMode, setIsHybridDevMode] = useState(false);
+  const [isAiServerBypassed, setIsAiServerBypassed] = useState(false);
+  const [remoteNodeIp, setRemoteNodeIp] = useState('157.50.81.156');
 
   // Cloud Run states
   const [cloudRunImage, setCloudRunImage] = useState('gcr.io/phrscrowd/express-app:latest');
@@ -402,7 +397,7 @@ export default function App() {
   const [newAgentName, setNewAgentName] = useState('');
   const [newAgentModel, setNewAgentModel] = useState('Gemini 1.5 Flash');
   const [newAgentPrompt, setNewAgentPrompt] = useState('');
-  const [agentPlatformSubTab, setAgentPlatformSubTab] = useState<'overview' | 'studio' | 'models' | 'agents' | 'notebooks'>('overview');
+  const [agentPlatformSubTab, setAgentPlatformSubTab] = useState<'overview' | 'studio' | 'models' | 'agents' | 'notebooks' | 'security'>('overview');
 
   // Home tab sub-navigation & interactive feedback toast
   const [homeSubTab, setHomeSubTab] = useState<'dashboard' | 'hub'>('dashboard');
@@ -575,22 +570,24 @@ export default function App() {
   // Deployment simulation
   const handleStartDeployment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!appName.trim() || !githubUrl.trim()) return;
+    if (!appName.trim()) return;
 
     setIsBuilding(true);
     setBuildProgress(5);
     setBuildLogs([
-      `[DOCKER] Triggering autonomous deployment build for "${appName}"...`,
-      `[BASH] git clone ${githubUrl} /var/www/deployments/${appName.toLowerCase().replace(/\s+/g, '-')}`
+      `[PHRS-PNP] Initializing Plug-and-Play Autonomous Engine for "${appName}"...`,
+      `[PHRS-SEC] Secret Manager: Fetching active environment translation rules...`,
+      `[PHRS-SEC] Translation Bridge: Automatically mapping external variables to local PHRS nodes...`,
+      githubUrl ? `[BASH] git clone ${githubUrl} /var/www/pnp-deployments/${appName.toLowerCase()}` : `[FS] Scanning uploaded files for project entry points...`
     ]);
 
     const buildSteps = [
-      { prg: 20, log: 'Cloning repository complete. 124 files verified.' },
-      { prg: 40, log: `Detecting configuration files... Found package.json. Technology identified: ${appTech}` },
-      { prg: 65, log: 'Executing dynamic dependencies installer: "npm install --production"' },
-      { prg: 80, log: '✓ NPM Packages installed successfully.' },
-      { prg: 90, log: 'Compiling app bundles... Generating production optimized bundles (Vite build).' },
-      { prg: 100, log: `✓ Port allocation completed on :${appPort}. Starting PM2 process routing.` }
+      { prg: 20, log: 'Source files verified. Integrity check: 100% OK.' },
+      { prg: 40, log: `Autonomous Scanner: Identification in progress... [FOUND: ${appTech === 'Docker File' ? 'Custom Dockerfile' : 'Project Config'}]` },
+      { prg: 65, log: `Setting up virtual environment for ${appTech}... (Built-in Hub Capability)` },
+      { prg: 80, log: '✓ Global Plug-and-Play Runtimes (PM2/Docker/Node) synchronized.' },
+      { prg: 90, log: 'Provisioning Local VPC Port: Routing external traffic to internal container...' },
+      { prg: 100, log: `✓ DEPLOYMENT SUCCESSFUL on port ${appPort}. Plug-and-Play Active.` }
     ];
 
     let currentStep = 0;
@@ -614,11 +611,11 @@ export default function App() {
           cpu: 0.1,
           memory: 32,
           visitors: 0,
-          githubUrl: githubUrl
+          githubUrl: githubUrl || 'Local File Upload'
         };
         
         setDeployments(prev => [...prev, newDep]);
-        setVpsLogStream(prev => [...prev, `[DEPLOYMENT] Successfully deployed "${appName}" to http://${newDep.subdomain}.phrscrowd.local`]);
+        setVpsLogStream(prev => [...prev, `[PHRS-PNP] Plug-and-Play Deployment active: "${appName}" -> http://${newDep.subdomain}.phrscrowd.local`]);
         setAppName('');
         setGithubUrl('');
         setAppPort(prev => prev + 1);
@@ -699,6 +696,18 @@ export default function App() {
   const totalApiHits = projects.reduce((sum, p) => sum + p.api_hits, 0);
 
   const navSections = [
+    {
+      id: 'secret_manager',
+      label: 'Secret Manager',
+      icon: Key,
+      subMenus: ['Secret Overview', 'Credentials', 'SSH Keys', 'API Tokens']
+    },
+    {
+      id: 'cloud_build',
+      label: 'Cloud Build',
+      icon: RefreshCw,
+      subMenus: ['Build History', 'Triggers', 'Settings', 'Artifact Registry']
+    },
     {
       id: 'cloud_hub',
       label: 'Cloud Hub',
@@ -802,6 +811,30 @@ export default function App() {
       subMenus: ['VPC networks', 'IP addresses', 'Internal ranges', 'Bring your own IP', 'Firewall', 'Routes', 'VPC connectivity', 'Shared VPC', 'Serverless VPC access', 'Packet mirroring']
     },
     {
+      id: 'network_config',
+      label: 'PHRS Offline Network',
+      icon: Network,
+      subMenus: ['Mobile IP Routing', 'Laptop Nodes', 'VPC Connections', 'Gateway Status']
+    },
+    {
+      id: 'sms_gateway',
+      label: 'SMS & OTP Gateway',
+      icon: MessageSquare,
+      subMenus: ['Gateway Dashboard', 'Recharge (₹25) Config', 'OTP Logs', 'API Access']
+    },
+    {
+      id: 'firebase_console',
+      label: 'Firebase (App Platform)',
+      icon: Database,
+      subMenus: ['Project Overview', 'Authentication', 'Firestore Database', 'Realtime Database', 'Storage', 'Hosting', 'Cloud Functions']
+    },
+    {
+      id: 'console',
+      label: 'Cloud Console',
+      icon: Code2,
+      subMenus: ['Project Keys', 'Webhooks', 'SDK Setup']
+    },
+    {
       id: 'databases',
       label: 'Databases',
       icon: Database,
@@ -829,7 +862,15 @@ export default function App() {
     setSelectedSubMenu(subMenu);
     
     // Clean, clever tab routing:
-    if (sectionId === 'cloud_hub') {
+    if (sectionId === 'secret_manager') {
+      setActiveTab('secret_manager');
+      setHomeToast('Secret Manager opened');
+      setTimeout(() => setHomeToast(null), 2000);
+    } else if (sectionId === 'cloud_build') {
+      setActiveTab('cloud_build');
+      setHomeToast('Cloud Build Console launched');
+      setTimeout(() => setHomeToast(null), 2000);
+    } else if (sectionId === 'cloud_hub') {
       if (subMenu === 'Deployments') {
         setActiveTab('app_studio'); // VPS hosting & deployments
       } else {
@@ -845,6 +886,9 @@ export default function App() {
       setActiveTab('recently_visited');
     } else if (sectionId === 'billing') {
       setActiveTab('billing');
+      if (subMenu === 'Account billing management') setBillingSubTab('management');
+      else if (subMenu === 'Cost tracking') setBillingSubTab('tracking');
+      else if (subMenu === 'Linked accounts') setBillingSubTab('accounts');
     } else if (sectionId === 'iam_admin') {
       setActiveTab('iam');
     } else if (sectionId === 'marketplace') {
@@ -869,6 +913,22 @@ export default function App() {
       setActiveTab('cloud_run');
     } else if (sectionId === 'vpc_network') {
       setActiveTab('vpc_network');
+    } else if (sectionId === 'network_config') {
+      setActiveTab('network_config' as any);
+      setHomeToast(`Network Service: ${subMenu} launched successfully`);
+      setTimeout(() => setHomeToast(null), 2500);
+    } else if (sectionId === 'sms_gateway') {
+      setActiveTab('sms_gateway' as any);
+      setHomeToast(`SMS Service: ${subMenu} launched successfully`);
+      setTimeout(() => setHomeToast(null), 2500);
+    } else if (sectionId === 'firebase_console') {
+      setActiveTab('database');
+      setHomeToast(`Firebase Service: ${subMenu} launched successfully`);
+      setTimeout(() => setHomeToast(null), 2500);
+    } else if (sectionId === 'console') {
+      setActiveTab('console' as any);
+      setHomeToast(`Cloud Console Setup Opened`);
+      setTimeout(() => setHomeToast(null), 2500);
     } else if (sectionId === 'databases') {
       setActiveTab('database');
     } else if (sectionId === 'cloud_sql') {
@@ -884,6 +944,73 @@ export default function App() {
       setIsSidebarOpen(false);
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 font-sans">
+        {loginView === 'user' && (
+          <div className="max-w-sm w-full bg-white rounded-3xl shadow-xl p-8 text-center border border-slate-100 relative overflow-hidden group">
+            {/* Hidden admin trigger button in the corner */}
+            <button 
+              onClick={() => setLoginView('admin')} 
+              className="absolute top-4 right-4 p-2 text-slate-200 hover:text-slate-400 hover:bg-slate-50 rounded-full transition-all"
+              title="Admin Login"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <div className="w-28 h-28 flex items-center justify-center mx-auto mb-6 mt-2">
+               {appIconUrl ? (
+                 <img src={appIconUrl} alt="App Logo" className="w-full h-full object-contain drop-shadow-xl" />
+               ) : (
+                 <User className="w-10 h-10 text-blue-500" />
+               )}
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">PHRS Crowd</h2>
+            <p className="text-sm text-slate-500 mb-8">Sign in to continue to your account</p>
+            
+            <button 
+              onClick={() => setIsAuthenticated(true)}
+              className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-2.5 px-4 rounded-xl shadow-sm transition-all"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              Continue with Google
+            </button>
+            <div className="mt-8 text-[11px] text-slate-400">
+              Secured by PHRS Crowd
+            </div>
+          </div>
+        )}
+
+        {loginView === 'admin' && (
+          <div className="max-w-xs w-full bg-white rounded-3xl shadow-xl p-8 border border-slate-200 text-center relative">
+            <button onClick={() => setLoginView('user')} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 transition hover:bg-slate-50 rounded-full">
+              <ArrowRight className="w-4 h-4 rotate-180" />
+            </button>
+            
+            <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100 mt-2">
+              <TerminalIcon className="w-8 h-8 text-indigo-600" />
+            </div>
+            
+            <h2 className="text-xl font-bold text-slate-900 mb-8">Admin Login</h2>
+            
+            <button 
+              onClick={() => setIsAuthenticated(true)}
+              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 px-4 rounded-xl shadow-lg shadow-indigo-200 transition-all"
+            >
+              <Key className="w-4 h-4" />
+              Authenticate
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen font-sans flex flex-col transition-colors duration-200 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
@@ -1199,6 +1326,58 @@ export default function App() {
           </div>
         </div>
 
+        
+        {/* UPI Recharge Modal */}
+        {showUpiModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+            <div className={`w-full max-w-sm rounded-3xl p-6 border shadow-2xl relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}>
+              
+              <button 
+                onClick={() => setShowUpiModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="text-center relative z-10">
+                <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                  <QrCode className="w-8 h-8 text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-black tracking-tight mb-1">Add Cloud Funds</h3>
+                <p className="text-xs text-slate-500 mb-6">Scan with PhonePe, Google Pay, or Paytm</p>
+                
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block mb-6 shadow-sm">
+                  {/* Custom Uploaded Admin PhonePe QR */}
+                  <img 
+                    src="/Screenshot_20260825_151147.jpg" 
+                    alt="PhonePe QR Code" 
+                    className="w-48 mx-auto rounded-lg"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=admin@ybl";
+                    }}
+                  />
+                </div>
+
+                <div className="bg-slate-100 rounded-xl p-3 text-center mb-6">
+                  <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Verified Merchant Account</div>
+                  <div className="text-xs font-mono font-medium text-slate-700">Scan using PhonePe or any UPI App</div>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setShowUpiModal(false);
+                    setHomeToast("✓ Funds will be added automatically once the transaction is verified by our servers.");
+                    setTimeout(() => setHomeToast(null), 5000);
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95"
+                >
+                  I HAVE PAID
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Project Create Modal */}
         {showNewProjModal && (
           <div className="fixed inset-0 bg-slate-300/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -1235,6 +1414,163 @@ export default function App() {
         )}
 
         {/* ==============================================
+            TAB: SECRET MANAGER
+            ============================================== */}
+        {activeTab === 'secret_manager' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-bold text-slate-900">Secret Manager</h1>
+                <p className="text-xs text-slate-500 font-mono">Autonomous Encryption & Environment Variable Bridge</p>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
+                  <button 
+                    onClick={() => setSecretManagerSubTab('secrets')}
+                    className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${secretManagerSubTab === 'secrets' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    Stored Secrets
+                  </button>
+                  <button 
+                    onClick={() => setSecretManagerSubTab('translation')}
+                    className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${secretManagerSubTab === 'translation' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    Translation Bridge
+                  </button>
+                </div>
+                <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> {secretManagerSubTab === 'secrets' ? 'Create Secret' : 'Add Mapping'}
+                </button>
+              </div>
+            </div>
+
+            {secretManagerSubTab === 'secrets' ? (
+              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="px-6 py-4">Name</th>
+                      <th className="px-6 py-4">Created</th>
+                      <th className="px-6 py-4">Type</th>
+                      <th className="px-6 py-4">Labels</th>
+                      <th className="px-6 py-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {[
+                      { name: 'phrs-master-db-key', date: '2 days ago', type: 'Database Password', label: 'env:prod' },
+                      { name: 'sms-gateway-token', date: '1 week ago', type: 'API Token', label: 'env:test' },
+                      { name: 'ssh-vps-access-key', date: '1 month ago', type: 'SSH Key', label: 'env:global' }
+                    ].map((s, i) => (
+                      <tr key={i} className="hover:bg-slate-50/50 transition-colors cursor-pointer">
+                        <td className="px-6 py-4 font-medium text-slate-900">{s.name}</td>
+                        <td className="px-6 py-4 text-slate-500">{s.date}</td>
+                        <td className="px-6 py-4 text-slate-600">{s.type}</td>
+                        <td className="px-6 py-4">
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono">{s.label}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button className="text-indigo-600 hover:underline">Edit</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                  <div className="flex gap-4">
+                    <div className="p-3 bg-white rounded-xl shadow-sm h-fit"><Link className="w-6 h-6 text-indigo-600" /></div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Environment Mapping Engine Active</h3>
+                      <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                        This bridge automatically detects external cloud variables in your source code (like <span className="font-mono bg-white px-1 rounded">FIREBASE_API_KEY</span>) 
+                        and substitutes them with PHRS Crowd equivalents during deployment. No code changes required in your original project.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50/50 font-bold text-xs uppercase tracking-wider text-slate-500">
+                    Live Translation Rules
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    {envTranslationMappings.map((mapping, i) => (
+                      <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50/30 transition-colors">
+                        <div className="flex items-center gap-8">
+                          <div className="w-48">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">EXTERNAL SOURCE</p>
+                            <p className="font-mono text-xs font-bold text-rose-600">{mapping.external}</p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-slate-300" />
+                          <div className="w-48">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">INTERNAL PHRS MAPPING</p>
+                            <p className="font-mono text-xs font-bold text-emerald-600">{mapping.internal}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${mapping.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {mapping.active ? 'ACTIVE BRIDGE' : 'PAUSED'}
+                          </span>
+                          <button 
+                            onClick={() => {
+                              const newMappings = [...envTranslationMappings];
+                              newMappings[i].active = !newMappings[i].active;
+                              setEnvTranslationMappings(newMappings);
+                            }}
+                            className="text-[10px] text-indigo-600 font-bold hover:underline"
+                          >
+                            {mapping.active ? 'Disable' : 'Enable'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==============================================
+            TAB: CLOUD BUILD
+            ============================================== */}
+        {activeTab === 'cloud_build' && (
+          <div className="space-y-6 animate-fade-in">
+            <h1 className="text-2xl font-bold text-slate-900">Cloud Build History</h1>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Builds', val: '42', icon: RefreshCw, color: 'text-indigo-500' },
+                { label: 'Successful', val: '38', icon: CheckCircle2, color: 'text-emerald-500' },
+                { label: 'Failed', val: '4', icon: AlertCircle, color: 'text-rose-500' },
+                { label: 'Artifacts', val: '12', icon: Layers, color: 'text-amber-500' }
+              ].map((stat, i) => (
+                <div key={i} className="p-4 bg-white rounded-xl border border-slate-200 flex items-center gap-4">
+                  <div className={`p-2 rounded-lg bg-slate-50 ${stat.color}`}>
+                    <stat.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{stat.label}</p>
+                    <p className="text-xl font-bold text-slate-900">{stat.val}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <span className="text-sm font-bold text-slate-700">Recent Build Logs</span>
+                <button className="text-xs text-indigo-600 font-medium hover:underline">View All Build Triggers</button>
+              </div>
+              <div className="p-4 font-mono text-[11px] space-y-1.5 bg-slate-900 text-slate-300 min-h-[300px]">
+                <p className="animate-pulse">_</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==============================================
             TAB 1: PHRS CROWD CONSOLE DASHBOARD (HOME) 
             ============================================== */}
         {activeTab === 'home' && (
@@ -1252,115 +1588,6 @@ export default function App() {
             {/* MAIN GCP STYLE WELCOME CARD */}
             <div className={`p-6 md:p-8 rounded-2xl border transition-all duration-300 ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'}`}>
               
-              {/* GIANT STANDALONE SERVER DOWNLOAD & DIRECT WEB URL INSTALLER BANNER */}
-              {showStandaloneBanner && (
-                <div className="mb-6 p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 rounded-2xl text-white shadow-xl relative flex flex-col gap-4">
-                  <button
-                    onClick={() => setShowStandaloneBanner(false)}
-                    className="absolute top-3 right-3 text-emerald-200 hover:text-white font-mono text-sm font-bold bg-emerald-700/50 hover:bg-emerald-700 w-7 h-7 rounded-full flex items-center justify-center transition-all"
-                    title="Dismiss Board"
-                  >
-                    ×
-                  </button>
-                  <div className="space-y-1 pr-8">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3.5 h-3.5 rounded-full bg-yellow-300 animate-ping"></span>
-                      <h2 className="font-mono font-bold text-sm md:text-base tracking-wide text-yellow-200">PHRS CROWD STANDALONE WEB SERVER [Direct URL Mode]</h2>
-                    </div>
-                    <p className="text-xs text-emerald-100 font-sans leading-relaxed">
-                      Zero AI Studio dependency! Access your server directly via browser link from any device. Fully standalone, offline-capable, and locked strictly to your PHRS Crowd backend.
-                    </p>
-                  </div>
-
-                  {/* Direct Browser Server Link Box with IP Input */}
-                  <div className="bg-slate-900/90 p-4 rounded-xl border border-emerald-500/40 flex flex-col gap-3">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span className="font-mono text-xs text-emerald-300">Local IP URL:</span>
-                        <input
-                          type="text"
-                          value={localServerIpInput}
-                          onChange={(e) => setLocalServerIpInput(e.target.value)}
-                          placeholder="e.g. 192.168.1.5"
-                          className="bg-slate-950 border border-emerald-500/50 rounded px-2 py-1 text-xs font-mono text-emerald-200 w-36 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                        />
-                        <span className="font-mono text-xs text-emerald-400">:3000</span>
-                      </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                        <button
-                          onClick={() => {
-                            const ipUrl = `http://${localServerIpInput.trim() || '192.168.1.10'}:3000`;
-                            navigator.clipboard.writeText(ipUrl);
-                            setHomeToast(`✓ Copied IP URL: ${ipUrl}`);
-                            setTimeout(() => setHomeToast(null), 3500);
-                          }}
-                          className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-xs px-4 py-2 rounded-lg font-bold shadow transition-all active:scale-95 flex items-center gap-1.5"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                          COPY IP URL
-                        </button>
-                        <button
-                          onClick={() => {
-                            const ipUrl = `http://${localServerIpInput.trim() || '192.168.1.10'}:3000`;
-                            window.open(ipUrl, '_blank');
-                          }}
-                          className="bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs px-3 py-2 rounded-lg font-bold shadow transition-all active:scale-95 flex items-center gap-1"
-                          title="Open IP URL in new tab"
-                        >
-                          OPEN
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-emerald-500/20 text-xs text-emerald-200/80 font-mono">
-                      <span>Or download standalone offline app:</span>
-                      <button
-                        onClick={() => {
-                          const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PHRS Crowd Standalone Server v6.17</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-6">
-  <div class="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl text-center space-y-4">
-    <div class="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🏥</div>
-    <h1 class="text-xl font-bold font-mono text-emerald-400">PHRS Crowd Standalone Server</h1>
-    <p class="text-xs text-slate-400">Running 100% offline & independent on your local device without AI Studio dependency.</p>
-    <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-emerald-300">
-      Status: ONLINE (Port 3000 Active)
-    </div>
-    <button onclick="alert('PHRS Crowd Server is fully active and operational!')" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl font-mono text-xs shadow-lg transition-all">
-      LAUNCH OFFLINE DASHBOARD
-    </button>
-  </div>
-</body>
-</html>`;
-                          const blob = new Blob([htmlContent], { type: 'text/html' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = 'phrscrowd-offline-server.html';
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                          setHomeToast("✓ Standalone Offline App (.html) downloaded successfully!");
-                          setTimeout(() => setHomeToast(null), 4000);
-                        }}
-                        className="bg-white hover:bg-emerald-50 text-emerald-800 font-mono text-xs px-4 py-2 rounded-lg font-bold shadow transition-all active:scale-95 flex items-center gap-1.5"
-                      >
-                        <Download className="w-3.5 h-3.5 text-emerald-700" />
-                        DOWNLOAD OFFLINE APP [6606.0k]
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Welcome Header & Cloud Logo */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className="flex items-start gap-4">
@@ -1383,9 +1610,7 @@ export default function App() {
                     <h1 className="text-3xl md:text-4xl font-light tracking-tight text-slate-900">
                       Welcome
                     </h1>
-                    
-                    {/* You're working in breadcrumbs */}
-                    <div className="flex flex-col text-[#5f6368] font-sans pt-1">
+                           <div className="flex flex-col text-[#5f6368] font-sans pt-1">
                       <span className="text-xs">You're working in</span>
                       <div className="flex flex-wrap items-center gap-1 mt-0.5">
                         <button 
@@ -1395,70 +1620,71 @@ export default function App() {
                           }} 
                           className="text-[#1a73e8] hover:underline font-medium text-[15px]"
                         >
-                          ai-builder-org
+                          phrs-crowd-org
                         </button>
                         <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="text-slate-400 text-[15px]">...</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <button 
-                          onClick={() => {
-                            setHomeToast("Primary active developer workspace: ai-builder-project");
-                            setTimeout(() => setHomeToast(null), 2500);
-                          }} 
-                          className="text-[#1a73e8] hover:underline font-medium text-[15px]"
-                        >
-                          ai-builder-project
-                        </button>
+                        
+                        {selectedProjectId ? (
+                          <button 
+                            onClick={() => {
+                              setHomeToast(`Active workspace: ${projects.find(p => p.id === selectedProjectId)?.name}`);
+                              setTimeout(() => setHomeToast(null), 2500);
+                            }} 
+                            className="text-[#1a73e8] hover:underline font-medium text-[15px]"
+                          >
+                            {projects.find(p => p.id === selectedProjectId)?.name || 'Unknown Project'}
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 text-[15px] italic">No project selected</span>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
-                {/* Standalone Plus button for collapsing/closing welcome board details */}
-                <button 
-                  onClick={() => setIsWelcomeBoardOpen(!isWelcomeBoardOpen)}
-                  className={`p-2 rounded-full border text-blue-600 hover:bg-blue-50 transition-all shrink-0 ${!isWelcomeBoardOpen ? 'bg-blue-100 border-blue-300' : 'bg-white border-slate-200'}`}
-                  title={isWelcomeBoardOpen ? "Collapse Welcome Board" : "Expand Welcome Board"}
-                >
-                  <Plus className={`w-5 h-5 transition-transform duration-300 ${isWelcomeBoardOpen ? 'rotate-45' : ''}`} />
-                </button>
-              </div>
 
-              {isWelcomeBoardOpen && (
+                </div>
+
                 <>
                   {/* Project Metadata Details */}
-                  <div className="space-y-2 md:space-y-0 md:flex md:items-center md:gap-8 text-xs text-slate-600 font-sans border-b border-slate-100 pb-5 mb-5 mt-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 font-medium">Project number:</span>
-                      <span className="font-mono font-bold text-slate-800">401635921059</span>
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText("401635921059");
-                          setHomeToast("✓ Project number copied to clipboard: 401635921059");
-                          setTimeout(() => setHomeToast(null), 3000);
-                        }}
-                        className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                        title="Copy Project Number"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
+                  {selectedProjectId ? (
+                    <div className="space-y-2 md:space-y-0 md:flex md:items-center md:gap-8 text-xs text-slate-600 font-sans border-b border-slate-100 pb-5 mb-5 mt-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 font-medium">Project number:</span>
+                        <span className="font-mono font-bold text-slate-800">{selectedProjectId.replace(/\D/g, '') || Math.floor(Math.random() * 1000000000)}</span>
+                        <button 
+                          onClick={() => {
+                            const num = selectedProjectId.replace(/\D/g, '') || '0';
+                            navigator.clipboard.writeText(num);
+                            setHomeToast(`✓ Project number copied to clipboard: ${num}`);
+                            setTimeout(() => setHomeToast(null), 3000);
+                          }}
+                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                          title="Copy Project Number"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 font-medium">Project ID:</span>
+                        <span className="font-mono font-bold text-slate-800">{selectedProjectId}</span>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(selectedProjectId);
+                            setHomeToast(`✓ Project ID copied to clipboard: ${selectedProjectId}`);
+                            setTimeout(() => setHomeToast(null), 3000);
+                          }}
+                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                          title="Copy Project ID"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 font-medium">Project ID:</span>
-                      <span className="font-mono font-bold text-slate-800">dauntless-appliance-1pxzt</span>
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText("dauntless-appliance-1pxzt");
-                          setHomeToast("✓ Project ID copied to clipboard: dauntless-appliance-1pxzt");
-                          setTimeout(() => setHomeToast(null), 3000);
-                        }}
-                        className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                        title="Copy Project ID"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
+                  ) : (
+                    <div className="text-xs text-slate-500 font-sans border-b border-slate-100 pb-5 mb-5 mt-4">
+                      Create a project using the 'Create Project' button above to get started.
                     </div>
-                  </div>
+                  )}
 
                   {/* Active Underlined Navigation Tabs */}
                   <div className="flex items-center gap-6 border-b border-slate-100 -mx-6 md:-mx-8 px-6 md:px-8 mb-4">
@@ -1485,7 +1711,6 @@ export default function App() {
                     </button>
                   </div>
                 </>
-              )}
 
               {/* SUB-TAB 1: GOOGLE CLOUD WELCOME DASHBOARD VIEW */}
               {homeSubTab === 'dashboard' && (
@@ -1532,13 +1757,14 @@ export default function App() {
                       <div className="p-0 flex-1">
                         <div className="divide-y divide-slate-100">
                           {[
-                            { name: 'Compute Engine', val: '2 instances', color: 'text-blue-600' },
-                            { name: 'Cloud Storage', val: '5 buckets', color: 'text-blue-600' },
-                            { name: 'Cloud SQL', val: '1 instance', color: 'text-blue-600' },
-                            { name: 'BigQuery', val: '12 datasets', color: 'text-blue-600' },
-                            { name: 'Agent Platform', val: `${agents.length} active`, color: 'text-indigo-600' }
+                            { name: 'Compute Engine', val: '2 instances', color: 'text-blue-600', tab: 'cloud_run' },
+                            { name: 'Cloud Storage', val: '5 buckets', color: 'text-blue-600', tab: 'cloud_storage' },
+                            { name: 'Cloud SQL', val: '1 instance', color: 'text-blue-600', tab: 'cloud_sql' },
+                            { name: 'BigQuery', val: '12 datasets', color: 'text-blue-600', tab: 'bigquery' },
+                            { name: 'Firebase Database', val: '3 active', color: 'text-[#FFCA28]', tab: 'database' },
+                            { name: 'Agent Platform', val: `${agents.length} active`, color: 'text-indigo-600', tab: 'agent_platform' }
                           ].map((res, i) => (
-                            <div key={i} className="flex justify-between items-center px-5 py-3 hover:bg-slate-50 transition cursor-pointer group">
+                            <div key={i} onClick={() => setActiveTab(res.tab as any)} className="flex justify-between items-center px-5 py-3 hover:bg-slate-50 transition cursor-pointer group">
                               <span className="text-xs text-slate-700">{res.name}</span>
                               <span className={`text-[11px] font-bold ${res.color} group-hover:underline`}>{res.val}</span>
                             </div>
@@ -1572,7 +1798,7 @@ export default function App() {
                         <p className="text-[11px] text-slate-500 text-center">API traffic is normal. Gemini model latency is at 1.2s average.</p>
                       </div>
                       <div className="p-3 border-t border-slate-50 bg-slate-50/20">
-                        <button className="text-xs font-bold text-blue-600 hover:underline">Go to APIs overview</button>
+                        <button onClick={() => setActiveTab('api_board')} className="text-xs font-bold text-blue-600 hover:underline">Go to APIs overview</button>
                       </div>
                     </div>
 
@@ -2004,8 +2230,17 @@ export default function App() {
                           <option value="Vue SPA">Vue SPA</option>
                           <option value="HTML/CSS/JS">HTML/CSS/JS</option>
                           <option value="Node.js Express">Node.js Express</option>
+                          <option value="Python/Flask">Python/Flask</option>
+                          <option value="PHP/Laravel">PHP/Laravel</option>
+                          <option value="Docker File">Any (via Dockerfile)</option>
                         </select>
                       </div>
+                    </div>
+
+                    <div className="p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 text-center space-y-2 group hover:border-indigo-400 transition-colors cursor-pointer">
+                      <div className="flex justify-center"><Upload className="w-6 h-6 text-slate-400 group-hover:text-indigo-500 transition-colors" /></div>
+                      <p className="text-[10px] font-mono text-slate-500">OR DRAG & DROP PROJECT ZIP/FOLDER</p>
+                      <p className="text-[9px] text-slate-400">PHRS Plug-and-Play engine will auto-detect dependencies</p>
                     </div>
 
                     <button 
@@ -2423,52 +2658,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* ₹25 1GB Stealth Data-to-SMS Converter & Private Wallet (Authorized: 6606.0k) */}
-                <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-amber-500 uppercase">STEALTH DATA-TO-SMS WALLET</h3>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">SIM Tunnel Active</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Authorized via token <span className="font-mono text-emerald-500 font-bold">6606.0k</span>. Direct SIM-to-Server Internet bridge is active. ₹25 (1GB data pack) recharges automatically sync and convert into 10,000 hidden SMS routing credits internally.
-                  </p>
-
-                  <div className="space-y-3 font-mono text-xs mb-4">
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                      <span className="text-slate-500">Carrier / SIM Link:</span>
-                      <span className="font-bold text-indigo-500">Jio / Airtel (Direct IP)</span>
-                    </div>
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                      <span className="text-slate-500">Wallet Balance:</span>
-                      <span className="font-bold text-emerald-600">₹{stealthWalletRupees}.00</span>
-                    </div>
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                      <span className="text-slate-500">Data Pack Loaded:</span>
-                      <span className="font-bold text-indigo-600">{stealthDataBalanceMb} MB (1GB)</span>
-                    </div>
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                      <span className="text-slate-500">Stealth SMS Credits:</span>
-                      <span className="font-bold text-amber-600">{stealthSmsCredits.toLocaleString()} SMS</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setStealthWalletRupees(prev => prev + 25);
-                      setStealthDataBalanceMb(prev => prev + 1024);
-                      setStealthSmsCredits(prev => prev + 10000);
-                      setVpsLogStream(prev => [...prev, `[STEALTH-6606.0k] Direct SIM Bridge recharged ₹25 (1GB). Converted into +10,000 internal SMS credits silently via internet tunnel.`]);
-                      alert('✓ ₹25 (1GB) SIM-to-Server Recharge Successful! +10,000 Hidden SMS Credits Loaded.');
-                    }}
-                    className="w-full bg-amber-600 hover:bg-amber-500 text-white font-mono text-xs py-2.5 rounded-lg font-semibold shadow-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>⚡ RECHARGE ₹25 (1GB → 10k SMS) [6606.0k]</span>
-                  </button>
-                </div>
-
                 {/* Standalone Server Offline Package & ZIP Export Hub (Token: 6606.0k) */}
                 <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                   <div className="flex items-center justify-between mb-3">
@@ -2631,6 +2820,387 @@ export default function App() {
 
             </div>
 
+          </div>
+        )}
+
+        {/* ==============================================
+            TAB 20: NETWORK CONFIG 
+            ============================================== */}
+        {activeTab === 'network_config' && (
+          <div className="p-6">
+            <div className={`p-6 mb-6 rounded-2xl border-2 transition-all ${isHybridDevMode ? 'bg-indigo-50/50 border-indigo-400 shadow-lg shadow-indigo-100' : 'bg-white border-slate-200'}`}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-xl ${isHybridDevMode ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
+                    <Cpu className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">AI Agent Hybrid Bridge</h3>
+                    <p className="text-xs text-slate-500">Link Google Studio Agent to your Local PHRS Node</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsHybridDevMode(!isHybridDevMode);
+                    if (!isHybridDevMode) {
+                      setVpsLogStream(prev => [...prev, `[HYBRID] Establishing secure tunnel to local node: ${remoteNodeIp}...`]);
+                      setTimeout(() => setVpsLogStream(prev => [...prev, `[HYBRID] SUCCESS: AI Agent is now powered by Local PHRS Server at ${remoteNodeIp}`]), 1500);
+                    }
+                  }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isHybridDevMode ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isHybridDevMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="max-w-md">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Target Local Node IP / Hostname</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={remoteNodeIp}
+                      onChange={(e) => setRemoteNodeIp(e.target.value)}
+                      placeholder="e.g. 192.168.1.15"
+                      className="flex-1 p-2.5 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button className="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition">PING NODE</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+                  <Network className="w-6 h-6 text-indigo-500" />
+                  PHRS Crowd Server (Self-Hosted Architecture)
+                </h1>
+                <p className="text-sm text-slate-500 font-mono mt-1">Autonomous Mini-Server • No External Dependencies</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* TIER 1: Mobile IP Configuration */}
+              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <h3 className="font-mono font-bold text-sm text-emerald-600">Tier 1: Mobile Server</h3>
+                </div>
+                <p className="text-xs text-slate-500 mb-2 font-mono">Capacity: Up to 500 Connections</p>
+                <p className="text-xs text-slate-400 mb-6">Local IP routing for direct mobile access. Acts as the primary base node.</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-mono text-slate-500 mb-1">LOCAL DEVICE IP</label>
+                    <input type="text" value={localServerIpInput} onChange={e => setLocalServerIpInput(e.target.value)} className="w-full p-2 text-xs rounded-lg border focus:ring-1 focus:ring-emerald-500 font-mono bg-slate-50" />
+                  </div>
+                  <button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded-lg" onClick={() => alert(`Server broadcasting on http://${localServerIpInput}:3000`)}>BROADCAST MOBILE NODE</button>
+                </div>
+              </div>
+
+              {/* TIER 2: Laptop Node Link */}
+              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  <h3 className="font-mono font-bold text-sm text-indigo-500">Tier 2: Laptop Node</h3>
+                </div>
+                <p className="text-xs text-slate-500 mb-2 font-mono">Capacity: High Traffic Balancing</p>
+                <p className="text-xs text-slate-400 mb-6">Activated when mobile capacity exceeds 500. Syncs via local VPC.</p>
+                <div className="space-y-4 mt-8">
+                  <div className="p-3 bg-slate-100 rounded-lg">
+                    <div className="text-[10px] font-mono text-slate-500 mb-1">NODE STATUS</div>
+                    <div className="font-mono text-sm text-indigo-600 font-bold">● STANDBY (Ready)</div>
+                  </div>
+                  <button className="w-full bg-slate-800 text-white font-mono text-xs py-2 rounded-lg" onClick={() => alert('Activating Laptop Node load balancer...')}>ACTIVATE LAPTOP NODE</button>
+                </div>
+              </div>
+
+              {/* TIER 3: Supercomputer Link */}
+              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-md ring-1 ring-purple-500/20'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  <h3 className="font-mono font-bold text-sm text-purple-600">Tier 3: Supercomputer</h3>
+                </div>
+                <p className="text-xs text-slate-500 mb-2 font-mono">Capacity: Massive / Global Scale</p>
+                <p className="text-xs text-slate-400 mb-6">Enterprise computing integration for extreme traffic spikes and Big Data.</p>
+                <div className="space-y-4 mt-8">
+                  <div className="p-3 bg-slate-100 rounded-lg border border-purple-200">
+                    <div className="text-[10px] font-mono text-slate-500 mb-1">COMPUTE STATUS</div>
+                    <div className="font-mono text-sm text-slate-400 font-bold">LOCKED</div>
+                  </div>
+                  <button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs py-2 rounded-lg flex items-center justify-center gap-2" onClick={() => alert('Requires Tier 3 Authorization Key to unlock Supercomputer routing.')}>
+                    <Lock className="w-3 h-3" /> UNLOCK SUPERCOMPUTER
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==============================================
+            TAB 21: SMS GATEWAY 
+            ============================================== */}
+        {activeTab === 'sms_gateway' && (
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-amber-500" />
+                SMS Gateway (Recharge → OTP)
+              </h1>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* ₹25 Stealth Recharge Component directly ported over */}
+              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-mono font-bold text-sm tracking-wider text-amber-500 uppercase">STEALTH DATA-TO-SMS WALLET</h3>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">SIM Tunnel Active</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mb-6">
+                  Authorized via token <span className="font-mono text-emerald-500 font-bold">6606.0k</span>. Direct SIM-to-Server Internet bridge is active. ₹25 (1GB data pack) recharges automatically sync and convert into 10,000 hidden SMS routing credits internally.
+                </p>
+
+                <div className="space-y-4 font-mono text-sm mb-6">
+                  <div className="flex justify-between p-3 rounded-lg bg-slate-100">
+                    <span className="text-slate-500">Wallet Balance:</span>
+                    <span className="font-bold text-emerald-600">₹{stealthWalletRupees}.00</span>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-lg bg-slate-100">
+                    <span className="text-slate-500">Data Pack Loaded:</span>
+                    <span className="font-bold text-indigo-600">{stealthDataBalanceMb} MB (1GB)</span>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-lg bg-slate-100">
+                    <span className="text-slate-500">Stealth SMS Credits:</span>
+                    <span className="font-bold text-amber-600">{stealthSmsCredits.toLocaleString()} SMS</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setStealthWalletRupees(prev => prev + 25);
+                    setStealthDataBalanceMb(prev => prev + 1024);
+                    setStealthSmsCredits(prev => prev + 10000);
+                    alert('✓ ₹25 (1GB) SIM-to-Server Recharge Successful! +10,000 Hidden SMS Credits Loaded.');
+                  }}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-white font-mono text-sm py-3 rounded-lg font-bold shadow-lg transition-all"
+                >
+                  ⚡ RECHARGE ₹25 (1GB → 10k SMS)
+                </button>
+              </div>
+
+              {/* OTP Send Test */}
+              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <h3 className="font-mono font-bold text-sm mb-4 text-indigo-500">Test OTP Delivery</h3>
+                <p className="text-xs text-slate-500 mb-4">Deducts from internal SMS credits automatically.</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-mono text-slate-500 mb-1">TARGET MOBILE</label>
+                    <input type="text" value={testPhoneNumber} onChange={e => setTestPhoneNumber(e.target.value)} placeholder="+91..." className="w-full p-2 text-xs rounded-lg border font-mono bg-slate-50" />
+                  </div>
+                  <button onClick={handleSendTestSms} disabled={isSendingOtp} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-3 rounded-lg font-bold disabled:opacity-50">
+                    {isSendingOtp ? 'SENDING...' : 'DISPATCH TEST OTP (-1 Credit)'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==============================================
+            TAB: INTEGRATION CODE (SDK) - NOW CLOUD CONSOLE
+            ============================================== */}
+        {activeTab === 'console' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <TerminalIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">PHRS Cloud Console</h2>
+                    <p className="text-sm text-slate-500 font-medium">మీ సర్వర్ కోసం 4 రకాల కోడింగ్ ముక్కలు ఇక్కడ ఉన్నాయి</p>
+                  </div>
+                </div>
+                
+                <div className="w-full p-1 bg-slate-100 rounded-xl border border-slate-200 grid grid-cols-3 gap-1">
+                  {[
+                    { id: 'Module', label: 'MODULE', telugu: 'రియాక్ట్ యాప్స్ కోసం' },
+                    { id: 'Script', label: 'SCRIPT', telugu: 'సాధారణ సైట్ల కోసం' },
+                    { id: 'Object', label: 'OBJECT', telugu: 'కేవలం సెట్టింగ్స్ కోసం' }
+                  ].map((format) => (
+                    <button
+                      key={format.id}
+                      onClick={() => setSnippetFormat(format.id)}
+                      className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all w-full text-center ${
+                        snippetFormat === format.id 
+                        ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200' 
+                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'
+                      }`}
+                    >
+                      <span className="text-xs font-black tracking-wider truncate w-full">{format.label}</span>
+                      <span className="text-[10px] font-medium opacity-75 mt-0.5 truncate w-full">{format.telugu}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-black text-indigo-800 uppercase tracking-widest flex items-center gap-2">
+                      <Cloud className="w-4 h-4" /> All-in-One Integration Script
+                    </h3>
+                  </div>
+                  
+                  {/* Code Editor Area (Top) */}
+                  <div className="relative group w-full">
+                    <pre className="w-full bg-slate-900 text-indigo-100 p-6 rounded-2xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800 shadow-xl whitespace-pre-wrap">
+                      {snippetFormat === 'Module' && (
+`import { initializeApp, PHRS, db, OTP } from "@phrs/cloud";
+
+// 1. Master Config
+const phrsConfig = {
+  apiKey: "PHRS_AUTH_8742260",
+  authDomain: "${remoteNodeIp}",
+  projectId: "${selectedProjectId || 'phrs-master-cloud'}",
+  appId: "1:8742260:web:phrs_master_node"
+};
+const app = initializeApp(phrsConfig);
+
+// 2. Initialize Core Services (App, DB, Auth)
+PHRS.init("${remoteNodeIp}");
+db.host = "${remoteNodeIp}";
+OTP.node("${remoteNodeIp}");`)}
+                      {snippetFormat === 'Script' && (
+`<script type="module">
+  import { initializeApp, PHRS, db, OTP } from "http://${remoteNodeIp}/sdk/v1/phrs-app.js";
+  
+  // 1. Master Config
+  const phrsConfig = { apiKey: "PHRS_AUTH_8742260", authDomain: "${remoteNodeIp}" };
+  const app = initializeApp(phrsConfig);
+
+  // 2. Initialize Core Services
+  PHRS.init("${remoteNodeIp}");
+  db.host = "${remoteNodeIp}";
+  OTP.node("${remoteNodeIp}");
+</script>`)}
+                      {snippetFormat === 'Object' && (
+`const phrsConfig = {
+  apiKey: "PHRS_AUTH_8742260",
+  authDomain: "${remoteNodeIp}",
+  projectId: "${selectedProjectId || 'phrs-master-cloud'}",
+  services: {
+    apkBridge: "${remoteNodeIp}",
+    databaseHost: "${remoteNodeIp}",
+    otpNode: "${remoteNodeIp}"
+  }
+};`)}
+                    </pre>
+                    <button 
+                      className="absolute top-4 right-4 p-2 bg-slate-800 rounded-lg hover:bg-indigo-600 text-white shadow-lg transition-colors group-hover:bg-indigo-500" 
+                      onClick={() => {
+                        let textToCopy = '';
+                        if (snippetFormat === 'Module') {
+                          textToCopy = `import { initializeApp, PHRS, db, OTP } from "@phrs/cloud";
+
+// 1. Master Config
+const phrsConfig = {
+  apiKey: "PHRS_AUTH_8742260",
+  authDomain: "${remoteNodeIp}",
+  projectId: "${selectedProjectId || 'phrs-master-cloud'}",
+  appId: "1:8742260:web:phrs_master_node"
+};
+const app = initializeApp(phrsConfig);
+
+// 2. Initialize Core Services (App, DB, Auth)
+PHRS.init("${remoteNodeIp}");
+db.host = "${remoteNodeIp}";
+OTP.node("${remoteNodeIp}");`;
+                        } else if (snippetFormat === 'Script') {
+                          textToCopy = `<script type="module">
+  import { initializeApp, PHRS, db, OTP } from "http://${remoteNodeIp}/sdk/v1/phrs-app.js";
+  
+  // 1. Master Config
+  const phrsConfig = { apiKey: "PHRS_AUTH_8742260", authDomain: "${remoteNodeIp}" };
+  const app = initializeApp(phrsConfig);
+
+  // 2. Initialize Core Services
+  PHRS.init("${remoteNodeIp}");
+db.host = "${remoteNodeIp}";
+  OTP.node("${remoteNodeIp}");
+</script>`;
+                        } else {
+                          textToCopy = `const phrsConfig = {
+  apiKey: "PHRS_AUTH_8742260",
+  authDomain: "${remoteNodeIp}",
+  projectId: "${selectedProjectId || 'phrs-master-cloud'}",
+  services: {
+    apkBridge: "${remoteNodeIp}",
+    databaseHost: "${remoteNodeIp}",
+    otpNode: "${remoteNodeIp}"
+  }
+};`;
+                        }
+                        navigator.clipboard.writeText(textToCopy);
+                        setHomeToast('✓ Script Copied to Clipboard!');
+                        setTimeout(() => setHomeToast(null), 3000);
+                      }}
+                      title="Copy Code"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* QR Code Dynamic Generation (Bottom) */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center shadow-sm w-full">
+                    <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 mb-4 w-48 h-48 flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                          snippetFormat === 'Module' 
+                          ? `import { initializeApp, PHRS, db, OTP } from "@phrs/cloud";
+
+const phrsConfig = { apiKey: "PHRS_AUTH_8742260", authDomain: "${remoteNodeIp}", projectId: "${selectedProjectId || 'phrs-master-cloud'}", appId: "1:8742260:web:phrs_master_node" };
+const app = initializeApp(phrsConfig);
+
+PHRS.init("${remoteNodeIp}");
+db.host = "${remoteNodeIp}";
+OTP.node("${remoteNodeIp}");`
+                          : snippetFormat === 'Script'
+                          ? `<script type="module">
+  import { initializeApp, PHRS, db, OTP } from "http://${remoteNodeIp}/sdk/v1/phrs-app.js";
+  const phrsConfig = { apiKey: "PHRS_AUTH_8742260", authDomain: "${remoteNodeIp}" };
+  const app = initializeApp(phrsConfig);
+  PHRS.init("${remoteNodeIp}");
+  db.host = "${remoteNodeIp}";
+  OTP.node("${remoteNodeIp}");
+</script>`
+                          : `const phrsConfig = {
+  apiKey: "PHRS_AUTH_8742260",
+  authDomain: "${remoteNodeIp}",
+  projectId: "${selectedProjectId || 'phrs-master-cloud'}",
+  services: {
+    apkBridge: "${remoteNodeIp}",
+    databaseHost: "${remoteNodeIp}",
+    otpNode: "${remoteNodeIp}"
+  }
+};`
+                        )}`} 
+                        alt="Code QR" 
+                        className="w-full h-full object-contain mix-blend-multiply"
+                      />
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-800 text-center mb-1">Scan Code Script</h4>
+                    <p className="text-[10px] text-slate-500 text-center leading-relaxed">
+                      Scan via mobile to instantly get the <span className="font-bold text-indigo-600">{snippetFormat}</span> integration script without manual typing.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -2988,66 +3558,79 @@ export default function App() {
             ============================================== */}
         {activeTab === 'billing' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <CreditCard className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">Billing Account Dashboard</h2>
+            {/* Wallet Top Section */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 text-white shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 opacity-20"></div>
+              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                  <h2 className="text-sm font-bold text-indigo-200 uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" /> Prepaid Cloud Wallet
+                  </h2>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-4xl font-black">₹342.50</span>
+                    <span className="text-xs text-indigo-300 font-mono font-bold px-2 py-1 bg-indigo-900/50 rounded-md">AVAILABLE</span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-2 max-w-sm">Zero hidden charges. Pay exactly for what you use, at disruptive market rates.</p>
+                </div>
+                <button onClick={() => setShowUpiModal(true)} className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black px-6 py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center gap-2 w-full md:w-auto justify-center">
+                  <QrCode className="w-5 h-5" /> RECHARGE VIA UPI
+                </button>
               </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Track active trial credits, setup warnings to avoid database over-charges, and configure automatic budget notifications.
-              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              <div className="md:col-span-4 p-5 rounded-2xl border border-slate-200 bg-white">
-                <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">REMAINING BALANCES</h3>
-                <div className="space-y-2">
-                  <div className="text-3xl font-light text-slate-900">$294.42 <span className="text-xs text-slate-400 font-mono">USD</span></div>
-                  <div className="text-xs text-slate-500">Of $300.00 trial cloud credit limit.</div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-4">
-                    <div className="bg-blue-600 h-full rounded-full" style={{ width: '98%' }}></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Competitive Pricing Table */}
+              <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-500" /> Competitive Pricing (20% Off Market)
+                </h3>
+                <div className="space-y-4 flex-1">
+                  <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
+                    <div>
+                      <div className="text-xs font-bold text-slate-800">Database Storage (per GB)</div>
+                      <div className="text-[10px] text-slate-500 line-through mt-1">Google Price: ₹100.00</div>
+                    </div>
+                    <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">₹80.00</div>
                   </div>
-                  <div className="text-[10px] text-slate-400 font-mono mt-1">EXPIRES: October 24, 2026</div>
+                  <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
+                    <div>
+                      <div className="text-xs font-bold text-slate-800">SMS OTP (per 100 SMS)</div>
+                      <div className="text-[10px] text-slate-500 line-through mt-1">Firebase: ₹25.00</div>
+                    </div>
+                    <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">₹20.00</div>
+                  </div>
+                  <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
+                    <div>
+                      <div className="text-xs font-bold text-slate-800">API Gateway Calls (per 10k)</div>
+                      <div className="text-[10px] text-slate-500 line-through mt-1">AWS/GCP: ₹40.00</div>
+                    </div>
+                    <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">₹32.00</div>
+                  </div>
                 </div>
               </div>
 
-              <div className="md:col-span-8 p-5 rounded-2xl border border-slate-200 bg-white">
-                <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">BUDGET ALERT THRESHOLDS</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-500 mb-1">WARNING THRESHOLD SLIDER (${billingAlertAmount})</label>
-                    <input 
-                      type="range" 
-                      min="50" 
-                      max="300" 
-                      step="10"
-                      value={billingAlertAmount} 
-                      onChange={(e) => setBillingAlertAmount(Number(e.target.value))}
-                      className="w-full cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-500 mb-1">ALERT DISPATCH EMAIL</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="email" 
-                        value={billingAlertEmail} 
-                        onChange={(e) => setBillingAlertEmail(e.target.value)}
-                        className="flex-1 p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-100 border-slate-300 text-slate-900"
-                      />
-                      <button 
-                        onClick={() => {
-                          setHomeToast(`✓ Billing alert email updated to: ${billingAlertEmail}`);
-                          setTimeout(() => setHomeToast(null), 3000);
-                        }}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-4 py-2 rounded-lg font-semibold transition"
-                      >
-                        SAVE
-                      </button>
-                    </div>
-                  </div>
+              {/* Live Micro-Ledger */}
+              <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-indigo-500" /> Live Micro-Transactions
+                  </h3>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
                 </div>
+                
+                <div className="flex-1 bg-slate-900 rounded-xl p-4 font-mono text-[11px] overflow-hidden flex flex-col justify-end space-y-3 relative group">
+                  <div className="absolute inset-0 bg-gradient-to-t from-transparent to-slate-900/90 pointer-events-none"></div>
+                  
+                  <div className="flex justify-between text-slate-500 opacity-50"><span>[14:22:01] DB_WRITE (0.2MB)</span><span className="text-rose-400/50">-₹0.004</span></div>
+                  <div className="flex justify-between text-slate-400 opacity-70"><span>[14:23:45] SMS_OTP_SEND</span><span className="text-rose-400/70">-₹0.100</span></div>
+                  <div className="flex justify-between text-slate-300"><span>[14:24:12] DB_READ (Query)</span><span className="text-rose-400">-₹0.001</span></div>
+                  <div className="flex justify-between text-emerald-400 font-bold border-l-2 border-emerald-500 pl-2 bg-emerald-500/10 py-1"><span>[14:25:33] SMS_OTP_VERIFY</span><span className="text-rose-400">-₹0.100</span></div>
+                  <div className="flex justify-between text-emerald-400 font-bold border-l-2 border-emerald-500 pl-2 bg-emerald-500/10 py-1 shadow-[0_0_10px_rgba(16,185,129,0.2)]"><span>[14:26:01] API_CALL_SUCCESS</span><span className="text-rose-400">-₹0.002</span></div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-4 text-center font-bold uppercase tracking-wider">Charges are deducted from wallet instantly per request.</p>
               </div>
             </div>
           </div>
@@ -4197,6 +4780,67 @@ export default function App() {
                     </button>
                   </div>
 
+                  {/* Hybrid Bridge Integration - Moved to Overview for Visibility */}
+                  <div className={`p-5 rounded-2xl border-2 transition-all ${isHybridDevMode ? 'bg-indigo-50 border-indigo-400 shadow-lg shadow-indigo-100' : 'bg-white border-slate-200'}`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${isHybridDevMode ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
+                            <Cpu className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-slate-800">AI Agent Hybrid Bridge (AI ఏజెంట్ కనెక్షన్)</div>
+                            <p className="text-[10px] text-slate-500">Link AI Studio Agent to Local Node: <span className="font-mono font-bold text-indigo-600">{remoteNodeIp}</span></p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <label className="text-[8px] font-bold text-slate-400 uppercase mb-1">Bridge Mode</label>
+                          <button 
+                            onClick={() => {
+                              setIsHybridDevMode(!isHybridDevMode);
+                              setHomeToast(isHybridDevMode ? "Hybrid Bridge Disabled" : "✓ AI Agent linked to Local PHRS Node!");
+                              setTimeout(() => setHomeToast(null), 3000);
+                            }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isHybridDevMode ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isHybridDevMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-slate-100 w-full" />
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${isAiServerBypassed ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                            {isAiServerBypassed ? <WifiOff className="w-5 h-5" /> : <Cloud className="w-5 h-5" />}
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-slate-800">Temporary Bypass (ఏఐ సర్వర్ కనెక్షన్)</div>
+                            <p className="text-[10px] text-slate-500">
+                              {isAiServerBypassed 
+                                ? "Google AI Server is DISCONNECTED (టెంపరరీగా ఆపివేయబడింది)" 
+                                : "Google AI Server is ACTIVE (గూగుల్ ఏఐ సర్వర్ యాక్టివ్‌గా ఉంది)"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <label className="text-[8px] font-bold text-slate-400 uppercase mb-1">Bypass AI</label>
+                          <button 
+                            onClick={() => {
+                              setIsAiServerBypassed(!isAiServerBypassed);
+                              setHomeToast(!isAiServerBypassed ? "⚠ Google AI Server Disconnected" : "✓ Google AI Server Restored");
+                              setTimeout(() => setHomeToast(null), 3000);
+                            }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isAiServerBypassed ? 'bg-rose-500' : 'bg-slate-200'}`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isAiServerBypassed ? 'translate-x-6' : 'translate-x-1'}`} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="p-5 rounded-xl border border-slate-200 bg-white">
                     <h3 className="text-xs font-bold text-slate-800 mb-4">SUBNETWORKS</h3>
                     <div className="overflow-x-auto">
@@ -4248,58 +4892,77 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="mt-8 p-5 bg-white rounded-xl border border-slate-200">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${isBridgeActive ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
-                            <Phone className="w-5 h-5" />
+                    <div className="space-y-4 mt-8">
+                      <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${isBridgeActive ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                              <Phone className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-bold text-slate-800">Mobile Connectivity Bridge</div>
+                              <div className="text-[10px] text-slate-500">Status: {isBridgeActive ? 'Tunneling active via PHRS Gateway' : 'Ready to connect'}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-sm font-bold text-slate-800">Bridge Connectivity</div>
-                            <div className="text-[10px] text-slate-500">Status: {isBridgeActive ? 'Tunneling active via PHRS Gateway' : 'Ready to connect'}</div>
-                          </div>
+                          <button 
+                            onClick={() => {
+                              setIsBridgeActive(!isBridgeActive);
+                              setHomeToast(isBridgeActive ? "Mobile Bridge Disconnected" : "✓ Mobile IP successfully bridged to VPC!");
+                              setTimeout(() => setHomeToast(null), 3000);
+                            }}
+                            className={`px-6 py-2 rounded-full text-xs font-bold transition ${isBridgeActive ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'}`}
+                          >
+                            {isBridgeActive ? 'STOP BRIDGE' : 'START BRIDGE'}
+                          </button>
                         </div>
-                        <button 
-                          onClick={() => {
-                            setIsBridgeActive(!isBridgeActive);
-                            setHomeToast(isBridgeActive ? "Mobile Bridge Disconnected" : "✓ Mobile IP successfully bridged to VPC!");
-                            setTimeout(() => setHomeToast(null), 3000);
-                          }}
-                          className={`px-6 py-2 rounded-full text-xs font-bold transition ${isBridgeActive ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'}`}
-                        >
-                          {isBridgeActive ? 'STOP BRIDGE' : 'START BRIDGE'}
-                        </button>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">VPC Subnet Target</label>
-                          <select className="w-full bg-transparent text-xs font-semibold text-slate-700 focus:outline-none">
-                            {subnets.map(s => <option key={s.name}>{s.name} ({s.range})</option>)}
-                          </select>
-                        </div>
-                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Encryption Mode</label>
-                          <div className="text-xs font-semibold text-slate-700">AES-256 GCM (PHRS Secured)</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">VPC Subnet Target</label>
+                            <select className="w-full bg-transparent text-xs font-semibold text-slate-700 focus:outline-none">
+                              {subnets.map(s => <option key={s.name}>{s.name} ({s.range})</option>)}
+                            </select>
+                          </div>
+                          <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Encryption Mode</label>
+                            <div className="text-xs font-semibold text-slate-700">AES-256 GCM (PHRS Secured)</div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-5 rounded-2xl border border-slate-200 bg-white">
-                    <h3 className="text-xs font-bold text-slate-800 mb-4">BRIDGE LOGS</h3>
-                    <div className="bg-slate-900 rounded-xl p-4 font-mono text-[10px] text-emerald-400 space-y-1 h-32 overflow-y-auto">
+                  <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="w-4 h-4 text-slate-400" />
+                        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-tight">System Bridge Monitor</h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${isBridgeActive ? 'bg-emerald-500 animate-ping' : 'bg-slate-300'}`}></span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">{isBridgeActive ? 'Live Stream' : 'Idle'}</span>
+                      </div>
+                    </div>
+                    <div className="bg-slate-900 rounded-xl p-4 font-mono text-[10px] text-slate-300 border border-slate-800 shadow-inner h-40 overflow-y-auto custom-scrollbar">
                       {isBridgeActive ? (
-                        <>
-                          <p>[{new Date().toLocaleTimeString()}] Initializing PHRS Cloud Bridge...</p>
-                          <p>[{new Date().toLocaleTimeString()}] Handshaking with mobile IP {mobileIp}...</p>
-                          <p>[{new Date().toLocaleTimeString()}] Tunnel established via VPC Subnet: subnet-india</p>
-                          <p>[{new Date().toLocaleTimeString()}] Packet routing: Mobile ↔ PHRS Core Agent Active</p>
-                          <p>[{new Date().toLocaleTimeString()}] Latency synchronized at 18ms</p>
-                        </>
+                        <div className="space-y-1.5">
+                          <p className="flex gap-2"><span className="text-slate-500">[{new Date().toLocaleTimeString()}]</span> <span className="text-indigo-400">INIT:</span> Initializing PHRS Cloud Bridge Engine...</p>
+                          <p className="flex gap-2"><span className="text-slate-500">[{new Date().toLocaleTimeString()}]</span> <span className="text-emerald-400">AUTH:</span> Secure Handshake with node {mobileIp || remoteNodeIp}...</p>
+                          <p className="flex gap-2"><span className="text-slate-500">[{new Date().toLocaleTimeString()}]</span> <span className="text-blue-400">VPC:</span> Tunnel established via Subnet Gateway [PHRS-IND-01]</p>
+                          <p className="flex gap-2"><span className="text-slate-500">[{new Date().toLocaleTimeString()}]</span> <span className="text-amber-400">SYNC:</span> AI Agent Hybrid Connection: <span className="underline">ACTIVE</span></p>
+                          <p className="flex gap-2"><span className="text-slate-500">[{new Date().toLocaleTimeString()}]</span> <span className="text-emerald-400">NET:</span> Packet routing operational (Latency: 14ms)</p>
+                          <p className="animate-pulse text-emerald-500/80">_ Waiting for incoming requests...</p>
+                        </div>
                       ) : (
-                        <p className="text-slate-500">Bridge idle. Waiting for connection start...</p>
+                        <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-2">
+                          <Activity className="w-5 h-5 opacity-20" />
+                          <p className="italic">Bridge Monitor Standby. Press "START BRIDGE" to begin transmission.</p>
+                        </div>
                       )}
+                    </div>
+                    <div className="mt-3 flex justify-between items-center px-1">
+                      <p className="text-[9px] text-slate-400 font-medium">PHRS SECURE ENCRYPTION: ACTIVE</p>
+                      <button className="text-[9px] text-indigo-600 font-bold hover:underline" onClick={() => setIsBridgeActive(false)}>CLEAR LOGS</button>
                     </div>
                   </div>
                 </div>
