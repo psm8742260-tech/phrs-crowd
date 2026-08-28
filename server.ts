@@ -2,17 +2,172 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
+import localtunnel from "localtunnel";
+import multer from "multer";
+import AdmZip from "adm-zip";
 
 const app = express();
 const PORT = 3000;
+
+// Store the active public tunnel URL globally
+let activeTunnelUrl: string | null = null;
 
 const HOSTED_DIR = path.join(process.cwd(), "dist", "hosted");
 if (!fs.existsSync(HOSTED_DIR)) {
   fs.mkdirSync(HOSTED_DIR, { recursive: true });
 }
 
+// --- REAL DOMAIN ROUTING LOGIC ---
+const DOMAIN_MAPPINGS_FILE = path.join(process.cwd(), "dist", "domainMappings.json");
+
+function getDomainMappings(): Record<string, string> {
+  try {
+    if (fs.existsSync(DOMAIN_MAPPINGS_FILE)) {
+      const data = fs.readFileSync(DOMAIN_MAPPINGS_FILE, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (e) {
+    console.error("Failed to read domain mappings:", e);
+  }
+  return {};
+}
+
+function saveDomainMappings(mappings: Record<string, string>) {
+  try {
+    if (!fs.existsSync(path.dirname(DOMAIN_MAPPINGS_FILE))) {
+      fs.mkdirSync(path.dirname(DOMAIN_MAPPINGS_FILE), { recursive: true });
+    }
+    fs.writeFileSync(DOMAIN_MAPPINGS_FILE, JSON.stringify(mappings, null, 2), "utf-8");
+  } catch (e) {
+    console.error("Failed to save domain mappings:", e);
+  }
+}
+
+let currentDomainMappings = getDomainMappings();
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// 1A. DISPATCHER MIDDLEWARE: Real Domain Routing
+app.use((req, res, next) => {
+  const host = req.hostname;
+  
+  if (currentDomainMappings[host]) {
+    const targetProject = currentDomainMappings[host];
+    const originalUrl = req.url;
+    req.url = `/hosted/${targetProject}${originalUrl}`;
+    console.log(`[ROUTER] Real Domain Routing: Mapped ${host} -> ${req.url}`);
+  }
+  
+  next();
+});
+
+// 1B. API: Domain Mappings Management
+app.get("/api/domain-mappings", (req, res) => res.json(currentDomainMappings));
+
+app.post("/api/domain-mappings", (req, res) => {
+  const { domain, project } = req.body;
+  if (!domain || !project) return res.status(400).json({ error: "Domain and project are required." });
+  currentDomainMappings[domain] = project;
+  saveDomainMappings(currentDomainMappings);
+  res.json({ success: true, mappings: currentDomainMappings });
+});
+
+app.delete("/api/domain-mappings/:domain", (req, res) => {
+  const domain = req.params.domain;
+  if (currentDomainMappings[domain]) {
+    delete currentDomainMappings[domain];
+    saveDomainMappings(currentDomainMappings);
+  }
+  res.json({ success: true, mappings: currentDomainMappings });
+});
+
+// --- REAL CLOUD STORAGE LOGIC ---
+const STORAGE_DIR = path.join(process.cwd(), "dist", "cloud_storage");
+if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
+
+app.get("/api/storage/buckets", (req, res) => {
+  try {
+    const buckets = fs.readdirSync(STORAGE_DIR).filter(f => fs.statSync(path.join(STORAGE_DIR, f)).isDirectory());
+    const bucketsData = buckets.map(name => {
+      const files = fs.readdirSync(path.join(STORAGE_DIR, name));
+      let totalSize = 0;
+      files.forEach(f => {
+         const st = fs.statSync(path.join(STORAGE_DIR, name, f));
+         totalSize += st.size;
+      });
+      return { id: name, name, location: 'asia-south1', storageClass: 'Standard', size: `${(totalSize / 1024).toFixed(2)} KB`, objects: files.length, created: new Date().toISOString() };
+    });
+    res.json({ success: true, buckets: bucketsData });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.post("/api/storage/buckets", (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Bucket name required" });
+  try {
+    const bucketPath = path.join(STORAGE_DIR, name);
+    if (!fs.existsSync(bucketPath)) fs.mkdirSync(bucketPath);
+    res.json({ success: true, name });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+const uploadMiddleware = multer({ storage: multer.memoryStorage() });
+app.post("/api/storage/upload", uploadMiddleware.single('file'), (req, res) => {
+  const { bucket } = req.body;
+  if (!bucket || !req.file) return res.status(400).json({ error: "Bucket and file required" });
+  try {
+    const bucketPath = path.join(STORAGE_DIR, bucket);
+    if (!fs.existsSync(bucketPath)) fs.mkdirSync(bucketPath);
+    fs.writeFileSync(path.join(bucketPath, req.file.originalname), req.file.buffer);
+    res.json({ success: true, fileName: req.file.originalname });
+  } catch(e) { res.status(500).json({ error: "Upload error" }); }
+});
+
+app.delete("/api/storage/buckets/:name", (req, res) => {
+  try {
+    const bucketPath = path.join(STORAGE_DIR, req.params.name);
+    if (fs.existsSync(bucketPath)) {
+      fs.rmSync(bucketPath, { recursive: true, force: true });
+    }
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: "Delete error" }); }
+});
+
+// --- REAL IAM LOGIC ---
+const IAM_FILE = path.join(process.cwd(), "dist", "iam_roles.json");
+if (!fs.existsSync(IAM_FILE)) {
+  fs.mkdirSync(path.dirname(IAM_FILE), { recursive: true });
+  fs.writeFileSync(IAM_FILE, JSON.stringify([
+    { id: 1, email: "admin@phrs.local", role: "Owner", type: "User", status: "Active", added: "2026-08-01" }
+  ], null, 2));
+}
+
+app.get("/api/iam/members", (req, res) => {
+  try {
+    res.json({ success: true, members: JSON.parse(fs.readFileSync(IAM_FILE, "utf-8")) });
+  } catch(e) { res.status(500).json({ error: "IAM error" }); }
+});
+
+app.post("/api/iam/members", (req, res) => {
+  const { email, role } = req.body;
+  if (!email || !role) return res.status(400).json({ error: "Email and role required" });
+  try {
+    const members = JSON.parse(fs.readFileSync(IAM_FILE, "utf-8"));
+    members.push({ id: Date.now(), email, role, type: "User", status: "Active", added: new Date().toISOString().split('T')[0] });
+    fs.writeFileSync(IAM_FILE, JSON.stringify(members, null, 2));
+    res.json({ success: true, members });
+  } catch(e) { res.status(500).json({ error: "IAM error" }); }
+});
+
+app.delete("/api/iam/members/:email", (req, res) => {
+  try {
+    let members = JSON.parse(fs.readFileSync(IAM_FILE, "utf-8"));
+    members = members.filter((m: any) => m.email !== req.params.email);
+    fs.writeFileSync(IAM_FILE, JSON.stringify(members, null, 2));
+    res.json({ success: true, members });
+  } catch(e) { res.status(500).json({ error: "IAM error" }); }
+});
 
 // 1. Explicitly serve the 'hosted' directory FIRST
 app.use("/hosted", express.static(HOSTED_DIR));
@@ -430,6 +585,62 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK", server: "PHRS Crowd Engine", time: new Date().toISOString() });
 });
 
+// REAL-TIME DEEPSEEK API INTEGRATION ENDPOINT
+app.post("/api/agent/chat", async (req, res) => {
+  const { query, systemPrompt, apiKey, model } = req.body;
+  
+  if (!query) {
+    return res.status(400).json({ error: "Query is required." });
+  }
+
+  // Choose the provided client API Key or fall back to Server-side env
+  const activeKey = apiKey || process.env.DEEPSEEK_API_KEY;
+  
+  if (!activeKey || activeKey === "Sk-9853d7fb03f84358b15842772093f61e" || activeKey.trim() === "") {
+    return res.status(400).json({ error: "మీ DeepSeek API కీ సెట్ చేయబడలేదు. దయచేసి '5G Bridge Config' (సెట్టింగ్స్) ప్యానెల్ లో మీ సొంత DeepSeek API కీని కాన్ఫిగర్ చేయండి. (DeepSeek API Key is not set. Please configure a valid key under '5G Bridge Config' in Settings.)" });
+  }
+
+  const selectedModel = model || "deepseek-chat";
+
+  try {
+    const messages = [];
+    if (systemPrompt) {
+      messages.push({ role: "system", content: systemPrompt });
+    }
+    messages.push({ role: "user", content: query });
+
+    console.log(`[DEEPSEEK API] Dispatching request with model: ${selectedModel}`);
+    
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${activeKey}`
+      },
+      body: JSON.stringify({
+        model: selectedModel,
+        messages: messages,
+        temperature: 0.6,
+        max_tokens: 2000
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[DEEPSEEK ERROR] API Response failure:`, errText);
+      return res.status(response.status).json({ error: `DeepSeek API returned error: ${errText}` });
+    }
+
+    const data = await response.json() as any;
+    const replyText = data.choices?.[0]?.message?.content || "No response received from DeepSeek.";
+    
+    res.json({ success: true, text: replyText });
+  } catch (error: any) {
+    console.error("[DEEPSEEK INTEGRATION EXCEPTION]:", error);
+    res.status(500).json({ error: `Failed to communicate with DeepSeek Server: ${error.message}` });
+  }
+});
+
 app.post("/api/links/create", (req, res) => {
   const { slug, target } = req.body;
   if (!slug || !target) {
@@ -458,6 +669,39 @@ app.post("/api/links/create", (req, res) => {
 });
 
 // PHRS CLOUD HOSTING ENGINE: Deploy files directly
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post("/api/deploy-zip", upload.single('zipFile'), (req, res) => {
+  const subdomain = req.body.name;
+  if (!subdomain || !req.file) {
+    return res.status(400).json({ error: "Project name and zip file are required." });
+  }
+
+  const safeName = subdomain.replace(/[^a-z0-9.-]/gi, "_").toLowerCase();
+  const appDir = path.join(HOSTED_DIR, safeName);
+
+  try {
+    // Create project directory if it doesn't exist
+    if (!fs.existsSync(appDir)) {
+      fs.mkdirSync(appDir, { recursive: true });
+    }
+
+    // Extract zip
+    const zip = new AdmZip(req.file.buffer);
+    zip.extractAllTo(appDir, true);
+
+    const publicUrl = `/hosted/${safeName}`;
+    res.json({ 
+      success: true, 
+      url: publicUrl,
+      message: "ZIP Deployed successfully to PHRS Crowd Hosting Engine" 
+    });
+  } catch (e) {
+    console.error("ZIP Hosting error:", e);
+    res.status(500).json({ error: "Failed to extract and deploy ZIP file." });
+  }
+});
+
 app.post("/api/host/deploy", (req, res) => {
   const { fileName, content, isBase64 } = req.body;
   if (!fileName || content === undefined) {
@@ -522,6 +766,118 @@ app.get("/go/:slug", (req, res) => {
   `);
 });
 
+app.get("/api/tunnel-status", (req, res) => {
+  res.json({
+    status: activeTunnelUrl ? "online" : "offline",
+    url: activeTunnelUrl
+  });
+});
+
+// --- REAL NETWORK CONFIG (TOGGLES) LOGIC ---
+const CONFIG_FILE = path.join(process.cwd(), "dist", "network_config.json");
+if (!fs.existsSync(CONFIG_FILE)) {
+  fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true });
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify({
+    isAutoInternetEnabled: true,
+    isHybridDevMode: false,
+    isAiServerBypassed: false
+  }, null, 2));
+}
+
+app.get("/api/network/settings", (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+    res.json({ success: true, settings: data });
+  } catch(e) { res.status(500).json({ error: "Config read error" }); }
+});
+
+app.post("/api/network/settings", (req, res) => {
+  try {
+    const currentData = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+    const newData = { ...currentData, ...req.body };
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(newData, null, 2));
+    res.json({ success: true, settings: newData });
+  } catch(e) { res.status(500).json({ error: "Config write error" }); }
+});
+
+// --- REAL LOCAL DATABASE (PHRS DB) LOGIC ---
+const DB_DIR = path.join(process.cwd(), "dist", "local_db");
+if (!fs.existsSync(DB_DIR)) {
+  fs.mkdirSync(DB_DIR, { recursive: true });
+}
+
+app.get("/api/db/collections", (req, res) => {
+  try {
+    const collections = fs.readdirSync(DB_DIR).filter(f => f.endsWith('.json')).map(f => f.replace('.json', ''));
+    res.json({ success: true, collections });
+  } catch(e) { res.status(500).json({ error: "DB read error" }); }
+});
+
+app.post("/api/db/collections", (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Collection name required" });
+  try {
+    const collPath = path.join(DB_DIR, `${name}.json`);
+    if (!fs.existsSync(collPath)) {
+      fs.writeFileSync(collPath, JSON.stringify({}, null, 2));
+    }
+    res.json({ success: true, name });
+  } catch(e) { res.status(500).json({ error: "DB write error" }); }
+});
+
+app.delete("/api/db/collections/:name", (req, res) => {
+  const { name } = req.params;
+  try {
+    const collPath = path.join(DB_DIR, `${name}.json`);
+    if (fs.existsSync(collPath)) {
+      fs.unlinkSync(collPath);
+    }
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: "DB delete error" }); }
+});
+
+app.get("/api/db/collections/:name/docs", (req, res) => {
+  const { name } = req.params;
+  try {
+    const collPath = path.join(DB_DIR, `${name}.json`);
+    if (fs.existsSync(collPath)) {
+      const data = JSON.parse(fs.readFileSync(collPath, "utf-8"));
+      res.json({ success: true, data });
+    } else {
+      res.json({ success: true, data: {} });
+    }
+  } catch(e) { res.status(500).json({ error: "DB read error" }); }
+});
+
+app.post("/api/db/collections/:name/docs", (req, res) => {
+  const { name } = req.params;
+  const { docId, data } = req.body;
+  if (!docId) return res.status(400).json({ error: "docId required" });
+  try {
+    const collPath = path.join(DB_DIR, `${name}.json`);
+    let collData: any = {};
+    if (fs.existsSync(collPath)) {
+      collData = JSON.parse(fs.readFileSync(collPath, "utf-8"));
+    }
+    collData[docId] = data || {};
+    fs.writeFileSync(collPath, JSON.stringify(collData, null, 2));
+    res.json({ success: true, docId });
+  } catch(e) { res.status(500).json({ error: "DB write error" }); }
+});
+
+app.delete("/api/db/collections/:name/docs/:docId", (req, res) => {
+  const { name, docId } = req.params;
+  try {
+    const collPath = path.join(DB_DIR, `${name}.json`);
+    if (fs.existsSync(collPath)) {
+      let collData = JSON.parse(fs.readFileSync(collPath, "utf-8"));
+      delete collData[docId];
+      fs.writeFileSync(collPath, JSON.stringify(collData, null, 2));
+    }
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: "DB delete error" }); }
+});
+
 // 4. Vite middleware for development or Static Asset serving for production
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
@@ -547,8 +903,27 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", async () => {
     console.log(`[PHRS SERVER] Node running on http://localhost:${PORT}`);
+    
+    // Auto-setup public tunneling for Termux/Mobile environment
+    try {
+      console.log(`[TUNNEL] Establishing public live URL via localtunnel...`);
+      const tunnel = await localtunnel({ port: PORT });
+      activeTunnelUrl = tunnel.url;
+      console.log(`[TUNNEL] SUCCESS: Public Live URL established at -> ${tunnel.url}`);
+      
+      tunnel.on('close', () => {
+        console.log('[TUNNEL] Tunnel closed.');
+        activeTunnelUrl = null;
+      });
+      tunnel.on('error', (err) => {
+        console.error('[TUNNEL] Error:', err);
+        activeTunnelUrl = null;
+      });
+    } catch (error) {
+      console.error(`[TUNNEL] Failed to establish public tunnel:`, error);
+    }
   });
 }
 

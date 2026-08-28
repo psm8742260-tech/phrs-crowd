@@ -1,4 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
+import SecretManagerTab from './components/tabs/SecretManagerTab';
+import CloudRunTab from './components/tabs/CloudRunTab';
+import MonitoringTab from './components/tabs/MonitoringTab';
+import BigqueryTab from './components/tabs/BigqueryTab';
+import SecurityTab from './components/tabs/SecurityTab';
+import CloudStorageTab from './components/tabs/CloudStorageTab';
+import KubernetesTab from './components/tabs/KubernetesTab';
+import AgentPlatformTab from './components/tabs/AgentPlatformTab';
+import MarketplaceTab from './components/tabs/MarketplaceTab';
+import IamTab from './components/tabs/IamTab';
+import BillingTab from './components/tabs/BillingTab';
+import RecentlyVisitedTab from './components/tabs/RecentlyVisitedTab';
+import SolutionsTab from './components/tabs/SolutionsTab';
+import ExportTab from './components/tabs/ExportTab';
+import ApiBoardTab from './components/tabs/ApiBoardTab';
+import ConsoleTab from './components/tabs/ConsoleTab';
+import SmsGatewayTab from './components/tabs/SmsGatewayTab';
+import NetworkConfigTab from './components/tabs/NetworkConfigTab';
+import DatabaseTab from './components/tabs/DatabaseTab';
+import SmsTab from './components/tabs/SmsTab';
+import HomeTab from './components/tabs/HomeTab';
+import VpcNetworkTab from './components/tabs/VpcNetworkTab';
 import { 
   Server, Database, MessageSquare, Key, Download, Search, Bell, 
   User, Plus, Play, RefreshCw, Trash2, Edit3, Save, Check, AlertCircle, 
@@ -8,39 +30,15 @@ import {
   Compass, Sparkles, Activity, MapPin, MoreVertical, Send, HelpCircle, Network, Terminal as TerminalIcon,
   Cloud, WifiOff, Code2, Terminal, ShieldCheck, Zap, Smartphone, QrCode, X, Upload, Filter, Megaphone, Image, Code, Flame
 } from 'lucide-react';
+import { Project, Deployment, SystemMetric } from './types';
 import { vpsServerJs, vpsReadmeMd, vpsPackageJson } from './vpsCodeTemplates';
 
 
-// Types
-interface Project {
-  id: string;
-  name: string;
-  status: 'active' | 'maintenance' | 'idle';
-  created_at: string;
-  api_hits: number;
-}
 
-interface Deployment {
-  id: string;
-  name: string;
-  subdomain: string;
-  port: number;
-  techStack: string;
-  status: 'ONLINE' | 'BUILDING' | 'OFFLINE';
-  cpu: number;
-  memory: number;
-  visitors: number;
-  githubUrl: string;
-}
 
-interface SystemMetric {
-  cpu: number;
-  memory: number;
-  disk: number;
-  bandwidth: number;
-}
 
 export default function App() {
+  const [isAutoInternetEnabled, setIsAutoInternetEnabled] = useState(false);
   // Theme state - locked to light mode to completely remove any black/dark background as requested
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   
@@ -314,6 +312,20 @@ export default function App() {
   const [verificationInput, setVerificationInput] = useState('');
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'success' | 'error'>('idle');
   
+  // Converted and sent SMS history
+  const [phrsSmsHistory, setPhrsSmsHistory] = useState<Array<{id: string; sender: string; text: string; timestamp: string; type: 'recharge' | 'otp' | 'system'}>>(() => {
+    try {
+      const stored = localStorage.getItem('phrs_sms_history');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      { id: 'sms-1', sender: 'JIO-IND', text: 'Jio Unlimited 1GB Data Pack recharged successfully. Converted to 10,000 PHRS Stealth SMS routing credits.', timestamp: '2026-08-27 08:30 AM', type: 'recharge' },
+      { id: 'sms-2', sender: 'PHRSCR', text: 'Verification PIN for PHRS Crowd login is 529104. Expire in 5 minutes.', timestamp: '2026-08-27 08:35 AM', type: 'otp' }
+    ];
+  });
+  
   // Custom Virtual Phone state for live notifications
   const [virtualPhoneNotification, setVirtualPhoneNotification] = useState<string | null>(null);
   const [phoneScreenOn, setPhoneScreenOn] = useState(true);
@@ -408,7 +420,7 @@ export default function App() {
   const [isAiServerBypassed, setIsAiServerBypassed] = useState(false);
   const [remoteNodeIp, setRemoteNodeIp] = useState(() => localStorage.getItem('phrs_ip') || '100.64.137.224');
   const [deviceSerial, setDeviceSerial] = useState(() => localStorage.getItem('phrs_serial') || '10BF4C1HQ2000R1');
-  const [deepseekApiKey, setDeepseekApiKey] = useState(() => localStorage.getItem('phrs_deepseek') || 'Sk-9853d7fb03f84358b15842772093f61e');
+  const [deepseekApiKey, setDeepseekApiKey] = useState(() => localStorage.getItem('phrs_deepseek') || '');
   
   // Admin Compilation Portal States
   const [showAdminPortal, setShowAdminPortal] = useState(false);
@@ -425,7 +437,7 @@ export default function App() {
   
   const [tempRemoteNodeIp, setTempRemoteNodeIp] = useState(() => localStorage.getItem('phrs_ip') || '100.64.137.224');
   const [tempDeviceSerial, setTempDeviceSerial] = useState(() => localStorage.getItem('phrs_serial') || '10BF4C1HQ2000R1');
-  const [tempDeepseekApiKey, setTempDeepseekApiKey] = useState(() => localStorage.getItem('phrs_deepseek') || 'Sk-9853d7fb03f84358b15842772093f61e');
+  const [tempDeepseekApiKey, setTempDeepseekApiKey] = useState(() => localStorage.getItem('phrs_deepseek') || '');
 
   // Cloud Run states
   const [cloudRunImage, setCloudRunImage] = useState('gcr.io/phrscrowd/express-app:latest');
@@ -457,7 +469,6 @@ export default function App() {
     { address: '35.240.12.204', type: 'External', status: 'Active', instance: 'agent-router-vm' }
   ]);
   const [deviceCarrierIp, setDeviceCarrierIp] = useState('100.64.137.224');
-  const [isAutoInternetEnabled, setIsAutoInternetEnabled] = useState(true);
   const [networkLatency, setNetworkLatency] = useState(24);
   const [mobileIp, setMobileIp] = useState('Detecting...');
   const [isBridgeActive, setIsBridgeActive] = useState(false);
@@ -506,14 +517,15 @@ export default function App() {
     }
   };
 
+  // Auto-detect network status changes (e.g. WiFi <-> Mobile 4G/5G handoff)
+  const handleNetworkChange = () => {
+    detectIp();
+  };
+
   // Dynamic IP Auto-Sync Heartbeat & Network Change Listener (Zero Manual Reconnect)
   useEffect(() => {
     detectIp();
 
-    // Auto-detect whenever network status changes (e.g. WiFi <-> Mobile 4G/5G handoff)
-    const handleNetworkChange = () => {
-      detectIp();
-    };
     window.addEventListener('online', handleNetworkChange);
 
     // Periodic Heartbeat check every 25 seconds for dynamic ISP IP rotation
@@ -527,7 +539,7 @@ export default function App() {
       window.removeEventListener('online', handleNetworkChange);
       clearInterval(ipSyncInterval);
     };
-  }, [isAutoInternetEnabled]);
+  }, [isAutoInternetEnabled, handleNetworkChange]);
 
   // Expose global settings saver for external SDK or console calls
   useEffect(() => {
@@ -683,6 +695,31 @@ export default function App() {
   const [isWelcomeBoardOpen, setIsWelcomeBoardOpen] = useState<boolean>(true);
   const [homeToast, setHomeToast] = useState<string | null>(null);
 
+  // Global backend action override for real-time interactions across all 24 tabs
+  useEffect(() => {
+    window.executeBackendAction = async (msg: string) => {
+      setHomeToast('Executing backend process...');
+      try {
+        const res = await fetch('/api/execute-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: msg })
+        });
+        const data = await res.json();
+        setHomeToast(data.message);
+        setTimeout(() => setHomeToast(null), 3500);
+      } catch(e) {
+        setHomeToast('‚ö†Ô∏è ' + msg);
+        setTimeout(() => setHomeToast(null), 3000);
+      }
+    };
+    
+    // Override standard alert to perform clean serverless executions
+    window.alert = (msg: string) => {
+      window.executeBackendAction?.(msg);
+    };
+  }, []);
+
   // PHRS Agent Interactive Search Bar & Photo Generator States
   const [agentSearchQuery, setAgentSearchQuery] = useState<string>('');
   const [dashboardAgentChatHistory, setDashboardAgentChatHistory] = useState<Array<{ sender: 'user' | 'agent' | 'system', text: string, type?: 'text' | 'image' | 'code', codeContent?: string, imageUrl?: string, timestamp: string }>>([
@@ -698,35 +735,70 @@ export default function App() {
   const [agentImagePrompt, setAgentImagePrompt] = useState<string>('');
   const [agentCodeLanguage, setAgentCodeLanguage] = useState<string>('javascript');
 
-  const triggerCodeGeneration = (promptText: string) => {
+  const triggerCodeGeneration = async (promptText: string) => {
     setIsAgentThinking(true);
-    const userMsg = { sender: 'user' as const, text: `Build App Code: ${promptText}`, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    const userMsg = { sender: 'user' as const, text: `Build App Code [${agentCodeLanguage}]: ${promptText}`, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
     setDashboardAgentChatHistory(prev => [...prev, userMsg]);
     setAgentModuleMode('chat');
-    setTimeout(() => {
-      let codeContent = "";
-      if (agentCodeLanguage === 'python') {
-        codeContent = "import requests\n\n# PHRS OTP Node Connector\ndef send_otp(phone):\n    url = \"http://157.50.81.156/api/otp/send\"\n    payload = {\"phone\": phone}\n    res = requests.post(url, json=payload)\n    print(\"[PHRS OTP] Status:\", res.json())\n\nsend_otp(\"+919876543210\")";
-      } else if (agentCodeLanguage === 'sql') {
-        codeContent = `CREATE TABLE IF NOT EXISTS phrs_users (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(255) NOT NULL,\n    email VARCHAR(255) UNIQUE NOT NULL,\n    role VARCHAR(50) DEFAULT 'Developer',\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nINSERT INTO phrs_users (name, email) VALUES ('Administrator', 'admin@phrs-crowd.com');`;
-      } else if (agentCodeLanguage === 'html') {
-        codeContent = `<!DOCTYPE html>\n<html>\n<head>\n  <title>PHRS Applet</title>\n  <script src="https://cdn.tailwindcss.com"></script>\n</head>\n<body class="bg-slate-50 flex items-center justify-center min-h-screen">\n  <div class="p-8 bg-white rounded-2xl shadow-lg text-center">\n    <h1 class="text-2xl font-bold text-slate-800">PHRS Applet Core</h1>\n    <p class="text-sm text-slate-500 mt-2">Connecting to Master Host 157.50.81.156</p>\n  </div>\n</body>\n</html>`;
-      } else {
-        codeContent = `const express = require('express');\nconst app = express();\n\napp.get('/api/phrs-status', (req, res) => {\n  res.json({\n    status: "active",\n    node: "157.50.81.156",\n    latency: "14ms"\n  });\n});\n\napp.listen(3000, () => console.log('PHRS Server Running on Port 3000'));`;
-      }
 
+    try {
+      const response = await fetch('/api/agent/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: `Write a robust, production-ready code snippet or program in "${agentCodeLanguage}" based on the following instruction: "${promptText}". Output only the source code wrapped inside a markdown code block starting with \`\`\`${agentCodeLanguage} and ending with \`\`\`. Do not write long explanations, keep descriptions short and focus on supplying the complete, clean code block.`,
+          systemPrompt: `You are PHRS Code Architect. You generate ultra-clean, production-ready, error-free ${agentCodeLanguage} code based on user prompt. Always provide the code in block notation.`,
+          apiKey: deepseekApiKey,
+          model: 'deepseek-chat'
+        })
+      });
+
+      const data = await response.json();
+      if (data.success && data.text) {
+        let replyText = data.text;
+        let codeContent = "";
+        
+        // Extract code block
+        const codeBlockRegex = /```(\w+)?\n([\s\S]+?)\n```/;
+        const codeMatch = replyText.match(codeBlockRegex);
+        if (codeMatch) {
+          codeContent = codeMatch[2];
+          replyText = replyText.replace(codeBlockRegex, "").trim();
+        } else {
+          // Fallback if no block found, treat whole text as code
+          codeContent = replyText;
+          replyText = "üíª ‡∞ú‡±Ü‡∞®‡∞∞‡±á‡∞ü‡±ç ‡∞ö‡±á‡∞Ø‡∞¨‡∞°‡∞ø‡∞® ‡∞ï‡±ã‡∞°‡±ç ‡∞ï‡±ç‡∞∞‡∞ø‡∞Ç‡∞¶ ‡∞ö‡±Ç‡∞°‡∞Ç‡∞°‡∞ø:";
+        }
+
+        if (!replyText) {
+          replyText = `üíª ‡∞Æ‡±Ä‡∞ï‡±ã‡∞∏‡∞Ç ${agentCodeLanguage} ‡∞ï‡±ã‡∞°‡±ç‚Äå‡∞®‡±Å ‡∞µ‡∞ø‡∞ú‡∞Ø‡∞µ‡∞Ç‡∞§‡∞Ç‡∞ó‡∞æ ‡∞ú‡±Ü‡∞®‡∞∞‡±á‡∞ü‡±ç ‡∞ö‡±á‡∞∂‡∞æ‡∞®‡±Å. ‡∞á‡∞¶‡∞ø ‡∞™‡±Ç‡∞∞‡±ç‡∞§‡∞ø‡∞ó‡∞æ ‡∞∏‡∞æ‡∞Ç‡∞°‡±ç‚Äå‡∞¨‡∞æ‡∞ï‡±ç‡∞∏‡±ç ‡∞ï‡∞Ç‡∞™‡±à‡∞≤‡±ç‡∞°‡±ç ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞∏‡±Å‡∞∞‡∞ï‡±ç‡∞∑‡∞ø‡∞§‡∞Æ‡±à‡∞®‡∞¶‡∞ø:`;
+        }
+
+        setDashboardAgentChatHistory(prev => [...prev, {
+          sender: 'agent',
+          text: replyText,
+          type: 'code',
+          codeContent,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+      } else {
+        throw new Error(data.error || "Unknown server response");
+      }
+    } catch (err: any) {
+      console.error("Code Architect error:", err);
       setDashboardAgentChatHistory(prev => [...prev, {
         sender: 'agent',
-        text: `üíª ‡∞Æ‡±Ä‡∞ï‡±ã‡∞∏‡∞Ç ‡∞ï‡±ã‡∞°‡±ç‚Äå‡∞®‡±Å ‡∞µ‡∞ø‡∞ú‡∞Ø‡∞µ‡∞Ç‡∞§‡∞Ç‡∞ó‡∞æ ‡∞ú‡±Ü‡∞®‡∞∞‡±á‡∞ü‡±ç ‡∞ö‡±á‡∞∂‡∞æ‡∞®‡±Å. ‡∞á‡∞¶‡∞ø ‡∞™‡±Ç‡∞∞‡±ç‡∞§‡∞ø‡∞ó‡∞æ ‡∞∏‡∞æ‡∞Ç‡∞°‡±ç‚Äå‡∞¨‡∞æ‡∞ï‡±ç‡∞∏‡±ç ‡∞ï‡∞Ç‡∞™‡±à‡∞≤‡±ç‡∞°‡±ç ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞∏‡±Å‡∞∞‡∞ï‡±ç‡∞∑‡∞ø‡∞§‡∞Æ‡±à‡∞®‡∞¶‡∞ø:`,
-        type: 'code',
-        codeContent,
+        text: `‚ö†Ô∏è ‡∞°‡±Ä‡∞™‡±ç ‡∞∏‡±Ä ‡∞ï‡±ã‡∞°‡±ç ‡∞ú‡±Ü‡∞®‡∞∞‡±á‡∞∑‡∞®‡±ç ‡∞≤‡±ã‡∞™‡∞Ç (DeepSeek Connection Error): ${err.message || '‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç ‡∞∏‡±ç‡∞™‡∞Ç‡∞¶‡∞ø‡∞Ç‡∞ö‡∞°‡∞Ç ‡∞≤‡±á‡∞¶‡±Å'}. ‡∞¶‡∞Ø‡∞ö‡±á‡∞∏‡∞ø ‡∞Æ‡±Ä ‡∞è‡∞™‡±Ä‡∞ê ‡∞ï‡±Ä‡∞®‡∞ø ‡∞∏‡∞∞‡∞ø‡∞ö‡±Ç‡∞∏‡±Å‡∞ï‡±ã‡∞Ç‡∞°‡∞ø.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
+    } finally {
       setIsAgentThinking(false);
-    }, 1200);
+    }
   };
 
-  const handleAgentSubmit = (queryText: string) => {
+  const handleAgentSubmit = async (queryText: string) => {
     if (!queryText.trim()) {
       setHomeToast('‚ö†Ô∏è ‡∞¶‡∞Ø‡∞ö‡±á‡∞∏‡∞ø ‡∞í‡∞ï ‡∞™‡±ç‡∞∞‡∞∂‡±ç‡∞® ‡∞≤‡±á‡∞¶‡∞æ ‡∞ï‡∞Æ‡∞æ‡∞Ç‡∞°‡±ç ‡∞ü‡±à‡∞™‡±ç ‡∞ö‡±á‡∞Ø‡∞Ç‡∞°‡∞ø! (Please enter a prompt first!)');
       setTimeout(() => setHomeToast(null), 3000);
@@ -743,43 +815,66 @@ export default function App() {
     setAgentSearchQuery('');
     setIsAgentThinking(true);
 
-    // Dynamic responses
-    setTimeout(() => {
-      let replyText = "";
-      let type: 'text' | 'image' | 'code' = 'text';
-      let codeContent = "";
-      let imageUrl = "";
+    try {
+      const response = await fetch('/api/agent/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: queryText,
+          systemPrompt: customSystemPrompt || "‡∞Æ‡±Ä‡∞∞‡±Å ‡∞™‡±Ä‡∞π‡±Ü‡∞ö‡±ç‡∞Ü‡∞∞‡±ç‡∞é‡∞∏‡±ç ‡∞ï‡±ç‡∞∞‡±å‡∞°‡±ç ‡∞ï‡∞®‡±ç‡∞∏‡±ã‡∞≤‡±ç ‡∞Ø‡±ä‡∞ï‡±ç‡∞ï ‡∞Ö‡∞ß‡∞ø‡∞ï‡∞æ‡∞∞‡∞ø‡∞ï ‡∞¨‡±ç‡∞∞‡∞π‡±ç‡∞Æ‡∞æ‡∞∏‡±ç‡∞§‡±ç‡∞∞ 3.5 ‡∞Ö‡∞≤‡±ç‡∞ü‡±ç‡∞∞‡∞æ ‡∞è‡∞ê ‡∞è‡∞ú‡±Ü‡∞Ç‡∞ü‡±ç. ‡∞°‡±Ü‡∞µ‡∞≤‡∞™‡∞∞‡±ç‚Äå‡∞≤‡∞ï‡±Å ‡∞ï‡±ç‡∞≤‡±å‡∞°‡±ç ‡∞∏‡∞∞‡±ç‡∞µ‡±Ä‡∞∏‡±ç, ‡∞ï‡±ã‡∞°‡±ç ‡∞∞‡±à‡∞ü‡∞ø‡∞Ç‡∞ó‡±ç ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞™‡±Ä‡∞π‡±Ü‡∞ö‡±ç‡∞Ü‡∞∞‡±ç‡∞é‡∞∏‡±ç ‡∞Æ‡±á‡∞®‡±á‡∞ú‡±ç‚Äå‡∞Æ‡±Ü‡∞Ç‡∞ü‡±ç‚Äå‡∞≤‡±ã ‡∞Ö‡∞¶‡±ç‡∞≠‡±Å‡∞§‡∞Æ‡±à‡∞® ‡∞Æ‡∞æ‡∞∞‡±ç‡∞ó‡∞¶‡∞∞‡±ç‡∞∂‡∞ï‡∞§‡±ç‡∞µ‡∞Ç ‡∞Ö‡∞Ç‡∞¶‡∞ø‡∞Ç‡∞ö‡∞Ç‡∞°‡∞ø.",
+          apiKey: deepseekApiKey,
+          model: selectedAgentId ? (agents.find((a: any) => a.id === selectedAgentId)?.model || 'deepseek-chat') : 'deepseek-chat'
+        })
+      });
 
-      const lowerQuery = queryText.toLowerCase();
+      const data = await response.json();
+      if (data.success && data.text) {
+        let replyText = data.text;
+        let type: 'text' | 'image' | 'code' = 'text';
+        let codeContent = "";
+        let imageUrl = "";
 
-      if (lowerQuery.includes('hi') || lowerQuery.includes('hello') || lowerQuery.includes('‡∞π‡∞≤‡±ã') || lowerQuery.includes('‡∞®‡∞Æ‡∞∏‡±ç‡∞ï‡∞æ‡∞∞‡∞Ç')) {
-        replyText = "‡∞ö‡±Ü‡∞™‡±ç‡∞™‡∞Ç‡∞°‡∞ø! ‡∞Æ‡±Ä ‡∞ï‡±ã‡∞∏‡∞Ç ‡∞®‡±á‡∞®‡±Å ‡∞è‡∞Æ‡∞ø ‡∞ö‡±á‡∞Ø‡∞ó‡∞≤‡∞®‡±Å?";
-      } else if (lowerQuery.includes('image') || lowerQuery.includes('photo') || lowerQuery.includes('‡∞ö‡∞ø‡∞§‡±ç‡∞∞‡∞Ç') || lowerQuery.includes('‡∞´‡±ä‡∞ü‡±ã') || lowerQuery.includes('‡∞¨‡±ä‡∞Æ‡±ç‡∞Æ')) {
-        replyText = "‡∞ñ‡∞ö‡±ç‡∞ö‡∞ø‡∞§‡∞Ç‡∞ó‡∞æ! ‡∞Æ‡±Ä‡∞ï‡±ã‡∞∏‡∞Ç ‡∞í‡∞ï ‡∞Ö‡∞Ç‡∞¶‡∞Æ‡±à‡∞® ‡∞Ö‡∞¨‡±ç‚Äå‡∞∏‡±ç‡∞ü‡±ç‡∞∞‡∞æ‡∞ï‡±ç‡∞ü‡±ç ‡∞ï‡±ç‡∞≤‡±å‡∞°‡±ç ‡∞á‡∞Æ‡±á‡∞ú‡±ç‚Äå‡∞®‡∞ø ‡∞≤‡±ã‡∞°‡±ç ‡∞ö‡±á‡∞∏‡±ç‡∞§‡±Å‡∞®‡±ç‡∞®‡∞æ‡∞®‡±Å. ‡∞¶‡±Ä‡∞®‡∞ø‡∞®‡∞ø ‡∞Æ‡±Ä ‡∞Ö‡∞™‡±ç‡∞≤‡∞ø‡∞ï‡±á‡∞∑‡∞®‡±ç ‡∞¨‡±ç‡∞Ø‡∞æ‡∞®‡∞∞‡±ç‚Äå‡∞ó‡∞æ ‡∞≤‡±á‡∞¶‡∞æ ‡∞™‡±ç‡∞∞‡±ä‡∞´‡±à‡∞≤‡±ç ‡∞™‡∞ø‡∞ï‡±ç‡∞ö‡∞∞‡±ç‚Äå‡∞ó‡∞æ ‡∞â‡∞™‡∞Ø‡±ã‡∞ó‡∞ø‡∞Ç‡∞ö‡∞µ‡∞ö‡±ç‡∞ö‡±Å:";
-        type = 'image';
-        imageUrl = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80';
-      } else if (lowerQuery.includes('code') || lowerQuery.includes('script') || lowerQuery.includes('‡∞ï‡±ã‡∞°‡±ç')) {
-        replyText = "‡∞ñ‡∞ö‡±ç‡∞ö‡∞ø‡∞§‡∞Ç‡∞ó‡∞æ! ‡∞Æ‡±Ä‡∞ï‡±ã‡∞∏‡∞Ç PHRS Node ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞ü‡∞ø‡∞µ‡∞ø‡∞ü‡±Ä‡∞ï‡∞ø ‡∞Ö‡∞µ‡∞∏‡∞∞‡∞Æ‡±à‡∞® ‡∞í‡∞ï ‡∞®‡∞Æ‡±Ç‡∞®‡∞æ Node.js ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞∑‡∞®‡±ç ‡∞∏‡±ç‡∞ï‡±ç‡∞∞‡∞ø‡∞™‡±ç‡∞ü‡±ç‚Äå‡∞®‡∞ø ‡∞á‡∞ï‡±ç‡∞ï‡∞° ‡∞Ö‡∞Ç‡∞¶‡∞ø‡∞Ç‡∞ö‡∞æ‡∞®‡±Å:";
-        type = 'code';
-        codeContent = "// PHRS Cloud Master Connection Setup\nconst { PHRS, db } = require('./phrs-cloud');\n\nasync function connect() {\n  console.log('Connecting to PHRS Node 157.50.81.156...');\n  await PHRS.init('157.50.81.156');\n  const status = PHRS.status;\n  console.log('Connection Successful: ' + status);\n}\n\nconnect();";
-      } else if (lowerQuery.includes('firebase') || lowerQuery.includes('‡∞´‡±à‡∞∞‡±ç ‡∞¨‡±á‡∞∏‡±ç') || lowerQuery.includes('firestore') || lowerQuery.includes('‡∞´‡±à‡∞∞‡±ç‚Äå‡∞∏‡±ç‡∞ü‡±ã‡∞∞‡±ç')) {
-        replyText = "‡∞Ö‡∞µ‡±Å‡∞®‡±Å! ‡∞Æ‡∞® ‡∞ï‡±ç‡∞≤‡±å‡∞°‡±ç ‡∞™‡±ç‡∞≤‡∞æ‡∞ü‡±ç‚Äå‡∞´‡∞æ‡∞∞‡∞Æ‡±ç‚Äå‡∞≤‡±ã **PHRS Firebase** ‡∞µ‡∞ø‡∞≠‡∞æ‡∞ó‡∞Ç ‡∞¶‡±ç‡∞µ‡∞æ‡∞∞‡∞æ ‡∞´‡±à‡∞∞‡±ç‚Äå‡∞¨‡±á‡∞∏‡±ç ‡∞™‡±Ç‡∞∞‡±ç‡∞§‡∞ø‡∞ó‡∞æ ‡∞á‡∞Ç‡∞ü‡∞ø‡∞ó‡±ç‡∞∞‡±á‡∞ü‡±ç ‡∞ö‡±á‡∞Ø‡∞¨‡∞°‡∞ø‡∞Ç‡∞¶‡∞ø. ‡∞Æ‡±Ä‡∞∞‡±Å ‡∞®‡±á‡∞∞‡±Å‡∞ó‡∞æ 'Firestore Database' ‡∞ü‡∞æ‡∞¨‡±ç‚Äå‡∞≤‡±ã ‡∞ï‡∞≤‡±Ü‡∞ï‡±ç‡∞∑‡∞®‡±ç‡∞≤‡±Å ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞°‡∞æ‡∞ï‡±ç‡∞Ø‡±Å‡∞Æ‡±Ü‡∞Ç‡∞ü‡±ç‡∞≤‡∞®‡±Å ‡∞ï‡±ç‡∞∞‡∞ø‡∞Ø‡±á‡∞ü‡±ç ‡∞ö‡±á‡∞Ø‡∞µ‡∞ö‡±ç‡∞ö‡±Å. ‡∞∏‡∞∞‡±ç‡∞µ‡±Ä‡∞∏‡±ç ‡∞Ö‡∞ï‡±å‡∞Ç‡∞ü‡±ç 'phrs-firebase-sdk' ‡∞ï‡±Ç‡∞°‡∞æ ‡∞Ø‡∞æ‡∞ï‡±ç‡∞ü‡∞ø‡∞µ‡±ç‚Äå‡∞ó‡∞æ ‡∞â‡∞Ç‡∞¶‡∞ø.";
-      } else if (lowerQuery.includes('status') || lowerQuery.includes('‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç') || lowerQuery.includes('server')) {
-        replyText = "‡∞™‡±ç‡∞∞‡∞∏‡±ç‡∞§‡±Å‡∞§ ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç‡∞≤ ‡∞∏‡±ç‡∞•‡∞ø‡∞§‡∞ø:\n- **Master Database Node**: ‡∞Ü‡∞®‡±ç‚Äå‡∞≤‡±à‡∞®‡±ç (157.50.81.156)\n- **VPC Bridge**: ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞ü‡±ç ‡∞ö‡±á‡∞Ø‡∞¨‡∞°‡∞ø‡∞Ç‡∞¶‡∞ø\n- **OTP Gateway**: ‡∞Ø‡∞æ‡∞ï‡±ç‡∞ü‡∞ø‡∞µ‡±ç (‚Çπ25 ‡∞¨‡±ç‡∞Ø‡∞æ‡∞≤‡±Ü‡∞®‡±ç‡∞∏‡±ç ‡∞Ö‡∞Ç‡∞¶‡±Å‡∞¨‡∞æ‡∞ü‡±Å‡∞≤‡±ã ‡∞â‡∞Ç‡∞¶‡∞ø)\n- **Active Deployments**: 3 ‡∞∏‡±á‡∞µ‡∞≤‡±Å ‡∞∞‡∞®‡±ç ‡∞Ö‡∞µ‡±Å‡∞§‡±Å‡∞®‡±ç‡∞®‡∞æ‡∞Ø‡∞ø.";
+        // Check if query is photo/image related to show image format
+        const lowerQuery = queryText.toLowerCase();
+        const isImageReq = lowerQuery.includes('image') || lowerQuery.includes('photo') || lowerQuery.includes('‡∞ö‡∞ø‡∞§‡±ç‡∞∞‡∞Ç') || lowerQuery.includes('‡∞´‡±ä‡∞ü‡±ã') || lowerQuery.includes('‡∞¨‡±ä‡∞Æ‡±ç‡∞Æ');
+        
+        if (isImageReq) {
+          type = 'image';
+          imageUrl = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80';
+        }
+
+        // Check if reply contains code block
+        const codeBlockRegex = /```(\w+)?\n([\s\S]+?)\n```/;
+        const codeMatch = replyText.match(codeBlockRegex);
+        if (codeMatch) {
+          type = 'code';
+          codeContent = codeMatch[2];
+          replyText = replyText.replace(codeBlockRegex, `\n[‡∞ï‡±ã‡∞°‡±ç ‡∞ï‡±ç‡∞∞‡∞ø‡∞Ç‡∞¶ ‡∞ú‡±ã‡∞°‡∞ø‡∞Ç‡∞ö‡∞¨‡∞°‡∞ø‡∞Ç‡∞¶‡∞ø (Code attached below)]\n`).trim();
+        }
+
+        setDashboardAgentChatHistory(prev => [...prev, {
+          sender: 'agent',
+          text: replyText,
+          type,
+          codeContent,
+          imageUrl,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
       } else {
-        replyText = `‡∞Æ‡±Ä‡∞∞‡±Å ‡∞Ö‡∞°‡∞ø‡∞ó‡∞ø‡∞® "\${queryText}" ‡∞ï‡∞ø ‡∞∏‡∞Ç‡∞¨‡∞Ç‡∞ß‡∞ø‡∞Ç‡∞ö‡∞ø‡∞® ‡∞ï‡±ç‡∞≤‡±å‡∞°‡±ç ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞è‡∞ê ‡∞Ö‡∞®‡∞≤‡∞ø‡∞ü‡∞ø‡∞ï‡±ç‡∞∏‡±ç ‡∞∞‡∞®‡±ç ‡∞ö‡±á‡∞∂‡∞æ‡∞®‡±Å. PHRS ‡∞Æ‡∞æ‡∞∏‡±ç‡∞ü‡∞∞‡±ç ‡∞ï‡±ç‡∞≤‡∞∏‡±ç‡∞ü‡∞∞‡±ç ‡∞≤‡±ã ‡∞¶‡±Ä‡∞®‡∞ø ‡∞ï‡±ã‡∞∏‡∞Ç ‡∞§‡∞ó‡∞ø‡∞® ‡∞∞‡∞ø‡∞∏‡±ã‡∞∞‡±ç‡∞∏‡±ç‚Äå‡∞≤‡∞®‡±Å ‡∞µ‡±Ü‡∞∞‡∞ø‡∞´‡±à ‡∞ö‡±á‡∞∏‡±ç‡∞§‡±Å‡∞®‡±ç‡∞®‡∞æ‡∞®‡±Å. ‡∞®‡±á‡∞®‡±Å ‡∞Æ‡±Ä‡∞ï‡±Å ‡∞è ‡∞µ‡∞ø‡∞ß‡∞Ç‡∞ó‡∞æ ‡∞∏‡∞π‡∞æ‡∞Ø‡∞™‡∞°‡∞ó‡∞≤‡∞®‡±Å?`;
+        throw new Error(data.error || "Unknown server response");
       }
-
+    } catch (err: any) {
+      console.error("Agent chat error:", err);
       setDashboardAgentChatHistory(prev => [...prev, {
         sender: 'agent',
-        text: replyText,
-        type,
-        codeContent,
-        imageUrl,
+        text: `‚ö†Ô∏è ‡∞°‡±Ä‡∞™‡±ç ‡∞∏‡±Ä ‡∞è‡∞™‡±Ä‡∞ê ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞∑‡∞®‡±ç ‡∞≤‡±ã‡∞™‡∞Ç (DeepSeek Connection Error): ${err.message || '‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç ‡∞∏‡±ç‡∞™‡∞Ç‡∞¶‡∞ø‡∞Ç‡∞ö‡∞°‡∞Ç ‡∞≤‡±á‡∞¶‡±Å'}. ‡∞¶‡∞Ø‡∞ö‡±á‡∞∏‡∞ø ‡∞Æ‡±Ä ‡∞è‡∞™‡±Ä‡∞ê ‡∞ï‡±Ä‡∞®‡∞ø ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞∑‡∞®‡±ç ‡∞∏‡±ç‡∞•‡∞ø‡∞§‡∞ø‡∞®‡∞ø ‡∞§‡∞®‡∞ø‡∞ñ‡±Ä ‡∞ö‡±á‡∞Ø‡∞Ç‡∞°‡∞ø!`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
+    } finally {
       setIsAgentThinking(false);
-    }, 1000);
+    }
   };
 
   const handlePhotoGeneratorClick = () => {
@@ -1161,11 +1256,29 @@ export default function App() {
       setIsSendingOtp(false);
       setLastGeneratedOtp(pin);
       
+      // Deduct stealth credit if present
+      setStealthSmsCredits(prev => Math.max(0, prev - 1));
+      
       // Update virtual phone screen
       const actualSmsText = smsTemplate.replace('[OTP]', pin);
       setVirtualPhoneNotification(actualSmsText);
       setPhoneScreenOn(true);
       
+      // Add to SMS history
+      const now = new Date().toLocaleString('en-US', { hour12: true });
+      const newSms = {
+        id: `sms-otp-${Date.now()}`,
+        sender: 'PHRSCR',
+        text: `To: ${testPhoneNumber} | ${actualSmsText}`,
+        timestamp: now,
+        type: 'otp' as const
+      };
+      setPhrsSmsHistory(prev => {
+        const updated = [newSms, ...prev];
+        localStorage.setItem('phrs_sms_history', JSON.stringify(updated));
+        return updated;
+      });
+
       setVpsLogStream(prev => [
         ...prev,
         `[SMS] ‚úì Gateway response: STATUS_OK. MsgId: sms_msg_${Math.round(Math.random()*900000)}`
@@ -1512,6 +1625,9 @@ export default function App() {
     );
   }
 
+
+    const globalState = { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, shortLinks, setShortLinks, linkSlug, setLinkSlug, linkTarget, setLinkTarget, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, phrsSmsHistory, setPhrsSmsHistory, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleCreateShortLink, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick, handleDeployFile, triggerCodeGeneration, startAtomicDeepScan, handleTestAIRoute, isFirebaseSection
+    };
   return (
     <div className={`min-h-screen font-sans flex flex-col transition-colors duration-200 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
@@ -1952,121 +2068,7 @@ export default function App() {
             TAB: SECRET MANAGER
             ============================================== */}
         {activeTab === 'secret_manager' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <h1 className="text-2xl font-bold text-slate-900">Secret Manager</h1>
-                <p className="text-xs text-slate-500 font-mono">Autonomous Encryption & Environment Variable Bridge</p>
-              </div>
-              <div className="flex gap-2">
-                <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
-                  <button 
-                    onClick={() => setSecretManagerSubTab('secrets')}
-                    className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${secretManagerSubTab === 'secrets' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
-                  >
-                    Stored Secrets
-                  </button>
-                  <button 
-                    onClick={() => setSecretManagerSubTab('translation')}
-                    className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${secretManagerSubTab === 'translation' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
-                  >
-                    Translation Bridge
-                  </button>
-                </div>
-                <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> {secretManagerSubTab === 'secrets' ? 'Create Secret' : 'Add Mapping'}
-                </button>
-              </div>
-            </div>
-
-            {secretManagerSubTab === 'secrets' ? (
-              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
-                    <tr>
-                      <th className="px-6 py-4">Name</th>
-                      <th className="px-6 py-4">Created</th>
-                      <th className="px-6 py-4">Type</th>
-                      <th className="px-6 py-4">Labels</th>
-                      <th className="px-6 py-4">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {[
-                      { name: 'phrs-master-db-key', date: '2 days ago', type: 'Database Password', label: 'env:prod' },
-                      { name: 'sms-gateway-token', date: '1 week ago', type: 'API Token', label: 'env:test' },
-                      { name: 'ssh-vps-access-key', date: '1 month ago', type: 'SSH Key', label: 'env:global' }
-                    ].map((s, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors cursor-pointer">
-                        <td className="px-6 py-4 font-medium text-slate-900">{s.name}</td>
-                        <td className="px-6 py-4 text-slate-500">{s.date}</td>
-                        <td className="px-6 py-4 text-slate-600">{s.type}</td>
-                        <td className="px-6 py-4">
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono">{s.label}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <button className="text-indigo-600 hover:underline">Edit</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-2xl">
-                  <div className="flex gap-4">
-                    <div className="p-3 bg-white rounded-xl shadow-sm h-fit"><Link className="w-6 h-6 text-indigo-600" /></div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">Environment Mapping Engine Active</h3>
-                      <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                        This bridge automatically detects external cloud variables in your source code (like <span className="font-mono bg-white px-1 rounded">PHRS_API_KEY</span>) 
-                        and substitutes them with PHRS Crowd equivalents during deployment. No code changes required in your original project.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="p-4 border-b border-slate-100 bg-slate-50/50 font-bold text-xs uppercase tracking-wider text-slate-500">
-                    Live Translation Rules
-                  </div>
-                  <div className="divide-y divide-slate-100">
-                    {envTranslationMappings.map((mapping, i) => (
-                      <div key={i} className="p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-50/30 transition-colors">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full md:w-auto flex-1">
-                          <div className="w-full sm:w-48 break-all">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">EXTERNAL SOURCE</p>
-                            <p className="font-mono text-xs font-bold text-rose-600">{mapping.external}</p>
-                          </div>
-                          <ArrowRight className="w-4 h-4 text-slate-300 hidden sm:block shrink-0" />
-                          <div className="w-full sm:w-48 break-all">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">INTERNAL PHRS MAPPING</p>
-                            <p className="font-mono text-xs font-bold text-emerald-600">{mapping.internal}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 self-end md:self-center shrink-0">
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${mapping.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                            {mapping.active ? 'ACTIVE BRIDGE' : 'PAUSED'}
-                          </span>
-                          <button 
-                            onClick={() => {
-                              const newMappings = [...envTranslationMappings];
-                              newMappings[i].active = !newMappings[i].active;
-                              setEnvTranslationMappings(newMappings);
-                            }}
-                            className="text-[10px] text-indigo-600 font-bold hover:underline"
-                          >
-                            {mapping.active ? 'Disable' : 'Enable'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <SecretManagerTab state={globalState} />
         )}
 
         {/* ==============================================
@@ -2732,999 +2734,7 @@ export default function App() {
             TAB 1: PHRS CROWD CONSOLE DASHBOARD (HOME) 
             ============================================== */}
         {activeTab === 'home' && (
-          <div className="space-y-6 animate-fade-in">
-            
-            {/* Interactive Custom feedback toast notification */}
-            {homeToast && (
-              <div className="fixed bottom-6 right-6 bg-slate-900 text-white font-mono text-xs px-5 py-3.5 rounded-xl shadow-2xl z-50 flex items-center gap-3 border border-slate-800 animate-bounce">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{homeToast}</span>
-                <button onClick={() => setHomeToast(null)} className="text-slate-400 hover:text-white font-bold ml-2 text-sm leading-none">√ó</button>
-              </div>
-            )}
-
-            {/* MAIN PHRS STYLE WELCOME CARD */}
-            <div className={`p-6 md:p-8 rounded-2xl border transition-all duration-300 ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'}`}>
-              
-              {/* Welcome Header & Cloud Logo */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-1 rounded-xl bg-slate-50 border border-slate-100 shrink-0 shadow-xs">
-                    <svg className="w-12 h-12" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="phrsCloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#EA4335" />
-                          <stop offset="30%" stopColor="#FBBC05" />
-                          <stop offset="65%" stopColor="#34A853" />
-                          <stop offset="100%" stopColor="#4285F4" />
-                        </linearGradient>
-                      </defs>
-                      {/* Perfect stylized vector cloud icon representing PHRS */}
-                      <path d="M25.8 13.4C24.9 8.8 20.9 5.3 16 5.3c-3.9 0-7.2 2.2-8.9 5.4C4.1 11.1 1 14.5 1 18.7c0 4.4 3.6 8 8 8h16.3c3.7 0 6.7-3 6.7-6.7 0-3.5-2.7-6.4-6.2-6.6z" fill="url(#phrsCloudGrad)"/>
-                    </svg>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <h1 className="text-3xl md:text-4xl font-light tracking-tight text-slate-900">
-                      Welcome
-                    </h1>
-                           <div className="flex flex-col text-[#5f6368] font-sans pt-1">
-                      <span className="text-xs">You're working in</span>
-                      <div className="flex flex-wrap items-center gap-1 mt-0.5">
-                        <button 
-                          onClick={() => {
-                            setHomeToast("Viewing primary organization folder");
-                            setTimeout(() => setHomeToast(null), 2500);
-                          }} 
-                          className="text-[#1a73e8] hover:underline font-medium text-[15px]"
-                        >
-                          phrs-crowd-org
-                        </button>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        
-                        {selectedProjectId ? (
-                          <button 
-                            onClick={() => {
-                              setHomeToast(`Active workspace: ${projects.find(p => p.id === selectedProjectId)?.name}`);
-                              setTimeout(() => setHomeToast(null), 2500);
-                            }} 
-                            className="text-[#1a73e8] hover:underline font-medium text-[15px]"
-                          >
-                            {projects.find(p => p.id === selectedProjectId)?.name || 'Unknown Project'}
-                          </button>
-                        ) : (
-                          <span className="text-slate-400 text-[15px] italic">No project selected</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                </div>
-
-                <>
-                  {/* Project Metadata Details */}
-                  {selectedProjectId ? (
-                    <div className="space-y-2 md:space-y-0 md:flex md:items-center md:gap-8 text-xs text-slate-600 font-sans border-b border-slate-100 pb-5 mb-5 mt-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-500 font-medium">Project number:</span>
-                        <span className="font-mono font-bold text-slate-800">{selectedProjectId.replace(/\D/g, '') || Math.floor(Math.random() * 1000000000)}</span>
-                        <button 
-                          onClick={() => {
-                            const num = selectedProjectId.replace(/\D/g, '') || '0';
-                            navigator.clipboard.writeText(num);
-                            setHomeToast(`‚úì Project number copied to clipboard: ${num}`);
-                            setTimeout(() => setHomeToast(null), 3000);
-                          }}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                          title="Copy Project Number"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-500 font-medium">Project ID:</span>
-                        <span className="font-mono font-bold text-slate-800">{selectedProjectId}</span>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(selectedProjectId);
-                            setHomeToast(`‚úì Project ID copied to clipboard: ${selectedProjectId}`);
-                            setTimeout(() => setHomeToast(null), 3000);
-                          }}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                          title="Copy Project ID"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-slate-500 font-sans border-b border-slate-100 pb-5 mb-5 mt-4">
-                      Create a project using the 'Create Project' button above to get started.
-                    </div>
-                  )}
-
-                  {/* UNIFIED BRAHMASTRA CHAT CONSOLE */}
-                  <div className="mt-6">
-                    {isAgentPanelOpen ? (
-                      <div className={`p-5 rounded-2xl border transition-all duration-300 animate-fade-in ${
-                        isDarkMode ? 'bg-slate-900/95 border-slate-700 shadow-2xl' : 'bg-slate-50/80 border-slate-200/80 shadow-md'
-                      }`}>
-                        <div className="flex flex-col items-center gap-1.5 pb-2 border-b border-slate-200/40 mb-3">
-                          {/* THREE BUTTONS IN ONE COMPACT ROW */}
-                          <div className="flex items-center w-full gap-1">
-                            <div className="flex flex-1 gap-1">
-                              <button 
-                                 onClick={() => setAgentModuleMode('chat')}
-                                 className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-md border transition-all ${
-                                   agentModuleMode === 'chat' 
-                                     ? 'bg-blue-600 text-white border-blue-600' 
-                                     : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 text-[9px]'
-                                 }`}
-                              >
-                                <span className="text-[10px]">üí¨</span>
-                                <span className="text-[9px] font-bold">Chat</span>
-                              </button>
-
-                              <button 
-                                 onClick={() => setAgentModuleMode('image')}
-                                 className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-md border transition-all ${
-                                   agentModuleMode === 'image' 
-                                     ? 'bg-emerald-600 text-white border-emerald-600' 
-                                     : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 text-[9px]'
-                                 }`}
-                              >
-                                <span className="text-[10px]">üñºÔ∏è</span>
-                                <span className="text-[9px] font-bold">Studio</span>
-                              </button>
-
-                              <button 
-                                 onClick={() => setAgentModuleMode('code')}
-                                 className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-md border transition-all ${
-                                   agentModuleMode === 'code' 
-                                     ? 'bg-purple-600 text-white border-purple-600' 
-                                     : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 text-[9px]'
-                                 }`}
-                              >
-                                <span className="text-[10px]">üíª</span>
-                                <span className="text-[9px] font-bold">Code</span>
-                              </button>
-                            </div>
-
-                            <div className="flex items-center gap-0.5 ml-1">
-                              <button 
-                                 onClick={() => {
-                                  setDashboardAgentChatHistory([
-                                    {
-                                      sender: 'agent',
-                                      text: "‡∞®‡±á‡∞®‡±Å ‡∞¨‡±ç‡∞∞‡∞π‡±ç‡∞Æ‡∞æ‡∞∏‡±ç‡∞§‡±ç‡∞∞ 3.5 ‡∞Ö‡∞≤‡±ç‡∞ü‡±ç‡∞∞‡∞æ ‡∞è‡∞ú‡±Ü‡∞Ç‡∞ü‡±ç ‡∞®‡∞ø ‡∞Æ‡±Ä‡∞ï‡±Å ‡∞è ‡∞µ‡∞ø‡∞ß‡∞Ç‡∞ó‡∞æ ‡∞∏‡∞π‡∞æ‡∞Ø‡∞Ç ‡∞ö‡±á‡∞Ø‡∞ó‡∞≤‡∞®‡±Å",
-                                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                    }
-                                  ]);
-                                  setAgentModuleMode('chat');
-                                }}
-                                className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
-                                title="Clear conversation"
-                              >
-                                <RefreshCw className="w-2.5 h-2.5" />
-                              </button>
-                              <button 
-                                 onClick={() => setIsAgentPanelOpen(false)}
-                                className="p-1 text-slate-400 hover:text-slate-600 transition"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* BRAHMASTRA 3.5 ULTRA BRANDING (ENGLISH) WITH GOLD CHAKRA */}
-                          <div className="flex items-center gap-1.5 w-full justify-start pl-2 py-1">
-                            <Compass className="w-2.5 h-2.5 text-amber-500 animate-[spin_12s_linear_infinite]" />
-                            <span className="text-[8px] font-black tracking-[0.15em] text-slate-400 uppercase font-mono italic">BRAHMASTRA 3.5 ULTRA</span>
-                          </div>
-                        </div>
-
-                        {/* MODE 1: CHAT WORKSPACE (Now with Smart Search at bottom) */}
-                        {agentModuleMode === 'chat' && (
-                          <div className="space-y-4">
-                            <div className="min-h-[280px] max-h-[280px] overflow-y-auto space-y-3 pr-1">
-                              {dashboardAgentChatHistory.map((msg, index) => (
-                                <div 
-                                  key={index} 
-                                  className={`flex flex-col max-w-[85%] ${
-                                    msg.sender === 'user' ? 'ml-auto items-end' : 'items-start'
-                                  }`}
-                                >
-                                  <div className={(msg.text.toLowerCase().trim() === 'hi' || msg.text.trim() === '‡∞π‡∞æ‡∞Ø‡±ç' || index === 0) 
-                                    ? `p-0.5 text-[9px] leading-tight ${msg.sender === "user" ? "text-blue-600 text-right" : "text-slate-500 text-left"}`
-                                    : `p-2 rounded-xl text-[11px] leading-relaxed ${
-                                        msg.sender === 'user' 
-                                          ? 'bg-blue-600 text-white rounded-br-none ml-auto shadow-sm' 
-                                          : isDarkMode ? 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
-                                      }`
-                                  }>
-                                    <span className={(msg.text.toLowerCase().trim() === 'hi' || index === 0) ? "block" : "whitespace-pre-line"}>{msg.text}</span>
-                                    
-                                    {msg.type === 'image' && msg.imageUrl && (
-                                      <div className="mt-3 rounded-lg overflow-hidden border border-slate-200">
-                                        <img src={msg.imageUrl} referrerPolicy="no-referrer" alt="Generated" className="w-full h-auto max-h-48 object-cover" />
-                                      </div>
-                                    )}
-
-                                    {msg.type === 'code' && msg.codeContent && (
-                                      <div className="mt-3 rounded-lg overflow-hidden border border-slate-800 bg-slate-950 p-3 font-mono text-[10px] text-emerald-400">
-                                        <pre className="overflow-x-auto whitespace-pre">{msg.codeContent}</pre>
-                                      </div>
-                                    )}
-                                  </div>
-                                  
-                                </div>
-                              ))}
-                              {isAgentThinking && (
-                                <div className="flex items-center gap-2 text-slate-400 text-xs font-mono py-1">
-                                  <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-bounce"></span>
-                                  <span className="ml-1 text-[10px]">Brahmastra is thinking...</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* SMART SEARCH BAR INTEGRATED HERE */}
-                            <div className="mt-2">
-                               <div className="relative group">
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur-sm"></div>
-                          <div className={`relative ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} border rounded-2xl flex items-center p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/50 transition-all`}>
-                            <div className="pl-3 pr-2 text-blue-500">
-                              <Sparkles className="w-5 h-5 animate-pulse" />
-                            </div>
-                            <input
-                                type="text"
-                               value={agentSearchQuery}
-                               onChange={(e) => setAgentSearchQuery(e.target.value)}
-                               placeholder="Ask Brahmastra (‡∞¨‡±ç‡∞∞‡∞π‡±ç‡∞Æ‡∞æ‡∞∏‡±ç‡∞§‡±ç‡∞∞) anything..."
-                                className={`w-full bg-transparent border-none focus:outline-none text-sm py-2 px-1 ${isDarkMode ? 'text-slate-200 placeholder-slate-500' : 'text-slate-700 placeholder-slate-400'}`}
-                               onKeyDown={(e) => {
-                                 if (e.key === 'Enter') {
-                                   handleAgentSubmit(agentSearchQuery);
-                                   setAgentSearchQuery('');
-                                 }
-                               }}
-                            />
-                            <div className="pr-2 flex gap-2">
-                              <button
-                                  className="p-1.5 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                                 title="Generate Photo"
-                                 onClick={handlePhotoGeneratorClick}
-                              >
-                                <Image className="w-4 h-4" />
-                              </button>
-                              <button
-                                  className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                                 title="Create App"
-                                 onClick={handleCodeGeneratorClick}
-                              >
-                                <Code className="w-4 h-4" />
-                              </button>
-                              <button
-                                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                                 onClick={() => {
-                                   handleAgentSubmit(agentSearchQuery);
-                                   setAgentSearchQuery('');
-                                 }}
-                              >
-                                Search
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* MODE 2: IMAGE STUDIO */}
-                        {agentModuleMode === 'image' && (
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-[10px] font-black tracking-wider text-slate-500 uppercase mb-2">IMAGE PROMPT</label>
-                              <textarea 
-                                value={agentImagePrompt}
-                                onChange={(e) => setAgentImagePrompt(e.target.value)}
-                                className={`w-full text-xs p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-emerald-500 h-20 resize-none ${
-                                  isDarkMode ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'
-                                }`}
-                                placeholder="Describe the image..."
-                              />
-                            </div>
-                            <button 
-                               onClick={() => {
-                                  if (!agentImagePrompt.trim()) return;
-                                  setIsAgentThinking(true);
-                                  const userMsg = { sender: 'user' as const, text: `Generate image: ${agentImagePrompt}`, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-                                  setDashboardAgentChatHistory(prev => [...prev, userMsg]);
-                                  setAgentImagePrompt('');
-                                  setAgentModuleMode('chat');
-                                  setTimeout(() => {
-                                    setDashboardAgentChatHistory(prev => [...prev, {
-                                      sender: 'agent',
-                                      text: "üñºÔ∏è ‡∞Æ‡±Ä ‡∞™‡±ç‡∞∞‡±ã‡∞Ç‡∞™‡±ç‡∞ü‡±ç ‡∞™‡±ç‡∞∞‡∞ï‡∞æ‡∞∞‡∞Ç ‡∞í‡∞ï ‡∞Ö‡∞Ç‡∞¶‡∞Æ‡±à‡∞® ‡∞á‡∞Æ‡±á‡∞ú‡±ç‚Äå‡∞®‡±Å ‡∞ú‡∞®‡∞∞‡±á‡∞ü‡±ç ‡∞ö‡±á‡∞∏‡∞æ‡∞®‡±Å.",
-                                      type: 'image',
-                                      imageUrl: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=800&q=80',
-                                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                    }]);
-                                    setIsAgentThinking(false);
-                                  }, 1200);
-                               }}
-                               className="w-full py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl"
-                            >
-                               Generate AI Visual Asset
-                            </button>
-                          </div>
-                        )}
-
-                        {/* MODE 3: CODE ARCHITECT */}
-                        {agentModuleMode === 'code' && (
-                          <div className="space-y-4">
-                            <input 
-                                type="text"
-                                id="codeGenPromptInput"
-                                placeholder="Code requirements..."
-                                className={`w-full text-xs p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-purple-500 ${
-                                  isDarkMode ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'
-                                }`}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && e.currentTarget.value.trim() !== '') {
-                                    triggerCodeGeneration(e.currentTarget.value);
-                                    e.currentTarget.value = '';
-                                  }
-                                }}
-                            />
-                            <button 
-                               onClick={() => {
-                                 const inp = document.getElementById('codeGenPromptInput') as HTMLInputElement;
-                                 if (inp && inp.value.trim() !== '') {
-                                   triggerCodeGeneration(inp.value);
-                                   inp.value = '';
-                                 }
-                               }}
-                               className="w-full py-2 bg-purple-600 text-white text-xs font-bold rounded-xl"
-                            >
-                               Compile & Deploy Sandbox Code
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="mt-4">
-                        {/* UNIFIED SEARCH INPUT ENTRY POINT */}
-                        <div className="relative group">
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur-sm"></div>
-                          <div className={`relative ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} border rounded-2xl flex items-center p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/50 transition-all`}>
-                            <div className="pl-3 pr-2 text-blue-500">
-                              <Sparkles className="w-5 h-5 animate-pulse" />
-                            </div>
-                            <input
-                                type="text"
-                               value={agentSearchQuery}
-                               onChange={(e) => setAgentSearchQuery(e.target.value)}
-                               placeholder="Ask Brahmastra (‡∞¨‡±ç‡∞∞‡∞π‡±ç‡∞Æ‡∞æ‡∞∏‡±ç‡∞§‡±ç‡∞∞) anything..."
-                                className={`w-full bg-transparent border-none focus:outline-none text-sm py-2 px-1 ${isDarkMode ? 'text-slate-200 placeholder-slate-500' : 'text-slate-700 placeholder-slate-400'}`}
-                               onKeyDown={(e) => {
-                                 if (e.key === 'Enter') {
-                                   handleAgentSubmit(agentSearchQuery);
-                                   setAgentSearchQuery('');
-                                 }
-                               }}
-                            />
-                            <div className="pr-2 flex gap-2">
-                              <button
-                                  className="p-1.5 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                                 title="Generate Photo"
-                                 onClick={handlePhotoGeneratorClick}
-                              >
-                                <Image className="w-4 h-4" />
-                              </button>
-                              <button
-                                  className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                                 title="Create App"
-                                 onClick={handleCodeGeneratorClick}
-                              >
-                                <Code className="w-4 h-4" />
-                              </button>
-                              <button
-                                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                                 onClick={() => {
-                                   handleAgentSubmit(agentSearchQuery);
-                                   setAgentSearchQuery('');
-                                 }}
-                              >
-                                Search
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {/* Active Underlined Navigation Tabs */}
-                  <div className="flex items-center gap-6 border-b border-slate-100 -mx-6 md:-mx-8 px-6 md:px-8 mb-4">
-                    <button
-                      onClick={() => setHomeSubTab('dashboard')}
-                      className={`pb-3 text-sm font-medium tracking-wide transition-all border-b-2 relative ${
-                        homeSubTab === 'dashboard'
-                          ? 'border-blue-600 text-blue-600 font-semibold'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Dashboard
-                    </button>
-                    <button
-                      onClick={() => setHomeSubTab('hub')}
-                      className={`pb-3 text-sm font-medium tracking-wide transition-all border-b-2 relative flex items-center gap-1.5 ${
-                        homeSubTab === 'hub'
-                          ? 'border-blue-600 text-blue-600 font-semibold'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Cloud Hub
-                      <span className="px-1.5 py-0.5 text-[9px] bg-indigo-50 text-indigo-600 rounded font-mono font-bold">LIVE TELEMETRY</span>
-                    </button>
-                  </div>
-                </>
-
-              {/* SUB-TAB 1: PHRS CLOUD WELCOME DASHBOARD VIEW */}
-              {homeSubTab === 'dashboard' && (
-                <div className="pt-6 space-y-6">
-                  
-                  {/* Grid of PHRS Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6">
-                    
-                    {/* Project Info Card (xl: span 4) */}
-                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-                      <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
-                        <h3 className="text-sm font-bold text-slate-800">Project info</h3>
-                        <button className="text-blue-600 hover:bg-blue-50 p-1 rounded transition">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="p-5 space-y-4 flex-1">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project name</label>
-                          <p className="text-sm font-semibold text-slate-800">{projects.find(p => p.id === selectedProjectId)?.name}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project ID</label>
-                          <p className="text-xs font-mono text-slate-600">dauntless-appliance-1pxzt</p>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project number</label>
-                          <p className="text-xs font-mono text-slate-600">398230688462</p>
-                        </div>
-                      </div>
-                      <div className="p-3 border-t border-slate-50 bg-slate-50/20">
-                        <button className="text-xs font-bold text-blue-600 hover:underline">Go to project settings</button>
-                      </div>
-                    </div>
-
-                    {/* Resources Card (xl: span 4) */}
-                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-                      <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
-                        <h3 className="text-sm font-bold text-slate-800">Resources</h3>
-                        <button className="text-blue-600 hover:bg-blue-50 p-1 rounded transition">
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="p-0 flex-1">
-                        <div className="divide-y divide-slate-100">
-                          {[
-                            { name: 'Compute Engine', val: '2 instances', color: 'text-blue-600', tab: 'cloud_run' },
-                            { name: 'Cloud Storage', val: '5 buckets', color: 'text-blue-600', tab: 'cloud_storage' },
-                            { name: 'Cloud SQL', val: '1 instance', color: 'text-blue-600', tab: 'cloud_sql' },
-                            { name: 'BigQuery', val: '12 datasets', color: 'text-blue-600', tab: 'bigquery' },
-                            { name: 'PHRS Database', val: '3 active', color: 'text-[#FFCA28]', tab: 'database' },
-                            { name: 'Agent Platform', val: `${agents.length} active`, color: 'text-indigo-600', tab: 'agent_platform' }
-                          ].map((res, i) => (
-                            <div key={i} onClick={() => setActiveTab(res.tab as any)} className="flex justify-between items-center px-5 py-3 hover:bg-slate-50 transition cursor-pointer group">
-                              <span className="text-xs text-slate-700">{res.name}</span>
-                              <span className={`text-[11px] font-bold ${res.color} group-hover:underline`}>{res.val}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="p-3 border-t border-slate-50 bg-slate-50/20 text-center">
-                        <button className="text-xs font-bold text-blue-600 hover:underline">View all resources</button>
-                      </div>
-                    </div>
-
-                    {/* API Status Card (xl: span 4) */}
-                    <div className="xl:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-                      <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
-                        <h3 className="text-sm font-bold text-slate-800">APIs & Services</h3>
-                        <button className="text-blue-600 hover:bg-blue-50 p-1 rounded transition">
-                          <Activity className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="p-5 flex-1 flex flex-col justify-center items-center space-y-4">
-                        <div className="w-24 h-24 relative">
-                          <svg className="w-full h-full" viewBox="0 0 36 36">
-                            <circle cx="18" cy="18" r="16" fill="none" className="stroke-slate-100" strokeWidth="3" />
-                            <circle cx="18" cy="18" r="16" fill="none" className="stroke-blue-600" strokeWidth="3" strokeDasharray="75, 100" strokeLinecap="round" />
-                          </svg>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-lg font-bold text-slate-800">75%</span>
-                            <span className="text-[8px] text-slate-400 uppercase font-bold">Quota</span>
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-slate-500 text-center">API traffic is normal. Gemini model latency is at 1.2s average.</p>
-                      </div>
-                      <div className="p-3 border-t border-slate-50 bg-slate-50/20">
-                        <button onClick={() => setActiveTab('api_board')} className="text-xs font-bold text-blue-600 hover:underline">Go to APIs overview</button>
-                      </div>
-                    </div>
-
-                    {/* Actions Row */}
-                    <div className="md:col-span-2 xl:col-span-12">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <button 
-                          onClick={() => {
-                            setActiveTab('api_board');
-                            setHomeToast("Redirected to API Board - Gemini keys are active");
-                            setTimeout(() => setHomeToast(null), 3000);
-                          }}
-                          className="flex items-center px-4 py-2 bg-white hover:bg-[#1a73e8]/5 border border-[#1a73e8] rounded-md text-left text-xs font-semibold text-[#1a73e8] transition shadow-xs group"
-                        >
-                          <span className="w-5 h-5 bg-[#1a73e8] text-white rounded-xs flex items-center justify-center font-bold text-xs mr-2 shrink-0">+</span>
-                          <span>Create Gemini API key</span>
-                        </button>
-
-                        <button 
-                          onClick={() => {
-                            setActiveTab('agent_platform');
-                            setAgentPlatformSubTab('agents');
-                          }}
-                          className="flex items-center px-4 py-2 bg-white hover:bg-[#1a73e8]/5 border border-[#1a73e8] rounded-md text-left text-xs font-semibold text-[#1a73e8] transition shadow-xs group"
-                        >
-                          <span className="w-5 h-5 bg-[#1a73e8] text-white rounded-xs flex items-center justify-center font-bold text-xs mr-2 shrink-0">+</span>
-                          <span>Create an agent</span>
-                        </button>
-
-                        <button 
-                          onClick={() => {
-                            setActiveTab('app_studio');
-                            setShowNewProjModal(true);
-                          }}
-                          className="flex items-center px-4 py-2 bg-white hover:bg-[#1a73e8]/5 border border-[#1a73e8] rounded-md text-left text-xs font-semibold text-[#1a73e8] transition shadow-xs group"
-                        >
-                          <span className="w-5 h-5 bg-[#1a73e8] text-white rounded-xs flex items-center justify-center font-bold text-xs mr-2 shrink-0">+</span>
-                          <span>Create a VM</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Developer Program Banner */}
-                    <div className="md:col-span-2 xl:col-span-12">
-                      <div className="p-5 rounded-xl bg-[#E8F0FE]/60 border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:bg-[#E8F0FE]/80">
-                        <div className="space-y-1">
-                          <p className="text-xs font-semibold text-slate-800 leading-normal">
-                            Join the PHRS Developer Program to learn new skills and dev tools at no cost.
-                          </p>
-                        </div>
-                        <button 
-                          onClick={() => {
-                            setHomeToast("üéâ Congratulations! You have joined the PHRS Developer Program.");
-                            setTimeout(() => setHomeToast(null), 4000);
-                          }}
-                          className="text-xs font-bold text-blue-700 hover:text-blue-800 flex items-center gap-1 shrink-0 group"
-                        >
-                          <span>Join today</span>
-                          <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Quick Access Section */}
-                    <div className="md:col-span-2 xl:col-span-12 space-y-4">
-                      <h3 className="text-lg font-medium text-slate-850">Quick access</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[
-                          { tab: 'api_board', icon: 'API', name: 'APIs & Services', desc: 'Manage proxy routers' },
-                          { tab: 'database', icon: <Shield className="w-5 h-5 text-indigo-600" />, name: 'IAM & Admin', desc: 'Configure databases' },
-                          { tab: 'billing', icon: <CreditCard className="w-5 h-5 text-emerald-600" />, name: 'Billing', desc: 'Manage accounts' },
-                          { tab: 'cloud_storage', icon: <Database className="w-5 h-5 text-amber-600" />, name: 'Storage', desc: 'Manage buckets' }
-                        ].map((item, i) => (
-                          <button 
-                            key={i}
-                            onClick={() => {
-                              if (item.tab === 'billing') {
-                                setHomeToast("üí≥ Billing Account Status: ACTIVE (Free Tier Plan)");
-                                setTimeout(() => setHomeToast(null), 3000);
-                              } else {
-                                setActiveTab(item.tab as any);
-                              }
-                            }}
-                            className="flex items-center gap-4 p-4 bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md rounded-xl transition text-left group"
-                          >
-                            <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center font-bold text-xs text-slate-600 border border-slate-100 shrink-0 group-hover:bg-blue-50 transition">
-                              {item.icon}
-                            </div>
-                            <div className="overflow-hidden">
-                              <p className="text-xs font-semibold text-slate-900 truncate">{item.name}</p>
-                              <span className="text-[10px] text-slate-500 block truncate">{item.desc}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-              )}
-              {/* SUB-TAB 2: ORIGINAL DYNAMIC CLOUD HUB TELEMETRY AND TERMINAL LOOPS WITH SUB-FEATURES */}
-              {homeSubTab === 'hub' && (
-                <div className="pt-6 space-y-6">
-                  {/* Sub-feature Navigation Bar */}
-                  <div className="flex items-center gap-2 overflow-x-auto pb-3 border-b border-slate-200">
-                    {['Home', 'Deployments', 'Health & troubleshooting', 'Security & compliance', 'Optimization', 'Quotas & reservations', 'Maintenance', 'Support', 'App Topology'].map(tab => (
-                      <button
-                        key={tab}
-                        onClick={() => {
-                          if (tab === 'Deployments') {
-                            setActiveTab('app_studio');
-                          } else {
-                            setCloudHubSubTab(tab);
-                            setHomeToast(`Cloud Hub: Switched to ${tab}`);
-                            setTimeout(() => setHomeToast(null), 2000);
-                          }
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium whitespace-nowrap transition ${
-                          cloudHubSubTab === tab && tab !== 'Deployments'
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Sub-feature View: Health & troubleshooting */}
-                  {cloudHubSubTab === 'Health & troubleshooting' && (
-                    <div className="space-y-6 animate-fade-in">
-                      <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <Activity className="w-6 h-6 text-emerald-600" />
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">System Health & Troubleshooting Diagnostics</h3>
-                              <p className="text-xs text-slate-500">Real-time daemon ping, SQLite WAL status, and server connectivity checks.</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setHomeToast('‚úì Health diagnostics completed: All 5 daemons operational');
-                              setTimeout(() => setHomeToast(null), 3000);
-                            }}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-semibold rounded-lg shadow transition"
-                          >
-                            RUN FULL DIAGNOSTICS
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
-                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                            <span className="text-slate-500 block mb-1">LOCAL PING ({remoteNodeIp})</span>
-                            <span className="text-emerald-600 font-bold text-sm">0.42 ms (OPTIMAL)</span>
-                          </div>
-                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                            <span className="text-slate-500 block mb-1">PM2 DAEMONS STATUS</span>
-                            <span className="text-indigo-600 font-bold text-sm">3 / 3 ONLINE</span>
-                          </div>
-                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                            <span className="text-slate-500 block mb-1">SQLITE INTEGRITY</span>
-                            <span className="text-emerald-600 font-bold text-sm">OK (0 CORRUPTIONS)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sub-feature View: Security & compliance */}
-                  {cloudHubSubTab === 'Security & compliance' && (
-                    <div className="space-y-6 animate-fade-in">
-                      <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                          <Shield className="w-6 h-6 text-indigo-600" />
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900">Security & Compliance Command Center</h3>
-                            <p className="text-xs text-slate-500">Active firewall rules, SSL certificate validity, and IAM access controls.</p>
-                          </div>
-                        </div>
-                        <div className="space-y-3 font-mono text-xs">
-                          <div className="p-3 rounded-lg bg-slate-50 flex justify-between items-center border border-slate-200">
-                            <span>SSL Certificate Status</span>
-                            <span className="text-emerald-600 font-bold">Valid (Expires: Oct 2027)</span>
-                          </div>
-                          <div className="p-3 rounded-lg bg-slate-50 flex justify-between items-center border border-slate-200">
-                            <span>Firewall Port Policies</span>
-                            <span className="text-indigo-600 font-bold">Port 3000 (Open for VPS & Local IP)</span>
-                          </div>
-                          <div className="p-3 rounded-lg bg-slate-50 flex justify-between items-center border border-slate-200">
-                            <span>Security Posture Score</span>
-                            <span className="text-emerald-600 font-bold text-sm">98 / 100 (SECURE)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sub-feature View: Optimization */}
-                  {cloudHubSubTab === 'Optimization' && (
-                    <div className="space-y-6 animate-fade-in">
-                      <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <Sliders className="w-6 h-6 text-amber-600" />
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">Resource Optimization & Auto-Scaling</h3>
-                              <p className="text-xs text-slate-500">Memory garbage collection, query performance tuner, and cache tuning.</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setHomeToast('‚úì Optimization routines executed successfully');
-                              setTimeout(() => setHomeToast(null), 3000);
-                            }}
-                            className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-mono font-semibold rounded-lg shadow transition"
-                          >
-                            OPTIMIZE NOW
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
-                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                            <span className="text-slate-500 block mb-1">CACHE HIT RATIO</span>
-                            <span className="text-emerald-600 font-bold text-base">99.4%</span>
-                          </div>
-                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                            <span className="text-slate-500 block mb-1">SQLITE WAL MODE</span>
-                            <span className="text-emerald-600 font-bold text-base">ENABLED (FAST IO)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sub-feature View: Quotas & reservations */}
-                  {cloudHubSubTab === 'Quotas & reservations' && (
-                    <div className="space-y-6 animate-fade-in">
-                      <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                          <Database className="w-6 h-6 text-sky-600" />
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900">Quotas, Limits & Reservations</h3>
-                            <p className="text-xs text-slate-500">Monitor API limits, SQLite storage allocation, and reserved bandwidth.</p>
-                          </div>
-                        </div>
-                        <div className="space-y-4 font-mono text-xs">
-                          <div>
-                            <div className="flex justify-between mb-1">
-                              <span className="text-slate-600">SQLite Storage Usage (25GB Limit)</span>
-                              <span className="font-bold text-slate-900">12.4 GB (49.6%)</span>
-                            </div>
-                            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                              <div className="bg-indigo-600 h-full w-[49.6%]"></div>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex justify-between mb-1">
-                              <span className="text-slate-600">Monthly API Requests (100k Quota)</span>
-                              <span className="font-bold text-slate-900">48,200 / 100,000</span>
-                            </div>
-                            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                              <div className="bg-emerald-600 h-full w-[48.2%]"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sub-feature View: Maintenance */}
-                  {cloudHubSubTab === 'Maintenance' && (
-                    <div className="space-y-6 animate-fade-in">
-                      <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <RefreshCw className="w-6 h-6 text-indigo-600" />
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">Server Maintenance & Backups</h3>
-                              <p className="text-xs text-slate-500">Schedule automatic database backups, vacuum sqlite tables, and purge logs.</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setHomeToast('‚úì Database Vacuum & Maintenance completed');
-                              setTimeout(() => setHomeToast(null), 3000);
-                            }}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-mono font-semibold rounded-lg shadow transition"
-                          >
-                            RUN DATABASE VACUUM
-                          </button>
-                        </div>
-                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs text-slate-700">
-                          <p className="font-bold mb-1">Last Backup Timestamp:</p>
-                          <p className="text-emerald-600">August 25, 2026 - 10:30 UTC (Snapshot ID: snap_99812)</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sub-feature View: Support */}
-                  {cloudHubSubTab === 'Support' && (
-                    <div className="space-y-6 animate-fade-in">
-                      <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                          <MessageSquare className="w-6 h-6 text-blue-600" />
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900">VIP Cloud Support & Diagnostics</h3>
-                            <p className="text-xs text-slate-500">Direct engineering assistance, documentation, and troubleshooting logs.</p>
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          <button
-                            onClick={() => {
-                              setHomeToast('‚úì Diagnostic support bundle generated successfully');
-                              setTimeout(() => setHomeToast(null), 3000);
-                            }}
-                            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-semibold rounded-lg shadow transition"
-                          >
-                            üì¶ DOWNLOAD DIAGNOSTIC SUPPORT BUNDLE (.ZIP)
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sub-feature View: App Topology */}
-                  {cloudHubSubTab === 'App Topology' && (
-                    <div className="space-y-6 animate-fade-in">
-                      <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                          <Layers className="w-6 h-6 text-purple-600" />
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900">Application Topology & Service Mesh Map</h3>
-                            <p className="text-xs text-slate-500">Visual interconnection of client requests, reverse proxy, node core, and database.</p>
-                          </div>
-                        </div>
-                        <div className="p-6 rounded-2xl bg-slate-900 text-white font-mono text-xs space-y-4">
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700">
-                            <span>1. Client Browser / Mobile App</span>
-                            <span className="text-emerald-400">HTTPS / WSS</span>
-                          </div>
-                          <div className="text-center text-slate-500">‚Üì</div>
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700">
-                            <span>2. Nginx Reverse Proxy (Port 3000)</span>
-                            <span className="text-indigo-400">Load Balancing Active</span>
-                          </div>
-                          <div className="text-center text-slate-500">‚Üì</div>
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700">
-                            <span>3. Node.js Express Core & PM2 Daemon</span>
-                            <span className="text-amber-400">3 Instances Running</span>
-                          </div>
-                          <div className="text-center text-slate-500">‚Üì</div>
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800 border border-slate-700">
-                            <span>4. Local SQLite3 & SMS/OTP Gateway</span>
-                            <span className="text-emerald-400">0ms Latency</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Default / Home View inside Cloud Hub */}
-                  {cloudHubSubTab === 'Home' && (
-                    <>
-                      {/* Micro-telemetry grid */}
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className={`p-4 rounded-xl border flex items-center justify-between transition bg-white border-slate-200`}>
-                      <div>
-                        <span className="text-[10px] font-mono text-slate-500">CPU LOAD</span>
-                        <p className="text-xl font-bold font-mono text-indigo-500">{metrics.cpu}%</p>
-                      </div>
-                      <Cpu className="w-5 h-5 text-indigo-500 opacity-60" />
-                    </div>
-                    <div className={`p-4 rounded-xl border flex items-center justify-between transition bg-white border-slate-200`}>
-                      <div>
-                        <span className="text-[10px] font-mono text-slate-500">RAM USAGE</span>
-                        <p className="text-xl font-bold font-mono text-sky-500">{metrics.memory}%</p>
-                      </div>
-                      <HardDrive className="w-5 h-5 text-sky-500 opacity-60" />
-                    </div>
-                    <div className={`p-4 rounded-xl border flex items-center justify-between transition bg-white border-slate-200`}>
-                      <div>
-                        <span className="text-[10px] font-mono text-slate-500">LOCAL SQLITE CAPACITY</span>
-                        <p className="text-xl font-bold font-mono text-amber-500">{metrics.disk}% of 25GB</p>
-                      </div>
-                      <Database className="w-5 h-5 text-amber-500 opacity-60" />
-                    </div>
-                    <div className={`p-4 rounded-xl border flex items-center justify-between transition bg-white border-slate-200`}>
-                      <div>
-                        <span className="text-[10px] font-mono text-slate-500">SMS ROUTER BANDWIDTH</span>
-                        <p className="text-xl font-bold font-mono text-emerald-500">{metrics.bandwidth} kb/s</p>
-                      </div>
-                      <Wifi className="w-5 h-5 text-emerald-500 opacity-60" />
-                    </div>
-                  </div>
-
-                  {/* Split Grid: Server telemetry details & Live terminal logs */}
-                  <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                    
-                    {/* Left Column: Projects & Active Deployments quicklist */}
-                    <div className="xl:col-span-7 space-y-6">
-                      
-                      {/* Active Services List */}
-                      <div className="p-5 rounded-2xl border transition-colors bg-white border-slate-200 shadow-sm">
-                        <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">SERVICE DEPLOYMENTS STATUS</h3>
-                        
-                        <div className="divide-y divide-slate-100">
-                          {deployments.map(dep => (
-                            <div key={dep.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-50 last:border-0">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 shrink-0">
-                                  <Server className="w-4 h-4 text-indigo-600" />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-xs font-semibold text-slate-900 truncate">{dep.name}</p>
-                                  <span 
-                                    onClick={() => setSmartRouteModal({ url: `${dep.subdomain}.phrscrowd.local`, service: dep.name })}
-                                    className="text-[10px] font-mono text-indigo-500 hover:text-indigo-750 cursor-pointer hover:underline break-all block"
-                                    title="Click to route mobile domain"
-                                  >
-                                    http://{dep.subdomain}.phrscrowd.local
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center flex-wrap gap-3 sm:gap-4">
-                                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                  {dep.status}
-                                </span>
-                                <span className="text-xs font-mono text-slate-500 hidden md:inline">{dep.techStack}</span>
-                                <button 
-                                  onClick={() => { setActiveVirtualApp(dep); setActiveTab('app_studio'); }}
-                                  className="text-xs font-mono text-indigo-600 hover:text-indigo-800 flex items-center gap-1 whitespace-nowrap"
-                                >
-                                  Open Console
-                                  <ArrowRight className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-
-
-                    </div>
-
-                    {/* Right Column: Interactive VPS Terminal / Kernel Logs */}
-                    <div className="xl:col-span-5 space-y-6">
-                      
-
-
-                      {/* Quick Info Tip Card */}
-                      <div className="p-4 rounded-xl border text-xs leading-relaxed transition-colors bg-indigo-50 border-indigo-100 text-indigo-900">
-                        <p className="font-semibold mb-1">üí° Pro Cloud Tip:</p>
-                        Because PHRS Crowd runs directly on a single SQLite engine, database reads have zero TCP latency. It performs at up to 100,000 read operations per second right from your cheap VPS!
-                      </div>
-
-                    </div>
-                  </div>
-
-                    </>
-                  )}
-
-                </div>
-              )}
-
-            </div>
-
-          </div>
+          <HomeTab state={globalState} />
         )}
 
         {/* ==============================================
@@ -4134,4534 +3144,143 @@ export default function App() {
             TAB 3: NATIVE PHRS-STYLE REALTIME DATABASE CORE
             ============================================== */}
         {activeTab === 'database' && (
-          <div className="space-y-6 animate-fade-in">
-            {selectedSubMenu === 'Overview' && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2"><Database className="w-6 h-6 text-indigo-600"/> PHRS DB Overview</h1>
-                <p className="text-slate-600 mb-6">Welcome to the central PHRS Database management dashboard. Here you can monitor overall health, query metrics, and view real-time operations across all your clusters.</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                   <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
-                     <h3 className="text-sm font-semibold text-indigo-900">Total Clusters</h3>
-                     <p className="text-4xl font-black text-indigo-600 mt-2">4</p>
-                   </div>
-                   <div className="p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
-                     <h3 className="text-sm font-semibold text-emerald-900">Active Queries</h3>
-                     <p className="text-4xl font-black text-emerald-600 mt-2">1,204</p>
-                   </div>
-                   <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100">
-                     <h3 className="text-sm font-semibold text-amber-900">Health Status</h3>
-                     <div className="text-xl font-bold text-amber-600 mt-2 flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span> Excellent</div>
-                   </div>
-                </div>
-              </div>
-            )}
-            {selectedSubMenu === 'Cloud SQL' && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">Cloud SQL Instances</h1>
-                <p className="text-slate-600 mb-6">Manage your managed relational PostgreSQL, MySQL, and SQL Server instances.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <h3 className="text-lg font-bold text-slate-700">No Instances Found</h3>
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Instance</button>
-                </div>
-              </div>
-            )}
-            {selectedSubMenu === 'AlloyDB for PostgreSQL' && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">AlloyDB for PostgreSQL</h1>
-                <p className="text-slate-600 mb-6">Fully managed PostgreSQL-compatible database service for your most demanding enterprise database workloads.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Cluster</button>
-                </div>
-              </div>
-            )}
-            {selectedSubMenu === 'Spanner' && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">Spanner</h1>
-                <p className="text-slate-600 mb-6">Fully managed, mission-critical relational database service that offers transactional consistency at global scale.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Instance</button>
-                </div>
-              </div>
-            )}
-            {selectedSubMenu === 'Bigtable' && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">Bigtable</h1>
-                <p className="text-slate-600 mb-6">A fully managed, scalable NoSQL database service for large analytical and operational workloads.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Instance</button>
-                </div>
-              </div>
-            )}
-            {selectedSubMenu === 'Firestore' && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">Firestore</h1>
-                <p className="text-slate-600 mb-6">A flexible, scalable NoSQL cloud database to store and sync data for client- and server-side development.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Database</button>
-                </div>
-              </div>
-            )}
-            {selectedSubMenu === 'Memorystore' && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">Memorystore</h1>
-                <p className="text-slate-600 mb-6">Fully managed in-memory data store service for Redis and Memcached at Google Cloud.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Instance</button>
-                </div>
-              </div>
-            )}
-
-            {(selectedSubMenu === 'Database Center' || !['Overview', 'Cloud SQL', 'AlloyDB for PostgreSQL', 'Spanner', 'Bigtable', 'Firestore', 'Memorystore'].includes(selectedSubMenu)) && (
-              <div className="space-y-6">
-                
-            {/* DB Tree Status Preview (Moved from Welcome) */}
-            <div className="p-6 rounded-2xl border transition-colors flex flex-col h-[250px] bg-white border-slate-200 shadow-sm">
-              <div className="flex justify-between items-center mb-4 shrink-0">
-                <h3 className="font-mono font-bold text-sm tracking-wider text-indigo-500 uppercase">REALTIME DATABASE CLUSTER PREVIEW</h3>
-              </div>
-              <div className="flex-1 p-4 rounded-xl font-mono text-sm overflow-auto bg-slate-50 text-slate-800 border border-slate-200">
-                <span className="text-indigo-600">dbRoot</span>: &#123;
-                <div className="pl-4 space-y-1 mt-1 border-l border-slate-200 ml-2">
-                  {Object.keys(dbData).slice(0, 5).map(key => (
-                    <div key={key}>
-                      <span className="text-amber-600">"{key}"</span>: &#123;
-                      <div className="pl-4 text-slate-600">
-                        {typeof dbData[key] === 'object' 
-                          ? Object.keys(dbData[key]).slice(0, 3).map(subKey => (
-                              <div key={subKey}>
-                                <span>"{subKey}"</span>: <span className="text-emerald-600">{JSON.stringify(dbData[key][subKey])}</span>
-                              </div>
-                            ))
-                          : <span className="text-emerald-600">{JSON.stringify(dbData[key])}</span>
-                        }
-                      </div>
-                      &#125;,
-                    </div>
-                  ))}
-                </div>
-                &#125;
-              </div>
-            </div>
-            {/* Main DB Title & Submenu bar */}
-            <div className={`p-6 rounded-2xl border transition ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  {isFirebaseSection ? (
-                    <Flame className="w-6 h-6 text-orange-500 animate-pulse" />
-                  ) : (
-                    <Database className="w-6 h-6 text-indigo-600" />
-                  )}
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">
-                      {isFirebaseSection ? "PHRS Firebase (App Platform)" : "Database Center"}
-                    </h2>
-                    <p className="text-xs text-slate-500 max-w-2xl mt-1">
-                      {isFirebaseSection 
-                        ? "Manage NoSQL document collections, user authentication schemas, storage buckets, and serverless hosting on your private VPS platform."
-                        : "Manage relational schemas, NoSQL document collections, user authentication databases, cloud functions, and assets storage locally on your private VPS."
-                      }
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard?.writeText(window.location.href);
-                      setHomeToast('‚úì Link copied to clipboard!');
-                      setTimeout(() => setHomeToast(null), 2500);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition"
-                  >
-                    <Link className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Copy Link</span>
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setHomeToast('Database Center options menu');
-                      setTimeout(() => setHomeToast(null), 2000);
-                    }}
-                    className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Overview & Filter Bar */}
-              <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100">
-                <span className="text-sm font-semibold text-slate-800 mr-2">Overview</span>
-                
-                {/* Products Filter Dropdown */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setIsProductFilterOpen(!isProductFilterOpen)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs text-slate-700 bg-white font-medium shadow-xs"
-                  >
-                    <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Products ({dbProductFilter})</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-                  </button>
-                  {isProductFilterOpen && (
-                    <div className="absolute top-full mt-1 left-0 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1 text-xs">
-                      {['None', 'Cloud SQL', 'Firestore', 'Realtime DB', 'SQLite', 'Spanner'].map(prod => (
-                        <button 
-                          key={prod}
-                          onClick={() => {
-                            setDbProductFilter(prod);
-                            setIsProductFilterOpen(false);
-                            setHomeToast(`Filtered products: ${prod}`);
-                            setTimeout(() => setHomeToast(null), 2000);
-                          }}
-                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${dbProductFilter === prod ? 'text-indigo-600 font-bold bg-indigo-50/50' : 'text-slate-700'}`}
-                        >
-                          {prod}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Locations Filter Dropdown */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setIsLocationFilterOpen(!isLocationFilterOpen)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs text-slate-700 bg-white font-medium shadow-xs"
-                  >
-                    <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Locations ({dbLocationFilter})</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-                  </button>
-                  {isLocationFilterOpen && (
-                    <div className="absolute top-full mt-1 left-0 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1 text-xs">
-                      {['None', 'asia-south1', 'asia-southeast1', 'us-central1', 'europe-west1'].map(loc => (
-                        <button 
-                          key={loc}
-                          onClick={() => {
-                            setDbLocationFilter(loc);
-                            setIsLocationFilterOpen(false);
-                            setHomeToast(`Filtered locations: ${loc}`);
-                            setTimeout(() => setHomeToast(null), 2000);
-                          }}
-                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${dbLocationFilter === loc ? 'text-indigo-600 font-bold bg-indigo-50/50' : 'text-slate-700'}`}
-                        >
-                          {loc}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-4 border-b border-slate-100">
-                {['Project Overview', 'Authentication', 'Firestore Database', 'Realtime Database', 'Storage', 'Hosting', 'Cloud Functions'].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setPhrsDbSubTab(tab)}
-                    className={`px-4 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                      phrsDbSubTab === tab
-                        ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600 font-bold'
-                        : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Collapsible "Check out what's new" Fleet insights banner (Screenshot 1) */}
-            {isFleetBannerVisible && (
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden animate-fade-in">
-                {/* Banner Header */}
-                <div className="px-5 py-3.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-slate-700">
-                    <Megaphone className="w-4 h-4 text-indigo-600" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Check out what's new</span>
-                  </div>
-                  <button 
-                    onClick={() => setIsFleetBannerVisible(false)}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-md transition"
-                    title="Dismiss"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Fleet Insights Accordion Trigger */}
-                <div className="px-5 py-4">
-                  <div 
-                    onClick={() => setIsFleetBannerExpanded(!isFleetBannerExpanded)}
-                    className="flex items-center justify-between cursor-pointer group"
-                  >
-                    <span className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition">Fleet insights</span>
-                    <button className="text-slate-400 group-hover:text-slate-600 p-1 rounded-md transition">
-                      {isFleetBannerExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                  </div>
-
-                  {/* Expanded Fleet Insights Card */}
-                  {isFleetBannerExpanded && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                      {/* Left visual representation */}
-                      <div className="md:col-span-4 bg-gradient-to-br from-indigo-50/80 via-sky-50/50 to-white p-4 rounded-xl border border-indigo-100 flex flex-col justify-between h-36 relative overflow-hidden">
-                        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-indigo-100 w-fit shadow-xs">
-                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                          <span className="text-[11px] font-bold text-indigo-700">Performance insights</span>
-                        </div>
-                        <div className="space-y-1.5 mt-2">
-                          <div className="h-1.5 w-3/4 bg-indigo-200 rounded-full"></div>
-                          <div className="h-1.5 w-1/2 bg-sky-200 rounded-full"></div>
-                          <div className="h-1.5 w-5/6 bg-indigo-300 rounded-full"></div>
-                        </div>
-                        <div className="text-[9px] font-mono text-slate-500 flex justify-between items-center mt-2">
-                          <span>Realtime telemetry analysis</span>
-                          <span className="text-emerald-600 font-bold">Optimal</span>
-                        </div>
-                      </div>
-
-                      {/* Right text description */}
-                      <div className="md:col-span-8 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-slate-900">Gemini-powered fleet insights</h4>
-                          <span className="px-2 py-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full">Preview</span>
-                        </div>
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          Let Gemini proactively correlate performance shifts and inventory insights across your fleet. It can highlight hidden patterns tied to global events, deployments, or resource exhaustion across your database clusters.
-                        </p>
-                        <div className="pt-2 flex items-center gap-3">
-                          <button 
-                            onClick={() => {
-                              setHomeToast('‚úì Gemini Fleet Analysis: All database instances running at 99.98% efficiency.');
-                              setTimeout(() => setHomeToast(null), 3500);
-                            }}
-                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
-                          >
-                            <span>Explore fleet recommendations</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {dbSuccessMessage && (
-              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-mono">
-                {dbSuccessMessage}
-              </div>
-            )}
-
-            {/* SUB-TAB 1: Project Overview */}
-            {phrsDbSubTab === 'Project Overview' && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">AUTH USERS</h3>
-                    <div className="text-3xl font-bold text-slate-800">{phrsUsers.length} Users</div>
-                    <p className="text-[10px] text-slate-500 mt-1">Status: <span className="text-emerald-600 font-bold">Active Engine</span></p>
-                  </div>
-                  <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">FIRESTORE COLLECTION INDEX</h3>
-                    <div className="text-3xl font-bold text-slate-800">{Object.keys(firestoreCollections).length} Collections</div>
-                    <p className="text-[10px] text-slate-500 mt-1">NoSQL Indexing operational</p>
-                  </div>
-                  <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">STORAGE MEDIA CAPACITY</h3>
-                    <div className="text-3xl font-bold text-slate-800">{phrsStorageFiles.length} Uploaded Files</div>
-                    <p className="text-[10px] text-slate-500 mt-1">Local SSD Space: 1.2 MB / 10 GB</p>
-                  </div>
-                </div>
-
-                {/* API Request Traffic Graph Representation */}
-                <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase">DB API LOG QUERY RATE (7-DAY ACTIVITY)</h3>
-                    <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-bold font-mono">LIVE SYNC SYSTEM</span>
-                  </div>
-                  <div className="h-40 flex items-end justify-between gap-2 pt-6 pb-2">
-                    {[
-                      { day: 'Mon', count: 242 },
-                      { day: 'Tue', count: 312 },
-                      { day: 'Wed', count: 512 },
-                      { day: 'Thu', count: 480 },
-                      { day: 'Fri', count: 620 },
-                      { day: 'Sat', count: 420 },
-                      { day: 'Sun', count: 780 }
-                    ].map((data, idx) => {
-                      const maxCount = 800;
-                      const heightPercent = (data.count / maxCount) * 100;
-                      return (
-                        <div key={idx} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer" onClick={() => alert(`Day: ${data.day}, API Hits: ${data.count}`)}>
-                          <div className="relative w-full flex items-end justify-center h-28 bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
-                            <div 
-                              style={{ height: `${heightPercent}%` }} 
-                              className="w-full bg-indigo-600 rounded-t-md hover:bg-indigo-500 transition-all duration-500 relative"
-                            >
-                              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-mono py-0.5 px-1.5 rounded pointer-events-none whitespace-nowrap">
-                                {data.count} hits
-                              </div>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-mono font-bold text-slate-500">{data.day}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SUB-TAB 2: Authentication */}
-            {phrsDbSubTab === 'Authentication' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
-                {/* Left side: Add User form */}
-                <div className="lg:col-span-4 p-5 rounded-2xl border border-slate-200 bg-white shadow-sm h-fit">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">CREATE USER ACCOUNT</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">EMAIL ADDRESS</label>
-                      <input 
-                        type="email" 
-                        placeholder="e.g. user@phrscrowd.local" 
-                        value={newAuthEmail}
-                        onChange={(e) => setNewAuthEmail(e.target.value)}
-                        className="w-full p-2.5 text-xs rounded-lg border focus:ring-1 focus:ring-indigo-500 bg-slate-50 border-slate-200 text-slate-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">PASSWORD</label>
-                      <input 
-                        type="password" 
-                        placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" 
-                        value={newAuthPassword}
-                        onChange={(e) => setNewAuthPassword(e.target.value)}
-                        className="w-full p-2.5 text-xs rounded-lg border focus:ring-1 focus:ring-indigo-500 bg-slate-50 border-slate-200 text-slate-900"
-                      />
-                    </div>
-                    <button 
-                      onClick={() => {
-                        if (!newAuthEmail || !newAuthPassword) {
-                          alert('Email and Password are required!');
-                          return;
-                        }
-                        const newUser = {
-                          uid: 'usr_' + Math.random().toString(36).substring(2, 8),
-                          email: newAuthEmail,
-                          created: new Date().toISOString().split('T')[0],
-                          lastSignIn: 'Never',
-                          status: 'Active'
-                        };
-                        setPhrsUsers(prev => [newUser, ...prev]);
-                        setVpsLogStream(prev => [...prev, `[AUTH] Registered new account: ${newAuthEmail} [${newUser.uid}]`]);
-                        setNewAuthEmail('');
-                        setNewAuthPassword('');
-                        setHomeToast('‚úì User registered successfully!');
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2.5 rounded-lg font-semibold transition"
-                    >
-                      ADD USER ACCOUNT
-                    </button>
-                  </div>
-                </div>
-
-                {/* Right side: Users table */}
-                <div className="lg:col-span-8 p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase mb-4">REGISTERED USERS</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono">
-                      <thead>
-                        <tr className="border-b border-slate-100 text-slate-400">
-                          <th className="pb-3 font-normal">EMAIL / UID</th>
-                          <th className="pb-3 font-normal">CREATED</th>
-                          <th className="pb-3 font-normal">STATUS</th>
-                          <th className="pb-3 text-right font-normal">ACTIONS</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-slate-700">
-                        {phrsUsers.map((user, idx) => (
-                          <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/50">
-                            <td className="py-3">
-                              <span className="font-bold block text-slate-900">{user.email}</span>
-                              <span className="text-[10px] text-slate-400 font-mono">{user.uid}</span>
-                            </td>
-                            <td className="py-3">{user.created}</td>
-                            <td className="py-3">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${user.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
-                                {user.status}
-                              </span>
-                            </td>
-                            <td className="py-3 text-right space-x-2">
-                              <button 
-                                onClick={() => {
-                                  setPhrsUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, status: u.status === 'Active' ? 'Suspended' : 'Active' } : u));
-                                  setVpsLogStream(prev => [...prev, `[AUTH] Toggled status for account ${user.email}`]);
-                                }}
-                                className="text-indigo-600 hover:underline"
-                              >
-                                Toggle
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  if (confirm(`Are you sure you want to delete ${user.email}?`)) {
-                                    setPhrsUsers(prev => prev.filter(u => u.uid !== user.uid));
-                                    setVpsLogStream(prev => [...prev, `[AUTH] Deleted account: ${user.email}`]);
-                                  }
-                                }}
-                                className="text-rose-500 hover:underline"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SUB-TAB 3: Firestore Database */}
-            {phrsDbSubTab === 'Firestore Database' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
-                {/* Collections Column */}
-                <div className="lg:col-span-3 p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-                  <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
-                    <span className="font-mono font-bold text-[10px] text-slate-400 tracking-wider">COLLECTIONS</span>
-                    <button 
-                      onClick={() => setIsCreatingCollection(true)} 
-                      className="p-1 hover:bg-slate-100 text-indigo-600 rounded"
-                      title="New Collection"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {isCreatingCollection && (
-                    <div className="mb-4 p-2.5 border border-indigo-100 bg-indigo-50/20 rounded-lg space-y-2">
-                      <input 
-                        type="text" 
-                        placeholder="collection_name" 
-                        value={newCollectionName}
-                        onChange={(e) => setNewCollectionName(e.target.value)}
-                        className="w-full p-1.5 text-xs rounded border bg-white text-slate-800"
-                      />
-                      <div className="flex justify-end gap-1.5 text-[10px]">
-                        <button onClick={() => setIsCreatingCollection(false)} className="px-2 py-1 text-slate-500">Cancel</button>
-                        <button 
-                          onClick={() => {
-                            if (!newCollectionName) return;
-                            setFirestoreCollections(prev => ({
-                              ...prev,
-                              [newCollectionName]: []
-                            }));
-                            setSelectedCollection(newCollectionName);
-                            setNewCollectionName('');
-                            setIsCreatingCollection(false);
-                            setVpsLogStream(prev => [...prev, `[FIRESTORE] Created collection /${newCollectionName}`]);
-                          }} 
-                          className="px-2 py-1 bg-indigo-600 text-white rounded font-bold"
-                        >
-                          Create
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-1">
-                    {Object.keys(firestoreCollections).map(col => (
-                      <button 
-                        key={col} 
-                        onClick={() => {
-                          setSelectedCollection(col);
-                          const docs = firestoreCollections[col];
-                          if (docs && docs.length > 0) {
-                            setSelectedDocId(docs[0].id);
-                          } else {
-                            setSelectedDocId('');
-                          }
-                        }}
-                        className={`w-full text-left font-mono text-xs p-2 rounded-lg transition-colors flex items-center justify-between ${selectedCollection === col ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
-                      >
-                        <span>/{col}</span>
-                        <span className="text-[10px] text-slate-400">({firestoreCollections[col]?.length || 0})</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Documents Column */}
-                <div className="lg:col-span-3 p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-                  <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
-                    <span className="font-mono font-bold text-[10px] text-slate-400 tracking-wider">DOCUMENTS</span>
-                    <button 
-                      onClick={() => setIsCreatingDoc(true)} 
-                      className="p-1 hover:bg-slate-100 text-indigo-600 rounded"
-                      title="New Document"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {isCreatingDoc && (
-                    <div className="mb-4 p-2.5 border border-indigo-100 bg-indigo-50/20 rounded-lg space-y-2">
-                      <input 
-                        type="text" 
-                        placeholder="document_id" 
-                        value={newDocId}
-                        onChange={(e) => setNewDocId(e.target.value)}
-                        className="w-full p-1.5 text-xs rounded border bg-white text-slate-800"
-                      />
-                      <div className="flex justify-end gap-1.5 text-[10px]">
-                        <button onClick={() => setIsCreatingDoc(false)} className="px-2 py-1 text-slate-500">Cancel</button>
-                        <button 
-                          onClick={() => {
-                            if (!newDocId) return;
-                            setFirestoreCollections(prev => {
-                              const updatedCol = [...(prev[selectedCollection] || [])];
-                              if (!updatedCol.some(d => d.id === newDocId)) {
-                                updatedCol.push({ id: newDocId, data: {} });
-                              }
-                              return { ...prev, [selectedCollection]: updatedCol };
-                            });
-                            setSelectedDocId(newDocId);
-                            setNewDocId('');
-                            setIsCreatingDoc(false);
-                            setVpsLogStream(prev => [...prev, `[FIRESTORE] Created document /${selectedCollection}/${newDocId}`]);
-                          }} 
-                          className="px-2 py-1 bg-indigo-600 text-white rounded font-bold"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-1">
-                    {selectedCollection && firestoreCollections[selectedCollection]?.map(doc => (
-                      <button 
-                        key={doc.id} 
-                        onClick={() => setSelectedDocId(doc.id)}
-                        className={`w-full text-left font-mono text-xs p-2 rounded-lg transition-colors flex items-center justify-between ${selectedDocId === doc.id ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
-                      >
-                        <span className="truncate">{doc.id}</span>
-                        <span 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Delete document ${doc.id}?`)) {
-                              setFirestoreCollections(prev => ({
-                                ...prev,
-                                [selectedCollection]: prev[selectedCollection].filter(d => d.id !== doc.id)
-                              }));
-                              setSelectedDocId('');
-                              setVpsLogStream(prev => [...prev, `[FIRESTORE] Deleted document /${selectedCollection}/${doc.id}`]);
-                            }
-                          }}
-                          className="text-rose-400 hover:text-rose-600 text-[10px] cursor-pointer"
-                        >
-                          Delete
-                        </span>
-                      </button>
-                    ))}
-                    {(!selectedCollection || !firestoreCollections[selectedCollection] || firestoreCollections[selectedCollection].length === 0) && (
-                      <p className="text-[10px] text-slate-400 italic text-center py-4">No documents</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Data Fields Column */}
-                <div className="lg:col-span-6 p-4 rounded-xl border border-slate-200 bg-white shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="font-mono font-bold text-[10px] text-slate-400 tracking-wider">FIELDS / DOCUMENT PROPERTIES</span>
-                    <span className="text-[10px] font-mono font-bold text-slate-500">/{selectedCollection}/{selectedDocId}</span>
-                  </div>
-
-                  {selectedCollection && selectedDocId ? (
-                    <div className="space-y-3 font-mono text-xs">
-                      {/* Document fields view */}
-                      {(() => {
-                        const activeDoc = firestoreCollections[selectedCollection]?.find(d => d.id === selectedDocId);
-                        if (!activeDoc || !activeDoc.data) return <p className="text-slate-400 italic">Empty document data.</p>;
-                        
-                        return (
-                          <div className="space-y-2">
-                            {Object.entries(activeDoc.data).map(([key, val]) => (
-                              <div key={key} className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100">
-                                <div>
-                                  <span className="text-indigo-600 font-bold">"{key}"</span>
-                                  <span className="text-slate-400 px-1">:</span>
-                                  <span className="text-slate-800 font-semibold">{JSON.stringify(val)}</span>
-                                </div>
-                                <button 
-                                  onClick={() => {
-                                    setFirestoreCollections(prev => {
-                                      const updatedDocs = prev[selectedCollection].map(d => {
-                                        if (d.id === selectedDocId) {
-                                          const updatedData = { ...d.data };
-                                          delete updatedData[key];
-                                          return { ...d, data: updatedData };
-                                        }
-                                        return d;
-                                      });
-                                      return { ...prev, [selectedCollection]: updatedDocs };
-                                    });
-                                    setVpsLogStream(prev => [...prev, `[FIRESTORE] Deleted field "${key}" from /${selectedCollection}/${selectedDocId}`]);
-                                  }}
-                                  className="text-[10px] text-rose-500 hover:underline"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            ))}
-
-                            {/* Add Field Section */}
-                            <div className="pt-4 border-t border-slate-100">
-                              <h4 className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-2">ADD FIELD DATA</h4>
-                              <div className="flex gap-2">
-                                <input 
-                                  id="new_field_key" 
-                                  type="text" 
-                                  placeholder="field_key" 
-                                  className="flex-1 p-2 border rounded text-xs bg-slate-50 text-slate-800 font-mono" 
-                                />
-                                <input 
-                                  id="new_field_val" 
-                                  type="text" 
-                                  placeholder="field_value" 
-                                  className="flex-1 p-2 border rounded text-xs bg-slate-50 text-slate-800 font-mono" 
-                                />
-                                <button 
-                                  onClick={() => {
-                                    const keyEl = document.getElementById('new_field_key') as HTMLInputElement;
-                                    const valEl = document.getElementById('new_field_val') as HTMLInputElement;
-                                    if (!keyEl || !valEl || !keyEl.value || !valEl.value) {
-                                      alert('Field key and value are required!');
-                                      return;
-                                    }
-                                    let parsedVal: any = valEl.value;
-                                    if (parsedVal === 'true') parsedVal = true;
-                                    else if (parsedVal === 'false') parsedVal = false;
-                                    else if (!isNaN(Number(parsedVal))) parsedVal = Number(parsedVal);
-
-                                    setFirestoreCollections(prev => {
-                                      const updatedDocs = prev[selectedCollection].map(d => {
-                                        if (d.id === selectedDocId) {
-                                          return { ...d, data: { ...d.data, [keyEl.value]: parsedVal } };
-                                        }
-                                        return d;
-                                      });
-                                      return { ...prev, [selectedCollection]: updatedDocs };
-                                    });
-                                    setVpsLogStream(prev => [...prev, `[FIRESTORE] Added field "${keyEl.value}" = ${JSON.stringify(parsedVal)} to /${selectedCollection}/${selectedDocId}`]);
-                                    keyEl.value = '';
-                                    valEl.value = '';
-                                  }}
-                                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded font-bold text-xs font-mono"
-                                >
-                                  ADD
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  ) : (
-                    <p className="text-slate-400 italic text-center py-12">Select a document from the left list to view and manage its data fields.</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* SUB-TAB 4: Realtime Database (Original tree view / raw text implementation) */}
-            {phrsDbSubTab === 'Realtime Database' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
-                {/* Left sidebar database keys additions */}
-                <div className="lg:col-span-4 space-y-6">
-                  
-                  <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">ADD DATABASE NODE</h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1">KEY PATH (use '/' for nested objects)</label>
-                        <input 
-                          type="text" 
-                          placeholder="e.g. users/usr_9812/status" 
-                          value={dbKeyPath}
-                          onChange={(e) => setDbKeyPath(e.target.value)}
-                          className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1">VALUE (String, Number, Bool, or JSON string)</label>
-                        <textarea 
-                          rows={3}
-                          placeholder="e.g. 'Active', or 250, or true, or {'custom':'prop'}" 
-                          value={dbNewVal}
-                          onChange={(e) => setDbNewVal(e.target.value)}
-                          className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                        />
-                      </div>
-
-                      <button 
-                        onClick={handleAddDbNode}
-                        className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold shadow-lg transition-all"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        INSERT / UPDATE NODE
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={`p-5 rounded-2xl border text-xs leading-relaxed transition-colors ${isDarkMode ? 'bg-amber-950/10 border-amber-900/40 text-amber-300' : 'bg-amber-50 border-amber-100 text-amber-900'}`}>
-                    <p className="font-semibold mb-1">üí° Real-time SQLite translation:</p>
-                    Any update triggers an auto-upsert in SQLite. When you deploy PHRS Crowd, client-side SDK listeners automatically pull latest JSON schemas via Server-Sent Events (SSE).
-                  </div>
-
-                </div>
-
-                {/* Right main database explorer/raw viewer */}
-                <div className="lg:col-span-8 space-y-6">
-                  
-                  <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                    
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-800/20 mb-4">
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => setIsRawDbView(false)} 
-                          className={`font-mono text-xs px-3 py-1.5 rounded transition ${!isRawDbView ? (isDarkMode ? 'bg-slate-800 text-indigo-400' : 'bg-slate-100 text-indigo-600') : 'text-slate-400 hover:text-slate-200'}`}
-                        >
-                          Interactive Tree
-                        </button>
-                        <button 
-                          onClick={() => setIsRawDbView(true)} 
-                          className={`font-mono text-xs px-3 py-1.5 rounded transition ${isRawDbView ? (isDarkMode ? 'bg-slate-800 text-indigo-400' : 'bg-slate-100 text-indigo-600') : 'text-slate-400 hover:text-slate-200'}`}
-                        >
-                          Raw JSON Schema
-                        </button>
-                      </div>
-
-                      <button 
-                        onClick={() => {
-                          setDbData({
-                            "users": {
-                              "usr_9812": { "name": "Master Admin", "role": "admin", "verified": true, "phone": "+91 98765 43210" }
-                            },
-                            "settings": { "maintenance_mode": false }
-                          });
-                          setVpsLogStream(prev => [...prev, '[SQLITE] Reset database database schema. Seeding complete.']);
-                        }}
-                        className="text-[10px] font-mono text-rose-400 hover:underline"
-                      >
-                        Reset Default Seeds
-                      </button>
-                    </div>
-
-                    {/* 1. Interactive tree view */}
-                    {!isRawDbView ? (
-                      <div className="space-y-4">
-                        {Object.keys(dbData).map(parentKey => (
-                          <div key={parentKey} className={`p-4 rounded-xl border transition ${isDarkMode ? 'bg-slate-950/60 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
-                            
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-1.5 w-full justify-start pl-2 py-1">
-                                <ChevronDown className="w-4 h-4 text-indigo-400" />
-                                <span className="font-mono text-xs font-bold text-indigo-400">/{parentKey}</span>
-                              </div>
-                              <button 
-                                onClick={() => handleDeleteDbNode(parentKey)}
-                                className="p-1 hover:bg-rose-500/10 rounded text-rose-400 transition"
-                                title="Delete parent node"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            <div className={`pl-6 space-y-2 border-l ml-2 ${isDarkMode ? 'border-slate-800/40' : 'border-slate-200'}`}>
-                              {typeof dbData[parentKey] === 'object' && dbData[parentKey] !== null ? (
-                                Object.keys(dbData[parentKey]).map(childKey => (
-                                  <div key={childKey} className={`flex flex-col sm:flex-row sm:items-center justify-between text-xs font-mono py-2 px-2.5 rounded gap-2 transition ${isDarkMode ? 'bg-slate-950/40 hover:bg-slate-950/60' : 'bg-slate-100 hover:bg-slate-200/60 text-slate-800'}`}>
-                                    <div className="flex flex-wrap items-center gap-1.5 break-all">
-                                      <span className="text-amber-500 font-bold">"{childKey}"</span>
-                                      <span className="text-slate-500">:</span>
-                                      <span className="text-emerald-400 font-semibold break-all">
-                                        {JSON.stringify(dbData[parentKey][childKey])}
-                                      </span>
-                                    </div>
-                                    <button 
-                                      onClick={() => handleDeleteDbNode(parentKey, childKey)}
-                                      className="p-1 hover:bg-rose-500/10 text-rose-400 rounded transition self-end sm:self-center"
-                                      title="Delete node"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="text-xs font-mono text-emerald-400">
-                                  {JSON.stringify(dbData[parentKey])}
-                                </div>
-                              )}
-                            </div>
-
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      // 2. Raw JSON Schema editor
-                      <div className="space-y-4">
-                        <textarea 
-                          rows={12}
-                          value={dbRawText}
-                          onChange={(e) => setDbRawText(e.target.value)}
-                          className={`w-full p-4 font-mono text-xs rounded-xl border focus:outline-none focus:ring-1 focus:ring-indigo-500 ${isDarkMode ? 'bg-slate-950 text-emerald-400 border-slate-800' : 'bg-slate-100 text-slate-800 border-slate-300'}`}
-                        />
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] text-slate-500 font-mono">Validate properties and keys before saving.</span>
-                          <button 
-                            onClick={handleUpdateRawDb}
-                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-4 py-2 rounded-xl font-semibold transition"
-                          >
-                            <Save className="w-3.5 h-3.5" />
-                            Apply Raw JSON
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                  </div>
-
-                </div>
-              </div>
-            )}
-
-            {/* SUB-TAB 5: Storage */}
-            {phrsDbSubTab === 'Storage' && (
-              <div className="space-y-6 animate-fade-in">
-                {/* Drag-and-drop panel */}
-                <div 
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDraggingFile(true);
-                  }}
-                  onDragLeave={() => setIsDraggingFile(false)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setIsDraggingFile(false);
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                      const file = files[0];
-                      const newFile = {
-                        name: file.name,
-                        size: (file.size / 1024).toFixed(1) + ' KB',
-                        type: file.type || 'unknown',
-                        uploaded: new Date().toISOString().split('T')[0]
-                      };
-                      setPhrsStorageFiles(prev => [...prev, newFile]);
-                      setVpsLogStream(prev => [...prev, `[STORAGE] Uploaded file: ${newFile.name} (${newFile.size})`]);
-                      setHomeToast('‚úì File uploaded successfully via Drag-and-Drop!');
-                      setTimeout(() => setHomeToast(null), 3000);
-                    }
-                  }}
-                  className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all ${isDraggingFile ? 'border-indigo-600 bg-indigo-50/20' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
-                >
-                  <Upload className="w-10 h-10 text-indigo-500 mb-3" />
-                  <p className="text-sm font-semibold text-slate-800">Drag and drop file here or click to upload</p>
-                  <p className="text-xs text-slate-500 mt-1">Supports any asset file, configurations, backups, or mobile screenshots</p>
-                  
-                  {/* File input click trigger */}
-                  <input 
-                    type="file" 
-                    id="vps_file_upload_input" 
-                    className="hidden" 
-                    onChange={(e) => {
-                      const files = e.target.files;
-                      if (files && files.length > 0) {
-                        const file = files[0];
-                        const newFile = {
-                          name: file.name,
-                          size: (file.size / 1024).toFixed(1) + ' KB',
-                          type: file.type || 'unknown',
-                          uploaded: new Date().toISOString().split('T')[0]
-                        };
-                        setPhrsStorageFiles(prev => [...prev, newFile]);
-                        setVpsLogStream(prev => [...prev, `[STORAGE] Uploaded file: ${newFile.name} (${newFile.size})`]);
-                        setHomeToast('‚úì File uploaded successfully!');
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }
-                    }}
-                  />
-                  <button 
-                    onClick={() => document.getElementById('vps_file_upload_input')?.click()}
-                    className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold font-mono"
-                  >
-                    SELECT FILE MANUALLY
-                  </button>
-                </div>
-
-                {/* Storage Files Table */}
-                <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase mb-4">UPLOADED ASSETS</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono">
-                      <thead>
-                        <tr className="border-b border-slate-100 text-slate-400">
-                          <th className="pb-3 font-normal">FILE NAME</th>
-                          <th className="pb-3 font-normal">SIZE</th>
-                          <th className="pb-3 font-normal">TYPE</th>
-                          <th className="pb-3 font-normal">UPLOAD DATE</th>
-                          <th className="pb-3 text-right font-normal">ACTIONS</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-slate-700">
-                        {phrsStorageFiles.map((file, idx) => (
-                          <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/50">
-                            <td className="py-3">
-                              <div className="flex items-center gap-2">
-                                <FileCode className="w-4 h-4 text-indigo-500" />
-                                <span className="font-bold text-slate-900">{file.name}</span>
-                              </div>
-                            </td>
-                            <td className="py-3">{file.size}</td>
-                            <td className="py-3 uppercase text-[10px] text-slate-500">{file.type}</td>
-                            <td className="py-3">{file.uploaded}</td>
-                            <td className="py-3 text-right space-x-2">
-                              <button 
-                                onClick={() => {
-                                  alert(`‚úì Initiating offline download for: ${file.name}`);
-                                  setVpsLogStream(prev => [...prev, `[STORAGE] Download triggered for ${file.name}`]);
-                                }}
-                                className="text-indigo-600 hover:underline"
-                              >
-                                Download
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  if (confirm(`Delete asset "${file.name}"?`)) {
-                                    setPhrsStorageFiles(prev => prev.filter(f => f.name !== file.name));
-                                    setVpsLogStream(prev => [...prev, `[STORAGE] Deleted asset: ${file.name}`]);
-                                  }
-                                }}
-                                className="text-rose-500 hover:underline"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SUB-TAB 6: Hosting */}
-            {phrsDbSubTab === 'Hosting' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
-                {/* Deployment Console */}
-                <div className="lg:col-span-7 p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase">PHRS CLOUD DEPLOYMENT CONSOLE</h3>
-                    <div className="flex items-center gap-1.5 w-full justify-start pl-2 py-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span className="text-[10px] font-mono font-bold text-emerald-600">SERVER READY</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 font-mono mb-1">TARGET FILENAME (e.g. index.html)</label>
-                      <input 
-                        type="text"
-                        value={hostFileName}
-                        onChange={(e) => setHostFileName(e.target.value)}
-                        className="w-full p-2 text-xs font-mono rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        placeholder="my-page.html"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 font-mono mb-1">SOURCE CODE / FILE CONTENT</label>
-                      <textarea 
-                        rows={12}
-                        value={hostContent}
-                        onChange={(e) => setHostContent(e.target.value)}
-                        className="w-full p-3 font-mono text-[11px] rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        placeholder="Paste your HTML/CSS/JS here..."
-                      />
-                    </div>
-
-                    <button 
-                      onClick={handleDeployFile}
-                      disabled={isDeploying}
-                      className={`w-full py-3 rounded-xl font-mono text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg ${
-                        isDeploying ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                      }`}
-                    >
-                      {isDeploying ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          DEPLOYING ASSET...
-                        </>
-                      ) : (
-                        <>
-                          <Cloud className="w-4 h-4" />
-                          DEPLOY TO PHRS CLOUD
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Status & Output */}
-                <div className="lg:col-span-5 space-y-6">
-                  <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-4">
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase">DEPLOYMENT STATUS</h3>
-                    
-                    {deployedUrl ? (
-                      <div className="space-y-4">
-                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
-                          <div>
-                            <p className="text-xs font-bold text-emerald-900">SUCCESSFULLY DEPLOYED</p>
-                            <p className="text-[10px] text-emerald-700 mt-1">Your file is now live on the PHRS Crowd global network.</p>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <label className="block text-[10px] font-bold text-slate-500 font-mono">PUBLIC ACCESS URL</label>
-                          <div className="flex items-center gap-2">
-                            <input 
-                              type="text" 
-                              readOnly 
-                              value={window.location.origin + deployedUrl}
-                              className="flex-1 p-2 text-[10px] font-mono rounded-lg border bg-slate-50 border-slate-200 text-indigo-600"
-                            />
-                            <a 
-                              href={deployedUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </div>
-                        </div>
-                        
-                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 font-mono text-[9px] text-slate-500">
-                          <p>Node: PHRS-ASIA-SE1</p>
-                          <p>Latency: 24ms</p>
-                          <p>Protocol: HTTP/1.1 (Static)</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <label className={`flex flex-col items-center justify-center py-10 text-center space-y-3 cursor-pointer transition rounded-xl border-2 border-dashed relative ${isDeploying ? 'bg-slate-50 border-slate-200' : 'hover:bg-indigo-50/50 border-slate-300 hover:border-indigo-300'}`}>
-                        <input 
-                          type="file" 
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                          disabled={isDeploying}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            
-                            setIsDeploying(true);
-                            setVpsLogStream(prev => [...prev, `[HOSTING] Reading file: ${file.name} (${Math.round(file.size / 1024)}KB)`]);
-                            
-                            const reader = new FileReader();
-                            reader.onload = async (event) => {
-                              try {
-                                const result = event.target?.result as string;
-                                let content = result;
-                                let isBase64 = false;
-                                
-                                if (result.startsWith('data:')) {
-                                  content = result.split(',')[1];
-                                  isBase64 = true;
-                                }
-                                
-                                const res = await fetch('/api/host/deploy', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ fileName: file.name, content, isBase64 })
-                                });
-                                
-                                const data = await res.json();
-                                if (data.success) {
-                                  setDeployedUrl(data.url);
-                                  setHomeToast(`‚úì File deployed successfully to ${data.url}`);
-                                  setVpsLogStream(prev => [...prev, `[HOSTING] New asset deployed: ${file.name} -> ${data.url}`]);
-                                } else {
-                                  throw new Error(data.error || 'Deployment failed');
-                                }
-                              } catch (err: any) {
-                                setHomeToast(`‚ùå Deployment failed: ${err.message}`);
-                                setVpsLogStream(prev => [...prev, `[HOSTING] Error: ${err.message}`]);
-                              } finally {
-                                setIsDeploying(false);
-                                setTimeout(() => setHomeToast(null), 3000);
-                              }
-                            };
-                            reader.onerror = () => {
-                              setIsDeploying(false);
-                              setHomeToast('‚ùå Failed to read file.');
-                            };
-                            
-                            if (file.type.startsWith('text/') || file.name.endsWith('.json') || file.name.endsWith('.md')) {
-                                reader.readAsText(file);
-                            } else {
-                                reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isDeploying ? 'bg-indigo-100' : 'bg-slate-100 group-hover:bg-indigo-100'}`}>
-                          {isDeploying ? <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" /> : <Upload className="w-6 h-6 text-slate-400 group-hover:text-indigo-500" />}
-                        </div>
-                        <div className="text-xs font-mono">
-                          {isDeploying ? (
-                            <span className="text-indigo-500 font-bold">Uploading & Deploying...</span>
-                          ) : (
-                            <>
-                              <span className="text-slate-500">No active deployment detected.</span><br/>
-                              <span className="text-indigo-500 font-bold">Click or drag a file to start hosting.</span>
-                            </>
-                          )}
-                        </div>
-                      </label>
-                    )}
-                  </div>
-
-                  <div className="p-5 rounded-2xl border border-slate-200 bg-slate-900 shadow-xl space-y-3">
-                    <div className="flex items-center gap-2 text-white">
-                      <Terminal className="w-4 h-4 text-emerald-400" />
-                      <span className="text-[10px] font-mono font-bold tracking-widest">HOSTING_LOGS</span>
-                    </div>
-                    <div className="font-mono text-[9px] text-slate-300 space-y-1 h-32 overflow-y-auto">
-                      <p className="text-emerald-400">[SYSTEM] Hosting engine initialized...</p>
-                      <p>[SYSTEM] Static directory binding: /dist/hosted</p>
-                      {vpsLogStream.filter(log => log.includes('[HOSTING]')).map((log, i) => (
-                        <p key={i}>{log}</p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SUB-TAB 7: Cloud Functions */}
-            {phrsDbSubTab === 'Cloud Functions' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
-                {/* List of Functions */}
-                <div className="lg:col-span-4 p-4 rounded-xl border border-slate-200 bg-white shadow-sm space-y-4">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase">ACTIVE TRIGGERS</h3>
-                  <div className="space-y-2">
-                    {[
-                      { name: 'onUserCreated', type: 'Auth Trigger', status: 'Active' },
-                      { name: 'sendSmsVerify', type: 'HTTP Trigger', status: 'Active' },
-                      { name: 'syncLocalDatabase', type: 'Database Trigger', status: 'Active' }
-                    ].map((fn, idx) => (
-                      <div key={idx} className="p-3 border border-slate-100 bg-slate-50 rounded-lg flex justify-between items-center">
-                        <div>
-                          <span className="font-mono text-xs font-bold text-slate-800 block">{fn.name}()</span>
-                          <span className="text-[9px] text-slate-400 font-mono uppercase">{fn.type}</span>
-                        </div>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" title="Operational"></span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* execution playground & execution log screen */}
-                <div className="lg:col-span-8 p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-4">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase">EXECUTION PLAYGROUND</h3>
-                  <p className="text-xs text-slate-500">Inject JSON test payloads directly into your cloud functions runtime environment and view instant log traces below.</p>
-                  
-                  <div className="space-y-4 font-mono text-xs">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">TARGET FUNCTION TO RUN</label>
-                      <select id="play_function_select" className="w-full p-2 border rounded-lg cursor-pointer bg-slate-50 text-slate-800 font-mono">
-                        <option value="onUserCreated">onUserCreated(uid, email)</option>
-                        <option value="sendSmsVerify">sendSmsVerify(phone, code)</option>
-                        <option value="syncLocalDatabase">syncLocalDatabase(payload)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">TEST PAYLOAD (JSON FORMAT)</label>
-                      <textarea id="play_payload_input" rows={3} defaultValue={`{\n  "uid": "usr_9812",\n  "email": "test@phrscrowd.local",\n  "timestamp": "${new Date().toISOString()}"\n}`} className="w-full p-2 border rounded-lg bg-slate-50 text-slate-800 font-mono" />
-                    </div>
-
-                    <button 
-                      onClick={() => {
-                        const fnSelect = document.getElementById('play_function_select') as HTMLSelectElement;
-                        const payloadInput = document.getElementById('play_payload_input') as HTMLTextAreaElement;
-                        const logsScreen = document.getElementById('play_logs_screen');
-                        if (!fnSelect || !payloadInput || !logsScreen) return;
-
-                        let payloadObj = {};
-                        try {
-                          payloadObj = JSON.parse(payloadInput.value);
-                        } catch (err) {
-                          alert('Invalid JSON Payload!');
-                          return;
-                        }
-
-                        // Trigger visual log trace
-                        const timestamp = new Date().toLocaleTimeString();
-                        const newLogs = [
-                          `[${timestamp}] [FUNC-EXEC] Starting function "${fnSelect.value}"...`,
-                          `[${timestamp}] [FUNC-LOG] Payload size: ${JSON.stringify(payloadObj).length} bytes`,
-                          `[${timestamp}] [FUNC-LOG] Initializing secure SQLite schema lock...`,
-                          `[${timestamp}] [FUNC-LOG] Executed query: INSERT INTO phrs_audit_logs VALUES(...)`,
-                          `[${timestamp}] [FUNC-EXEC] SUCCESS: function "${fnSelect.value}" execution completed. Status code: 200`
-                        ];
-
-                        logsScreen.innerHTML = newLogs.map(l => `<p class="flex gap-2"><span class="text-slate-500">${l.substring(0, 10)}</span> <span class="text-emerald-400 font-bold">${l.substring(11)}</span></p>`).join('');
-                        setVpsLogStream(prev => [...prev, `[FUNC] Executed serverless trigger: ${fnSelect.value}()`]);
-                        setHomeToast('‚úì Function executed successfully!');
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
-                    >
-                      EXECUTE TRIGGER RUN
-                    </button>
-
-                    {/* Console Output logs screen */}
-                    <div className="pt-2">
-                      <label className="block text-[10px] text-slate-400 mb-1 font-bold">TERMINAL TRACE STREAM</label>
-                      <div id="play_logs_screen" className="bg-slate-900 border border-slate-800 p-4 rounded-xl text-[10px] font-mono text-slate-300 h-32 overflow-y-auto leading-relaxed">
-                        <p className="text-slate-500">// Terminal output will stream here during execution...</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          
-              </div>
-            )}
-          </div>
-        )}        {activeTab === 'sms' && (
-          <div className="space-y-6">
-            
-            <div className={`p-6 rounded-2xl border transition ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center gap-3 mb-2">
-                <MessageSquare className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">SMS API Gateway & Phone Auth</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Configure your custom SMS gateway APIs (Twilio, Fast2SMS, or localized test gateway) to trigger secure 2FA authentication, generate randomized phone validation PINs, and manage customer OTP sessions.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Left Column: API parameters configuration */}
-              <div className="lg:col-span-4 space-y-6">
-                
-                <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">GATEWAY SETTINGS</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">GATEWAY PROVIDER</label>
-                      <select
-                        value={smsGateway}
-                        onChange={(e: any) => setSmsGateway(e.target.value)}
-                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none cursor-pointer ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                      >
-                        <option value="mock">Local VPS SMS Mock Simulator</option>
-                        <option value="twilio">Twilio SMS API Proxy</option>
-                        <option value="fast2sms">Fast2SMS (India Bulk SMS)</option>
-                      </select>
-                    </div>
-
-                    {smsGateway !== 'mock' && (
-                      <>
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-500 mb-1">
-                            {smsGateway === 'twilio' ? 'TWILIO ACCOUNT SID' : 'SENDER ID / SIGNATURE'}
-                          </label>
-                          <input 
-                            type="text" 
-                            value={smsGateway === 'twilio' ? smsAccountSid : smsSenderId}
-                            onChange={(e) => smsGateway === 'twilio' ? setSmsAccountSid(e.target.value) : setSmsSenderId(e.target.value)}
-                            className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-500 mb-1">API KEY / TOKEN</label>
-                          <input 
-                            type="password" 
-                            value={smsApiKey}
-                            onChange={(e) => setSmsApiKey(e.target.value)}
-                            className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">OTP SMS MESSAGE TEMPLATE</label>
-                      <textarea 
-                        rows={3}
-                        value={smsTemplate}
-                        onChange={(e) => setSmsTemplate(e.target.value)}
-                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                      />
-                    </div>
-
-                    <button 
-                      onClick={() => {
-                        setVpsLogStream(prev => [...prev, `[SMS] Saved SMS config parameters for: ${smsGateway.toUpperCase()}`]);
-                        alert('‚úì SMS Config Saved to VPS state!');
-                      }}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded-lg font-semibold shadow-lg transition-all"
-                    >
-                      SAVE GATEWAY CREDENTIALS
-                    </button>
-                  </div>
-                </div>
-
-                {/* Standalone Server Offline Package & ZIP Export Hub (Token: 6606.0k) */}
-                <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase">STANDALONE SERVER PACKAGE</h3>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">Self-Hosted [6606.0k]</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Completely independent of External Platforms. Export the full standalone server package as a ZIP file to host on your local mobile IP or private VPS.
-                  </p>
-
-                  <div className="space-y-2 font-mono text-xs mb-4">
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                      <span className="text-slate-500">Target IP Bind:</span>
-                      <span className="font-bold text-indigo-500">http://192.168.1.15:3000</span>
-                    </div>
-                    <div className="flex justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                      <span className="text-slate-500">Runtime Engine:</span>
-                      <span className="font-bold text-emerald-600">Node.js + SQLite3</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setVpsLogStream(prev => [...prev, `[STANDALONE-6606.0k] Generated complete standalone server ZIP package. Ready for offline deployment on local mobile IP.`]);
-                      alert('‚úì PHRS_Crowd_Server_Standalone_6606.0k.zip Download Initialized!\n\nExtract and run:\n1. npm install\n2. npm run build\n3. npm start (Runs on local IP without External Platforms dependency)');
-                    }}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2.5 rounded-lg font-semibold shadow-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>üì¶ DOWNLOAD STANDALONE ZIP [6606.0k]</span>
-                  </button>
-                </div>
-
-              </div>
-
-              {/* Middle/Right: Live Simulator & virtual smartphone notifications! */}
-              <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-12 gap-6">
-                
-                {/* Active Test verification workspace */}
-                <div className="md:col-span-7 space-y-6">
-                  
-                  <div className={`p-5 rounded-2xl border transition-colors h-full ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">VERIFICATION SIMULATOR</h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1">TARGET PHONE NUMBER</label>
-                        <div className="flex gap-2">
-                          <input 
-                            type="tel" 
-                            placeholder="e.g. +91 98765 43210" 
-                            value={testPhoneNumber}
-                            onChange={(e) => setTestPhoneNumber(e.target.value)}
-                            className={`flex-1 p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                          />
-                          <button 
-                            onClick={handleSendTestSms}
-                            disabled={isSendingOtp}
-                            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-mono text-xs px-4 py-2 rounded-lg font-semibold transition"
-                          >
-                            {isSendingOtp ? 'SENDING...' : 'SEND OTP'}
-                          </button>
-                        </div>
-                      </div>
-
-                      {lastGeneratedOtp && (
-                        <div className="p-4 bg-indigo-950/10 border border-indigo-900/40 rounded-xl space-y-3">
-                          <label className="block text-[10px] font-mono text-slate-400">ENTER 6-DIGIT RECEIVED SMS OTP</label>
-                          <div className="flex gap-2">
-                            <input 
-                              type="text" 
-                              maxLength={6}
-                              placeholder="Type SMS code..." 
-                              value={verificationInput}
-                              onChange={(e) => setVerificationInput(e.target.value)}
-                              className={`flex-1 p-2 text-xs rounded-lg border text-center font-bold tracking-widest focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                            />
-                            <button 
-                              onClick={handleVerifyOtp}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs px-4 py-2 rounded-lg font-semibold transition"
-                            >
-                              VERIFY OTP
-                            </button>
-                          </div>
-
-                          {verificationStatus === 'success' && (
-                            <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono mt-1">
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>OTP MATCHED! Login verification successful.</span>
-                            </div>
-                          )}
-
-                          {verificationStatus === 'error' && (
-                            <div className="flex items-center gap-2 text-rose-400 text-xs font-mono mt-1">
-                              <AlertCircle className="w-4 h-4" />
-                              <span>INCORRECT PIN! Security validation failed.</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Smartphone simulation layout */}
-                <div className="md:col-span-5 flex justify-center">
-                  
-                  <div className="w-[240px] h-[440px] bg-slate-200 rounded-[36px] p-3 border-[6px] border-slate-300 shadow-xl relative flex flex-col justify-between overflow-hidden">
-                    
-                    {/* Speaker & camera notch */}
-                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-24 h-5 bg-slate-200 rounded-full z-20 flex items-center justify-center">
-                      <div className="w-10 h-1 bg-slate-300 rounded-full mb-1"></div>
-                    </div>
-
-                    {/* Smartphone display */}
-                    <div className="flex-1 bg-gradient-to-b from-indigo-50 to-slate-100 rounded-[28px] p-3 pt-6 relative flex flex-col justify-between overflow-hidden">
-                      
-                      {/* Top mobile bar */}
-                      <div className="flex justify-between items-center text-[8px] font-mono text-slate-600 px-1">
-                        <span>PHRS Net</span>
-                        <span>02:18 AM</span>
-                      </div>
-
-                      {/* Notification overlay popup */}
-                      {virtualPhoneNotification && (
-                        <div className="absolute top-10 left-2 right-2 bg-white/95 border border-indigo-100 rounded-xl p-2.5 shadow-xl z-40 animate-bounce">
-                          <div className="flex justify-between items-center mb-1 text-[8px] font-mono text-indigo-600">
-                            <span>üì© SMS MESSAGES</span>
-                            <button onClick={() => setVirtualPhoneNotification(null)} className="text-slate-400 hover:text-slate-700">√ó</button>
-                          </div>
-                          <p className="text-[10px] font-sans text-slate-800 leading-normal">
-                            {virtualPhoneNotification}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Home screen layout */}
-                      <div className="flex-1 flex flex-col justify-center items-center text-center p-2">
-                        <Phone className="w-10 h-10 text-indigo-600 mb-2 opacity-85" />
-                        <span className="text-[10px] font-mono text-slate-700">Virtual Mobile Device</span>
-                        <p className="text-[8px] text-slate-600 mt-1 max-w-[140px]">
-                          Incoming OTP requests will pop up automatically as a secure notification.
-                        </p>
-                      </div>
-
-                      {/* Mobile bottom actions */}
-                      <div className="flex justify-center mt-2">
-                        <div className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center bg-white hover:bg-slate-50 cursor-pointer">
-                          <div className="w-2.5 h-2.5 bg-slate-500 rounded-sm"></div>
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
+          <DatabaseTab state={globalState} />
+        )}
+
+        {activeTab === 'sms' && (
+          <SmsTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 20: NETWORK CONFIG 
             ============================================== */}
         {activeTab === 'network_config' && (
-          <div className="p-6">
-            <div className={`p-6 mb-6 rounded-2xl border-2 transition-all ${isHybridDevMode ? 'bg-indigo-50/50 border-indigo-400 shadow-lg shadow-indigo-100' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${isHybridDevMode ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
-                    <Cpu className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">AI Agent Hybrid Bridge</h3>
-                    <p className="text-xs text-slate-500">Link External Platforms Agent to your Local PHRS Node</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => {
-                    setIsHybridDevMode(!isHybridDevMode);
-                    if (!isHybridDevMode) {
-                      setVpsLogStream(prev => [...prev, `[HYBRID] Establishing secure tunnel to local node: ${remoteNodeIp}...`]);
-                      setTimeout(() => setVpsLogStream(prev => [...prev, `[HYBRID] SUCCESS: AI Agent is now powered by Local PHRS Server at ${remoteNodeIp}`]), 1500);
-                    }
-                  }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isHybridDevMode ? 'bg-indigo-600' : 'bg-slate-200'}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isHybridDevMode ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="max-w-md">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Target Local Node IP / Hostname</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={remoteNodeIp}
-                      onChange={(e) => setRemoteNodeIp(e.target.value)}
-                      placeholder="e.g. 192.168.1.15"
-                      className="flex-1 p-2.5 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <button className="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition">PING NODE</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex flex-col">
-                <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
-                  <Network className="w-6 h-6 text-indigo-500" />
-                  PHRS Crowd Server (Self-Hosted Architecture)
-                </h1>
-                <p className="text-sm text-slate-500 font-mono mt-1">Autonomous Mini-Server ‚Ä¢ No External Dependencies</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* TIER 1: Mobile IP Configuration */}
-              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <h3 className="font-mono font-bold text-sm text-emerald-600">Tier 1: Mobile Server</h3>
-                </div>
-                <p className="text-xs text-slate-500 mb-2 font-mono">Capacity: Up to 500 Connections</p>
-                <p className="text-xs text-slate-400 mb-6">Local IP routing for direct mobile access. Acts as the primary base node.</p>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-500 mb-1">LOCAL DEVICE IP</label>
-                    <input type="text" value={localServerIpInput} onChange={e => setLocalServerIpInput(e.target.value)} className="w-full p-2 text-xs rounded-lg border focus:ring-1 focus:ring-emerald-500 font-mono bg-slate-50" />
-                  </div>
-                  <button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded-lg" onClick={() => alert(`Server broadcasting on http://${localServerIpInput}:3000`)}>BROADCAST MOBILE NODE</button>
-                </div>
-              </div>
-
-              {/* TIER 2: Laptop Node Link */}
-              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                  <h3 className="font-mono font-bold text-sm text-indigo-500">Tier 2: Laptop Node</h3>
-                </div>
-                <p className="text-xs text-slate-500 mb-2 font-mono">Capacity: High Traffic Balancing</p>
-                <p className="text-xs text-slate-400 mb-6">Activated when mobile capacity exceeds 500. Syncs via local VPC.</p>
-                <div className="space-y-4 mt-8">
-                  <div className="p-3 bg-slate-100 rounded-lg">
-                    <div className="text-[10px] font-mono text-slate-500 mb-1">NODE STATUS</div>
-                    <div className="font-mono text-sm text-indigo-600 font-bold">‚óè STANDBY (Ready)</div>
-                  </div>
-                  <button className="w-full bg-slate-800 text-white font-mono text-xs py-2 rounded-lg" onClick={() => alert('Activating Laptop Node load balancer...')}>ACTIVATE LAPTOP NODE</button>
-                </div>
-              </div>
-
-              {/* TIER 3: Supercomputer Link */}
-              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-md ring-1 ring-purple-500/20'}`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                  <h3 className="font-mono font-bold text-sm text-purple-600">Tier 3: Supercomputer</h3>
-                </div>
-                <p className="text-xs text-slate-500 mb-2 font-mono">Capacity: Massive / Global Scale</p>
-                <p className="text-xs text-slate-400 mb-6">Enterprise computing integration for extreme traffic spikes and Big Data.</p>
-                <div className="space-y-4 mt-8">
-                  <div className="p-3 bg-slate-100 rounded-lg border border-purple-200">
-                    <div className="text-[10px] font-mono text-slate-500 mb-1">COMPUTE STATUS</div>
-                    <div className="font-mono text-sm text-slate-400 font-bold">LOCKED</div>
-                  </div>
-                  <button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs py-2 rounded-lg flex items-center justify-center gap-2" onClick={() => alert('Requires Tier 3 Authorization Key to unlock Supercomputer routing.')}>
-                    <Lock className="w-3 h-3" /> UNLOCK SUPERCOMPUTER
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <NetworkConfigTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 21: SMS GATEWAY 
             ============================================== */}
         {activeTab === 'sms_gateway' && (
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
-                <MessageSquare className="w-6 h-6 text-amber-500" />
-                SMS Gateway (Recharge ‚Üí OTP)
-              </h1>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* ‚Çπ25 Stealth Recharge Component directly ported over */}
-              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-amber-500 uppercase">STEALTH DATA-TO-SMS WALLET</h3>
-                  <div className="flex items-center gap-1.5 w-full justify-start pl-2 py-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">SIM Tunnel Active</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-500 mb-6">
-                  Authorized via token <span className="font-mono text-emerald-500 font-bold">6606.0k</span>. Direct SIM-to-Server Internet bridge is active. ‚Çπ25 (1GB data pack) recharges automatically sync and convert into 10,000 hidden SMS routing credits internally.
-                </p>
-
-                <div className="space-y-4 font-mono text-sm mb-6">
-                  <div className="flex justify-between p-3 rounded-lg bg-slate-100">
-                    <span className="text-slate-500">Wallet Balance:</span>
-                    <span className="font-bold text-emerald-600">‚Çπ{stealthWalletRupees}.00</span>
-                  </div>
-                  <div className="flex justify-between p-3 rounded-lg bg-slate-100">
-                    <span className="text-slate-500">Data Pack Loaded:</span>
-                    <span className="font-bold text-indigo-600">{stealthDataBalanceMb} MB (1GB)</span>
-                  </div>
-                  <div className="flex justify-between p-3 rounded-lg bg-slate-100">
-                    <span className="text-slate-500">Stealth SMS Credits:</span>
-                    <span className="font-bold text-amber-600">{stealthSmsCredits.toLocaleString()} SMS</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setStealthWalletRupees(prev => prev + 25);
-                    setStealthDataBalanceMb(prev => prev + 1024);
-                    setStealthSmsCredits(prev => prev + 10000);
-                    alert('‚úì ‚Çπ25 (1GB) SIM-to-Server Recharge Successful! +10,000 Hidden SMS Credits Loaded.');
-                  }}
-                  className="w-full bg-amber-600 hover:bg-amber-500 text-white font-mono text-sm py-3 rounded-lg font-bold shadow-lg transition-all"
-                >
-                  ‚ö° RECHARGE ‚Çπ25 (1GB ‚Üí 10k SMS)
-                </button>
-              </div>
-
-              {/* OTP Send Test */}
-              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <h3 className="font-mono font-bold text-sm mb-4 text-indigo-500">Test OTP Delivery</h3>
-                <p className="text-xs text-slate-500 mb-4">Deducts from internal SMS credits automatically.</p>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-mono text-slate-500 mb-1">TARGET MOBILE</label>
-                    <input type="text" value={testPhoneNumber} onChange={e => setTestPhoneNumber(e.target.value)} placeholder="+91..." className="w-full p-2 text-xs rounded-lg border font-mono bg-slate-50" />
-                  </div>
-                  <button onClick={handleSendTestSms} disabled={isSendingOtp} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-3 rounded-lg font-bold disabled:opacity-50">
-                    {isSendingOtp ? 'SENDING...' : 'DISPATCH TEST OTP (-1 Credit)'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SmsGatewayTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB: INTEGRATION CODE (SDK) - NOW CLOUD CONSOLE
             ============================================== */}
         {activeTab === 'console' && (
-          <div className="space-y-6">
-            <div className="p-6 rounded-2xl border flex flex-col h-[350px] transition-colors bg-slate-900 border-slate-800 shadow-2xl">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                  <TerminalIcon className="w-5 h-5 text-indigo-400" />
-                  <h3 className="font-mono font-bold text-sm tracking-wider uppercase text-indigo-400">VPS TERMINAL METRICS & LOGS</h3>
-                </div>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System alive"></span>
-              </div>
-              <div 
-                ref={logTerminalRef}
-                className="flex-1 p-4 font-mono text-xs rounded-xl overflow-y-auto space-y-2 select-text border bg-black/50 text-emerald-400 border-slate-700/50"
-              >
-                {vpsLogStream.map((log, idx) => (
-                  <div key={idx} className="leading-relaxed">
-                    <span className="text-indigo-400">sys@vps:~#</span> {log}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-3 border-t grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono border-slate-800 text-slate-300">
-                <div className="flex flex-col p-2 rounded bg-slate-800/50">
-                  <span className="text-slate-500 font-medium mb-1">IP ADDRESS:</span>
-                  <span className="font-bold">{remoteNodeIp}</span>
-                </div>
-                <div className="flex flex-col p-2 rounded bg-slate-800/50">
-                  <span className="text-slate-500 font-medium mb-1">DOCKER ENGINE:</span>
-                  <span className="font-bold text-emerald-500">ACTIVE</span>
-                </div>
-                <div className="flex flex-col p-2 rounded bg-slate-800/50">
-                  <span className="text-slate-500 font-medium mb-1">PM2 DAEMONS:</span>
-                  <span className="font-bold text-indigo-400">3 ONLINE</span>
-                </div>
-                <div className="flex flex-col p-2 rounded bg-slate-800/50">
-                  <span className="text-slate-500 font-medium mb-1">DB SCHEMA:</span>
-                  <span className="font-bold text-amber-500">SQLITE3 v4</span>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
-                    <TerminalIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">PHRS Cloud Console</h2>
-                    <p className="text-sm text-slate-500 font-medium">‡∞Æ‡±Ä ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç ‡∞ï‡±ã‡∞∏‡∞Ç 3 ‡∞∞‡∞ï‡∞æ‡∞≤ ‡∞ï‡±ã‡∞°‡∞ø‡∞Ç‡∞ó‡±ç ‡∞¨‡±ã‡∞∞‡±ç‡∞°‡±Å‡∞≤‡±Å ‡∞á‡∞ï‡±ç‡∞ï‡∞° ‡∞â‡∞®‡±ç‡∞®‡∞æ‡∞Ø‡∞ø</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Master Standalone Server & APK Download Card for 157.50.81.156 */}
-              <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-2xl border border-indigo-500/30 mb-8">
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-                  <div>
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase">Master IP: 157.50.81.156 Ready</span>
-                    <h3 className="text-lg font-black tracking-tight mt-2">üì• 1-CLICK STANDALONE & APK DEPLOYMENT CONSOLE</h3>
-                    <p className="text-xs text-indigo-200 mt-1 max-w-xl">
-                      ‡∞™‡±Ç‡∞∞‡±ç‡∞§‡∞ø PHRS Crowd ‡∞Ö‡∞™‡±ç‡∞≤‡∞ø‡∞ï‡±á‡∞∑‡∞®‡±ç ‡∞Æ‡∞æ‡∞∏‡±ç‡∞ü‡∞∞‡±ç‚Äå‡∞®‡±Å ‡∞í‡∞ï‡∞µ‡±à‡∞™‡±Å ‡∞∏‡∞ø‡∞Ç‡∞ó‡∞ø‡∞≤‡±ç HTML ‡∞´‡±à‡∞≤‡±ç‚Äå‡∞ó‡∞æ ‡∞≤‡±á‡∞¶‡∞æ ‡∞Æ‡∞∞‡±ã‡∞µ‡±à‡∞™‡±Å ‡∞®‡±á‡∞∞‡±Å‡∞ó‡∞æ ‡∞Ü‡∞Ç‡∞°‡±ç‡∞∞‡∞æ‡∞Ø‡∞ø‡∞°‡±ç APK ‡∞™‡±ç‡∞Ø‡∞æ‡∞ï‡±á‡∞ú‡±Ä‡∞≤‡∞æ ‡∞°‡±å‡∞®‡±ç‚Äå‡∞≤‡±ã‡∞°‡±ç ‡∞ö‡±á‡∞∏‡±Å‡∞ï‡±ã‡∞Ç‡∞°‡∞ø!
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 shrink-0">
-                    <button
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/standalone.html');
-                          const htmlText = await res.text();
-                          const blob = new Blob([htmlText], { type: 'text/html' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = 'phrs_crowd_standalone_master.html';
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                          setHomeToast('‚úì Standalone HTML Master Bundle downloaded successfully!');
-                          setTimeout(() => setHomeToast(null), 3000);
-                        } catch (e) {
-                          window.open('/standalone.html', '_blank');
-                        }
-                      }}
-                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-xs px-5 py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>DOWNLOAD HTML</span>
-                    </button>
-                    
-                    <button
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/standalone.html');
-                          const htmlText = await res.text();
-                          const blob = new Blob([htmlText], { type: 'text/html' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = 'PHRS_Crowd_Master_v1.0.apk.html';
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                          setHomeToast('‚úì Android APK Installer Package initialized successfully!');
-                          setTimeout(() => setHomeToast(null), 3000);
-                        } catch (e) {
-                          window.open('/standalone.html', '_blank');
-                        }
-                      }}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-5 py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2"
-                    >
-                      <Smartphone className="w-4 h-4" />
-                      <span>DOWNLOAD APK</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Three Beautiful Symmetrical Integration Code Boards Side-by-Side */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Board 1: MODULE (phrs-config.js) */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                          <FileCode className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-black text-indigo-600 tracking-wider">MODULE</div>
-                          <div className="text-[11px] font-bold text-slate-700 font-mono">phrs-config.js</div>
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded-md font-bold uppercase font-sans">‡∞ï‡∞æ‡∞®‡±ç‡∞´‡∞ø‡∞ó‡∞∞‡±á‡∞∑‡∞®‡±ç</span>
-                    </div>
-                    
-                    <p className="text-[10px] text-slate-500 leading-relaxed font-sans h-8">
-                      ‡∞Æ‡±Ä ‡∞∞‡∞ø‡∞Ø‡∞æ‡∞ï‡±ç‡∞ü‡±ç (React) ‡∞≤‡±á‡∞¶‡∞æ ‡∞Ü‡∞ß‡±Å‡∞®‡∞ø‡∞ï ‡∞ï‡±ç‡∞≤‡∞Ø‡∞ø‡∞Ç‡∞ü‡±ç-‡∞∏‡±à‡∞°‡±ç ‡∞Ø‡∞æ‡∞™‡±ç‡∞∏‡±ç‚Äå‡∞®‡∞ø PHRS ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç‚Äå‡∞ï‡∞ø ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞ü‡±ç ‡∞ö‡±á‡∞Ø‡∞°‡∞æ‡∞®‡∞ø‡∞ï‡∞ø ‡∞µ‡∞æ‡∞°‡±á ‡∞™‡±ç‡∞∞‡∞æ‡∞•‡∞Æ‡∞ø‡∞ï ‡∞ï‡∞æ‡∞®‡±ç‡∞´‡∞ø‡∞ó‡∞∞‡±á‡∞∑‡∞®‡±ç ‡∞´‡±à‡∞≤‡±ç.
-                    </p>
-
-                    <div className="relative group">
-                      <pre className="w-full bg-slate-950 text-emerald-400 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
-{`import { initializeApp } from "@phrs/cloud";
-
-// ‡∞≤‡±ã‡∞ï‡∞≤‡±ç ‡∞∏‡±ç‡∞ü‡±ã‡∞∞‡±á‡∞ú‡±ç ‡∞≤‡±á‡∞¶‡∞æ ‡∞°‡∞ø‡∞´‡∞æ‡∞≤‡±ç‡∞ü‡±ç ‡∞µ‡∞æ‡∞≤‡±ç‡∞Ø‡±Ç‡∞∏‡±ç
-const currentIP = localStorage.getItem('phrs_ip') || "${remoteNodeIp}";
-const currentSerial = localStorage.getItem('phrs_serial') || "${deviceSerial}";
-const currentDeepSeekKey = localStorage.getItem('phrs_deepseek') || "${deepseekApiKey}";
-
-export const phrsConfig = {
-  apiKey: "PHRS_AUTH_8742260",
-  deepseekApiKey: currentDeepSeekKey,
-  deviceSerial: currentSerial,
-  authDomain: currentIP,
-  projectId: "phrs-master-cloud",
-  appId: "1:8742260:web:phrs_master_node"
-};
-
-export const app = initializeApp(phrsConfig);`}
-                      </pre>
-                      <button 
-                        className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
-                        onClick={() => {
-                          const code = `import { initializeApp } from "@phrs/cloud";
-
-// ‡∞≤‡±ã‡∞ï‡∞≤‡±ç ‡∞∏‡±ç‡∞ü‡±ã‡∞∞‡±á‡∞ú‡±ç ‡∞≤‡±á‡∞¶‡∞æ ‡∞°‡∞ø‡∞´‡∞æ‡∞≤‡±ç‡∞ü‡±ç ‡∞µ‡∞æ‡∞≤‡±ç‡∞Ø‡±Ç‡∞∏‡±ç
-const currentIP = localStorage.getItem('phrs_ip') || "${remoteNodeIp}";
-const currentSerial = localStorage.getItem('phrs_serial') || "${deviceSerial}";
-const currentDeepSeekKey = localStorage.getItem('phrs_deepseek') || "${deepseekApiKey}";
-
-export const phrsConfig = {
-  apiKey: "PHRS_AUTH_8742260",
-  deepseekApiKey: currentDeepSeekKey,
-  deviceSerial: currentSerial,
-  authDomain: currentIP,
-  projectId: "phrs-master-cloud",
-  appId: "1:8742260:web:phrs_master_node"
-};
-
-export const app = initializeApp(phrsConfig);`;
-                          navigator.clipboard.writeText(code);
-                          setHomeToast('‚úì phrs-config.js (MODULE) copied!');
-                          setTimeout(() => setHomeToast(null), 3000);
-                        }}
-                        title="Copy Config"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col items-center">
-                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3 w-32 h-32 flex items-center justify-center overflow-hidden">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                          `import { initializeApp } from "@phrs/cloud";
-const currentIP = localStorage.getItem('phrs_ip') || "${remoteNodeIp}";
-const currentSerial = localStorage.getItem('phrs_serial') || "${deviceSerial}";
-const currentDeepSeekKey = localStorage.getItem('phrs_deepseek') || "${deepseekApiKey}";
-export const phrsConfig = { apiKey: "PHRS_AUTH_8742260", deepseekApiKey: currentDeepSeekKey, deviceSerial: currentSerial, authDomain: currentIP, projectId: "phrs-master-cloud", appId: "1:8742260:web:phrs_master_node" };
-export const app = initializeApp(phrsConfig);`
-                        )}`} 
-                        alt="MODULE QR" 
-                        className="w-full h-full object-contain mix-blend-multiply"
-                      />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">MODULE QR CODE</span>
-                  </div>
-                </div>
-
-                {/* Board 2: SCRIPT (main.js) */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                          <Cloud className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-black text-indigo-600 tracking-wider">SCRIPT</div>
-                          <div className="text-[11px] font-bold text-slate-700 font-mono">main.js</div>
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded-md font-bold uppercase font-sans">‡∞Ø‡∞æ‡∞ï‡±ç‡∞ü‡∞ø‡∞µ‡±á‡∞∑‡∞®‡±ç</span>
-                    </div>
-                    
-                    <p className="text-[10px] text-slate-500 leading-relaxed font-sans h-8">
-                      PHRS, db, OTP, ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞°‡±Ä‡∞™‡±ç‚Äå‡∞∏‡±Ä‡∞ï‡±ç AI ‡∞ï‡±ã‡∞∞‡±ç ‡∞∏‡∞∞‡±ç‡∞µ‡±Ä‡∞∏‡±Å‡∞≤‡∞®‡±Å ‡∞Æ‡±Ä ‡∞µ‡±Ü‡∞¨‡±ç‚Äå‡∞∏‡±à‡∞ü‡±ç‚Äå‡∞≤‡±ã ‡∞Ø‡∞æ‡∞ï‡±ç‡∞ü‡∞ø‡∞µ‡±á‡∞ü‡±ç ‡∞ö‡±á‡∞Ø‡∞°‡∞æ‡∞®‡∞ø‡∞ï‡∞ø ‡∞â‡∞™‡∞Ø‡±ã‡∞ó‡∞ø‡∞Ç‡∞ö‡±á ‡∞™‡±ç‡∞∞‡∞ß‡∞æ‡∞® ‡∞∏‡±ç‡∞ï‡±ç‡∞∞‡∞ø‡∞™‡±ç‡∞ü‡±ç ‡∞ï‡±ã‡∞°‡±ç.
-                    </p>
-
-                    <div className="relative group">
-                      <pre className="w-full bg-slate-950 text-indigo-300 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
-{`import { PHRS, db, OTP, DeepSeekAI } from "@phrs/cloud";
-import { phrsConfig } from "./phrs-config.js";
-
-PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
-db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);
-DeepSeekAI.connect(phrsConfig.deepseekApiKey);`}
-                      </pre>
-                      <button 
-                        className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
-                        onClick={() => {
-                          const code = `import { PHRS, db, OTP, DeepSeekAI } from "@phrs/cloud";
-import { phrsConfig } from "./phrs-config.js";
-
-PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
-db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);
-DeepSeekAI.connect(phrsConfig.deepseekApiKey);`;
-                          navigator.clipboard.writeText(code);
-                          setHomeToast('‚úì main.js (SCRIPT) copied!');
-                          setTimeout(() => setHomeToast(null), 3000);
-                        }}
-                        title="Copy Script"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col items-center">
-                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3 w-32 h-32 flex items-center justify-center overflow-hidden">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                          `import { PHRS, db, OTP, DeepSeekAI } from "@phrs/cloud";
-import { phrsConfig } from "./phrs-config.js";
-PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
-db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);
-DeepSeekAI.connect(phrsConfig.deepseekApiKey);`
-                        )}`} 
-                        alt="SCRIPT QR" 
-                        className="w-full h-full object-contain mix-blend-multiply"
-                      />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">SCRIPT QR CODE</span>
-                  </div>
-                </div>
-
-                {/* Board 3: OBJECT (settings.js) */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                          <Settings className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-black text-indigo-600 tracking-wider">OBJECT</div>
-                          <div className="text-[11px] font-bold text-slate-700 font-mono">settings.js</div>
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded-md font-bold uppercase font-sans">‡∞∏‡±Ü‡∞ü‡±ç‡∞ü‡∞ø‡∞Ç‡∞ó‡±ç‡∞∏‡±ç ‡∞∏‡±á‡∞µ‡±ç</span>
-                    </div>
-                    
-                    <p className="text-[10px] text-slate-500 leading-relaxed font-sans h-8">
-                      ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç IP, ‡∞∏‡±Ä‡∞∞‡∞ø‡∞Ø‡∞≤‡±ç ‡∞®‡±Ü‡∞Ç‡∞¨‡∞∞‡±ç ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞°‡±Ä‡∞™‡±ç‚Äå‡∞∏‡±Ä‡∞ï‡±ç API ‡∞ï‡±Ä‡∞®‡∞ø ‡∞¨‡±ç‡∞∞‡±å‡∞ú‡∞∞‡±ç ‡∞≤‡±ã‡∞ï‡∞≤‡±ç ‡∞∏‡±ç‡∞ü‡±ã‡∞∞‡±á‡∞ú‡±ç‚Äå‡∞≤‡±ã ‡∞°‡±à‡∞®‡∞Æ‡∞ø‡∞ï‡±ç‚Äå‡∞ó‡∞æ ‡∞∏‡±á‡∞µ‡±ç ‡∞ö‡±á‡∞∏‡∞ø ‡∞Ö‡∞™‡±ç‚Äå‡∞°‡±á‡∞ü‡±ç ‡∞ö‡±á‡∞∏‡±á ‡∞´‡∞Ç‡∞ï‡±ç‡∞∑‡∞®‡±ç.
-                    </p>
-
-                    <div className="relative group">
-                      <pre className="w-full bg-slate-950 text-indigo-200 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
-{`window.savePHRSSettings = function(newIP, newSerial, newDeepSeekKey) {
-  localStorage.setItem('phrs_ip', newIP);
-  localStorage.setItem('phrs_serial', newSerial);
-  localStorage.setItem('phrs_deepseek', newDeepSeekKey);
-  
-  alert("PHRS ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç ‡∞∏‡±Ü‡∞ü‡±ç‡∞ü‡∞ø‡∞Ç‡∞ó‡±ç‡∞∏‡±ç ‡∞µ‡∞ø‡∞ú‡∞Ø‡∞µ‡∞Ç‡∞§‡∞Ç‡∞ó‡∞æ ‡∞Ö‡∞™‡±ç‚Äå‡∞°‡±á‡∞ü‡±ç ‡∞Ö‡∞Ø‡±ç‡∞Ø‡∞æ‡∞Ø‡∞ø! ‡∞∏‡∞ø‡∞∏‡±ç‡∞ü‡∞Æ‡±ç ‡∞∞‡±Ä‡∞∏‡±ç‡∞ü‡∞æ‡∞∞‡±ç‡∞ü‡±ç ‡∞Ö‡∞µ‡±Å‡∞§‡±ã‡∞Ç‡∞¶‡∞ø...");
-  location.reload();
-};`}
-                      </pre>
-                      <button 
-                        className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
-                        onClick={() => {
-                          const code = `window.savePHRSSettings = function(newIP, newSerial, newDeepSeekKey) {
-  localStorage.setItem('phrs_ip', newIP);
-  localStorage.setItem('phrs_serial', newSerial);
-  localStorage.setItem('phrs_deepseek', newDeepSeekKey);
-  
-  alert("PHRS ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç ‡∞∏‡±Ü‡∞ü‡±ç‡∞ü‡∞ø‡∞Ç‡∞ó‡±ç‡∞∏‡±ç ‡∞µ‡∞ø‡∞ú‡∞Ø‡∞µ‡∞Ç‡∞§‡∞Ç‡∞ó‡∞æ ‡∞Ö‡∞™‡±ç‚Äå‡∞°‡±á‡∞ü‡±ç ‡∞Ö‡∞Ø‡±ç‡∞Ø‡∞æ‡∞Ø‡∞ø! ‡∞∏‡∞ø‡∞∏‡±ç‡∞ü‡∞Æ‡±ç ‡∞∞‡±Ä‡∞∏‡±ç‡∞ü‡∞æ‡∞∞‡±ç‡∞ü‡±ç ‡∞Ö‡∞µ‡±Å‡∞§‡±ã‡∞Ç‡∞¶‡∞ø...");
-  location.reload();
-};`;
-                          navigator.clipboard.writeText(code);
-                          setHomeToast('‚úì settings.js (OBJECT) copied!');
-                          setTimeout(() => setHomeToast(null), 3000);
-                        }}
-                        title="Copy Settings"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col items-center">
-                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3 w-32 h-32 flex items-center justify-center overflow-hidden">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                          `window.savePHRSSettings = function(newIP, newSerial, newDeepSeekKey) {
-  localStorage.setItem('phrs_ip', newIP);
-  localStorage.setItem('phrs_serial', newSerial);
-  localStorage.setItem('phrs_deepseek', newDeepSeekKey);
-  alert("PHRS ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç ‡∞∏‡±Ü‡∞ü‡±ç‡∞ü‡∞ø‡∞Ç‡∞ó‡±ç‡∞∏‡±ç ‡∞µ‡∞ø‡∞ú‡∞Ø‡∞µ‡∞Ç‡∞§‡∞Ç‡∞ó‡∞æ ‡∞Ö‡∞™‡±ç‡∞°‡±á‡∞ü‡±ç ‡∞Ö‡∞Ø‡±ç‡∞Ø‡∞æ‡∞Ø‡∞ø! ‡∞∏‡∞ø‡∞∏‡±ç‡∞ü‡∞Æ‡±ç ‡∞∞‡±Ä‡∞∏‡±ç‡∞ü‡∞æ‡∞∞‡±ç‡∞ü‡±ç ‡∞Ö‡∞µ‡±Å‡∞§‡±ã‡∞Ç‡∞¶‡∞ø...");
-  location.reload();
-};`
-                        )}`} 
-                        alt="OBJECT QR" 
-                        className="w-full h-full object-contain mix-blend-multiply"
-                      />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">OBJECT QR CODE</span>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
+          <ConsoleTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 5: ADMIN API BOARD MANAGEMENT PANEL (AI)
             ============================================== */}
         {activeTab === 'api_board' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className={`p-6 rounded-2xl border transition shadow-sm ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Key className="w-6 h-6 text-indigo-600" />
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">APIs & Services</h2>
-                    <p className="text-xs text-slate-500 max-w-2xl mt-1">
-                      Manage and monitor all APIs and credentials used by the PHRS CROWD ecosystem.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-4 border-b border-slate-100">
-                {['Enabled APIs & services', 'Library', 'Credentials', 'OAuth consent screen', 'Page usage agreements'].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setApisSubTab(tab)}
-                    className={`px-4 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                      apisSubTab === tab
-                        ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600'
-                        : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {apisSubTab === 'Enabled APIs & services' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* API keys credentials setups */}
-              <div className="lg:col-span-4 space-y-6">
-                
-                <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">ROUTER API KEYS</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">GEMINI PRO API KEY</label>
-                      <input 
-                        type="password" 
-                        value={apiKeys.gemini}
-                        onChange={(e) => setApiKeys(prev => ({...prev, gemini: e.target.value}))}
-                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">DEEPSEEK CODER API KEY</label>
-                      <input 
-                        type="password" 
-                        value={apiKeys.deepseek}
-                        onChange={(e) => setApiKeys(prev => ({...prev, deepseek: e.target.value}))}
-                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">OPENAI BACKUP KEY</label>
-                      <input 
-                        type="password" 
-                        value={apiKeys.openai}
-                        onChange={(e) => setApiKeys(prev => ({...prev, openai: e.target.value}))}
-                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                      />
-                    </div>
-
-                    <button 
-                      onClick={() => {
-                        localStorage.setItem('phrs_key_gemini', apiKeys.gemini);
-                        localStorage.setItem('phrs_key_deepseek', apiKeys.deepseek);
-                        localStorage.setItem('phrs_key_openai', apiKeys.openai);
-                        setVpsLogStream(prev => [...prev, '[API] Secure API keys table updated in local SQLite container.']);
-                        alert('‚úì Model key definitions saved successfully!');
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold shadow-lg transition-all"
-                    >
-                      SAVE MODEL DEFINITIONS
-                    </button>
-                  </div>
-                </div>
-
-                {/* Routing status stats */}
-                <div className={`p-4 rounded-xl border text-xs space-y-2 transition-colors ${isDarkMode ? 'bg-indigo-950/10 border-indigo-900/40 text-indigo-300' : 'bg-indigo-50 border-indigo-100 text-indigo-900'}`}>
-                  <p className="font-semibold">üöÄ Live AI Routing Policy:</p>
-                  <p className="text-[10px]">
-                    Current model distribution routing is set to: <strong>DeepSeek Chat (60%)</strong>, <strong>Gemini 1.5 Flash (40%)</strong>. Failover routes to OpenAI GPT-4o-mini is active.
-                  </p>
-                </div>
-
-              </div>
-
-              {/* Right main playground & router maps */}
-              <div className="lg:col-span-8 space-y-6">
-                
-                {/* Router interactive testing panel */}
-                <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">DYNAMIC PROXY PLAYGROUND</h3>
-                  
-                  <form onSubmit={handleTestAIRoute} className="space-y-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="flex-1">
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1 font-semibold">CHOOSE TARGET GATEWAY ROUTE</label>
-                        <select 
-                          value={activeRouterModel}
-                          onChange={(e) => setActiveRouterModel(e.target.value)}
-                          className={`w-full p-2 text-xs rounded-lg border focus:outline-none cursor-pointer ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                        >
-                          <option value="DeepSeek Chat">DeepSeek Chat API Route (V3)</option>
-                          <option value="Gemini 1.5 Flash">Gemini 1.5 Flash Route (Serverless)</option>
-                          <option value="OpenAI GPT-4o-mini">OpenAI GPT-4o-mini Backup Router</option>
-                        </select>
-                      </div>
-
-                      <div className="flex-1">
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1 font-semibold">ROUTING STRATEGY</label>
-                        <div className={`p-2 rounded-lg text-xs font-mono border ${isDarkMode ? 'bg-slate-800/40 border-slate-700 text-slate-400' : 'bg-slate-100 border-slate-300 text-slate-600'}`}>
-                          ‚ö° Latency & Cost Optimization (Auto)
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1 font-semibold">AGENT PROMPT INJECTION PAYLOAD</label>
-                      <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          required
-                          value={activeRouterPrompt}
-                          onChange={(e) => setActiveRouterPrompt(e.target.value)}
-                          placeholder="e.g. Generate database optimize check command for SQLite cluster" 
-                          className={`flex-1 p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                        />
-                        <button 
-                          type="submit"
-                          disabled={isRoutingLoading}
-                          className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-mono text-xs px-5 py-2 rounded-lg font-semibold transition"
-                        >
-                          {isRoutingLoading ? 'ROUTING...' : 'TEST ROUTE'}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Routing transaction log cards */}
-                <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">ROUTING TRANSACTION LOGS (TELEMETRY)</h3>
-                  
-                  <div className="space-y-4 font-mono text-xs">
-                    {routingHistory.map((item, idx) => (
-                      <div key={idx} className={`p-4 rounded-xl border ${isDarkMode ? 'bg-slate-950/40 border-slate-900' : 'bg-slate-100/50 border-slate-200'}`}>
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-amber-500 font-bold">&quot;{item.prompt}&quot;</span>
-                          <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded">
-                            {item.target}
-                          </span>
-                        </div>
-                        <p className="text-slate-400 dark:text-slate-300 mb-2 leading-relaxed text-[11px]">{item.response}</p>
-                        <div className="flex gap-4 text-[10px] text-slate-500 border-t border-slate-800/10 pt-2 mt-2">
-                          <span>Latency: <strong className="text-emerald-400">{item.latency}ms</strong></span>
-                          <span>Cost: <strong className="text-emerald-400">${item.cost.toFixed(5)}</strong></span>
-                          <span>Gateway status: <strong>SUCCESS (200)</strong></span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-            )}
-
-            {apisSubTab !== 'Enabled APIs & services' && (
-              <div className="p-12 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 bg-white">
-                <Key className="w-8 h-8 mb-3 opacity-20" />
-                <p className="text-sm font-mono italic">{apisSubTab} management interface is configured and ready.</p>
-              </div>
-            )}
-
-          </div>
+          <ApiBoardTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 6: VPS EXPORT & INSTALLATION MANAGER
             ============================================== */}
         {activeTab === 'export' && (
-          <div className="space-y-6">
-            
-            <div className={`p-6 rounded-2xl border transition ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center gap-3 mb-2">
-                <FileCode className="w-5 h-5 text-emerald-500" />
-                <h2 className="text-lg font-bold tracking-tight text-emerald-500">VPS Export & Shell Provisioning Pack</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Inspect, copy, or download the full backend Node.js Express server source code, SQLite table generation structures, and deployment terminal setup blueprints. Spin up PHRS Crowd on any standard Ubuntu IP in minutes.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Export file lists tabs selector */}
-              <div className="lg:col-span-3 space-y-3 font-mono text-xs">
-                <button 
-                  onClick={() => setActiveExportFile('server')}
-                  className={`w-full p-3.5 rounded-xl border text-left transition flex items-center justify-between ${activeExportFile === 'server' ? (isDarkMode ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400 font-semibold' : 'bg-emerald-100 border-emerald-500 text-emerald-600 font-semibold') : (isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-200' : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900')}`}
-                >
-                  <span>server.js</span>
-                  <FileCode className="w-4 h-4 opacity-70" />
-                </button>
-
-                <button 
-                  onClick={() => setActiveExportFile('readme')}
-                  className={`w-full p-3.5 rounded-xl border text-left transition flex items-center justify-between ${activeExportFile === 'readme' ? (isDarkMode ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400 font-semibold' : 'bg-emerald-100 border-emerald-500 text-emerald-600 font-semibold') : (isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-200' : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900')}`}
-                >
-                  <span>README.md Guide</span>
-                  <FileCode className="w-4 h-4 opacity-70" />
-                </button>
-
-                <button 
-                  onClick={() => setActiveExportFile('package')}
-                  className={`w-full p-3.5 rounded-xl border text-left transition flex items-center justify-between ${activeExportFile === 'package' ? (isDarkMode ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400 font-semibold' : 'bg-emerald-100 border-emerald-500 text-emerald-600 font-semibold') : (isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-200' : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900')}`}
-                >
-                  <span>package.json</span>
-                  <FileCode className="w-4 h-4 opacity-70" />
-                </button>
-
-                <div className={`p-4 rounded-xl border text-[11px] leading-relaxed space-y-2 transition ${isDarkMode ? 'bg-emerald-950/15 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50 border-emerald-100 text-emerald-900'}`}>
-                  <p className="font-bold">‚úì Self-Hosting Ready</p>
-                  Save these files into a folder on your VPS, execute <strong>npm install</strong>, then use PM2 to make it completely indestructible!
-                </div>
-              </div>
-
-              {/* Source code viewing screen */}
-              <div className="lg:col-span-9 space-y-4">
-                
-                <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="font-mono text-xs font-bold text-slate-400">
-                      Viewing: {activeExportFile === 'server' ? 'server.js' : activeExportFile === 'readme' ? 'README.md' : 'package.json'}
-                    </span>
-                    
-                    <button 
-                      onClick={() => {
-                        const content = activeExportFile === 'server' ? vpsServerJs : activeExportFile === 'readme' ? vpsReadmeMd : vpsPackageJson;
-                        navigator.clipboard.writeText(content);
-                        alert('‚úì Copied code file contents to clipboard!');
-                      }}
-                      className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 hover:underline hover:scale-105 transition"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Copy Content
-                    </button>
-                  </div>
-
-                  <div className={`p-4 rounded-xl font-mono text-xs overflow-x-auto max-h-[500px] overflow-y-auto leading-relaxed select-text border ${isDarkMode ? 'bg-slate-950 border-slate-900 text-slate-300' : 'bg-slate-100 border-slate-300 text-slate-800'}`}>
-                    <pre className="whitespace-pre-wrap">{activeExportFile === 'server' ? vpsServerJs : activeExportFile === 'readme' ? vpsReadmeMd : vpsPackageJson}</pre>
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
-
-          </div>
+          <ExportTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 7: SOLUTIONS CATALOG
             ============================================== */}
         {activeTab === 'solutions' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <LayoutGrid className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">PHRS Solutions Catalog</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Ready-to-deploy architectural stacks compiled dynamically to target standalone local VPS clusters. Click deploy to initialize telemetry networks.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { name: 'Microservice SMS Router', desc: 'Pre-configured Twilio & Fast2SMS gateway cluster for heavy multi-user OTP verification.', stack: 'Node.js, SQLite, Fast2SMS', time: '1.2s' },
-                { name: 'Relational SQLite Cache', desc: 'A synchronized BigQuery replica for super-fast offline analytical searches.', stack: 'SQL, SQLite DB, GCSFuse', time: '2.5s' },
-                { name: 'Geo Maps Telemetry tracker', desc: 'Real-time geographical position locator mapping coordinates with the PHRS Maps SDK.', stack: 'React, Maps API, GeoJson', time: '0.8s' }
-              ].map((solution, idx) => (
-                <div key={idx} className="p-5 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between">
-                  <div>
-                    <span className="px-2 py-0.5 text-[9px] bg-indigo-50 text-indigo-600 rounded font-mono font-bold">STABLE V2</span>
-                    <h3 className="font-bold text-sm text-slate-900 mt-2 mb-1">{solution.name}</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed mb-4">{solution.desc}</p>
-                    <div className="space-y-1 mb-6 text-[10px] font-mono text-slate-400">
-                      <div>STACK: <span className="text-slate-700 font-semibold">{solution.stack}</span></div>
-                      <div>PROBE DELAY: <span className="text-slate-700 font-semibold">{solution.time}</span></div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setHomeToast(`üöÄ Deploying ${solution.name}... Check active PM2 cluster terminal logs!`);
-                      setTimeout(() => setHomeToast(null), 3500);
-                      setVpsLogStream(prev => [...prev, `[SOLUTIONS] Deploy triggered: ${solution.name}. Compiling dependencies...`]);
-                    }}
-                    className="w-full text-center bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
-                  >
-                    ONE-CLICK DEPLOY
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          <SolutionsTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 8: RECENTLY VISITED OPERATIONS LOG
             ============================================== */}
         {activeTab === 'recently_visited' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <Clock className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">Recently Visited & Operations History</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                A granular telemetry stream tracking developer workspace actions, API endpoints requested, and SMS gateways synchronized in this console.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl border border-slate-200 bg-white">
-              <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">WORKSPACE OPERATION AUDITS</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left font-mono text-xs text-slate-600">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 text-[10px]">
-                      <th className="pb-3">TIMESTAMP</th>
-                      <th className="pb-3">OPERATION</th>
-                      <th className="pb-3">ASSOCIATED IP</th>
-                      <th className="pb-3">LATENCY</th>
-                      <th className="pb-3">STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {[
-                      { time: '2026-08-24 10:14:15', op: 'SMS Route Generation Key Sync', ip: remoteNodeIp, latency: '120ms', status: 'SUCCESS' },
-                      { time: '2026-08-24 09:32:02', op: 'SQLite Schema Validation Check', ip: '127.0.0.1:3000', latency: '420ms', status: 'SUCCESS' },
-                      { time: '2026-08-24 07:11:45', op: 'Cloud SQL Read Replica Query Run', ip: remoteNodeIp, latency: '980ms', status: 'SUCCESS' },
-                      { time: '2026-08-23 23:59:12', op: 'Export Package JSON Bundle Compile', ip: remoteNodeIp, latency: '1.2s', status: 'SUCCESS' }
-                    ].map((row, i) => (
-                      <tr key={i}>
-                        <td className="py-3 text-slate-500">{row.time}</td>
-                        <td className="py-3 font-semibold text-slate-800">{row.op}</td>
-                        <td className="py-3 text-slate-400">{row.ip}</td>
-                        <td className="py-3 text-emerald-600">{row.latency}</td>
-                        <td className="py-3">
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-bold rounded">
-                            {row.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <RecentlyVisitedTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 9: BILLING CREDITS & BUDGET WARNINGS
             ============================================== */}
         {activeTab === 'billing' && (
-          <div className="space-y-6 animate-fade-in">
-            {/* Wallet Top Section */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 text-white shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 opacity-20"></div>
-              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                  <h2 className="text-sm font-bold text-indigo-200 uppercase tracking-wider mb-1 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" /> Prepaid Cloud Wallet
-                  </h2>
-                  <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-black">‚Çπ342.50</span>
-                    <span className="text-xs text-indigo-300 font-mono font-bold px-2 py-1 bg-indigo-900/50 rounded-md">AVAILABLE</span>
-                  </div>
-                  <p className="text-xs text-slate-300 mt-2 max-w-sm">Zero hidden charges. Pay exactly for what you use, at disruptive market rates.</p>
-                </div>
-                <button onClick={() => setShowUpiModal(true)} className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black px-6 py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center gap-2 w-full md:w-auto justify-center">
-                  <QrCode className="w-5 h-5" /> RECHARGE VIA UPI
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Competitive Pricing Table */}
-              <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" /> Competitive Pricing (20% Off Market)
-                </h3>
-                <div className="space-y-4 flex-1">
-                  <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
-                    <div>
-                      <div className="text-xs font-bold text-slate-800">Database Storage (per GB)</div>
-                      <div className="text-[10px] text-slate-500 line-through mt-1">External Price: ‚Çπ100.00</div>
-                    </div>
-                    <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">‚Çπ80.00</div>
-                  </div>
-                  <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
-                    <div>
-                      <div className="text-xs font-bold text-slate-800">SMS OTP (per 100 SMS)</div>
-                      <div className="text-[10px] text-slate-500 line-through mt-1">External DB: ‚Çπ25.00</div>
-                    </div>
-                    <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">‚Çπ20.00</div>
-                  </div>
-                  <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 flex justify-between items-center transition-all hover:bg-white hover:shadow-md">
-                    <div>
-                      <div className="text-xs font-bold text-slate-800">API Gateway Calls (per 10k)</div>
-                      <div className="text-[10px] text-slate-500 line-through mt-1">External Cloud: ‚Çπ40.00</div>
-                    </div>
-                    <div className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">‚Çπ32.00</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Live Micro-Ledger */}
-              <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-indigo-500" /> Live Micro-Transactions
-                  </h3>
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                  </span>
-                </div>
-                
-                <div className="flex-1 bg-slate-900 rounded-xl p-4 font-mono text-[11px] overflow-hidden flex flex-col justify-end space-y-3 relative group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-transparent to-slate-900/90 pointer-events-none"></div>
-                  
-                  <div className="flex justify-between text-slate-500 opacity-50"><span>[14:22:01] DB_WRITE (0.2MB)</span><span className="text-rose-400/50">-‚Çπ0.004</span></div>
-                  <div className="flex justify-between text-slate-400 opacity-70"><span>[14:23:45] SMS_OTP_SEND</span><span className="text-rose-400/70">-‚Çπ0.100</span></div>
-                  <div className="flex justify-between text-slate-300"><span>[14:24:12] DB_READ (Query)</span><span className="text-rose-400">-‚Çπ0.001</span></div>
-                  <div className="flex justify-between text-emerald-400 font-bold border-l-2 border-emerald-500 pl-2 bg-emerald-500/10 py-1"><span>[14:25:33] SMS_OTP_VERIFY</span><span className="text-rose-400">-‚Çπ0.100</span></div>
-                  <div className="flex justify-between text-emerald-400 font-bold border-l-2 border-emerald-500 pl-2 bg-emerald-500/10 py-1 shadow-[0_0_10px_rgba(16,185,129,0.2)]"><span>[14:26:01] API_CALL_SUCCESS</span><span className="text-rose-400">-‚Çπ0.002</span></div>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-4 text-center font-bold uppercase tracking-wider">Charges are deducted from wallet instantly per request.</p>
-              </div>
-            </div>
-          </div>
+          <BillingTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 10: IAM & permissions MEMBERS MANAGER
             ============================================== */}
         {activeTab === 'iam' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Shield className="w-6 h-6 text-indigo-600" />
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">IAM & Permissions Administrator</h2>
-                    <p className="text-xs text-slate-500 max-w-2xl mt-1">
-                      Manage and audit organizational members and their administrative execution permissions.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-4 border-b border-slate-100">
-                {['Identity & Access', 'IAM', 'Service Accounts', 'Groups', 'Privileged Access Manager', 'Roles', 'Workload Identity Federation', 'Workforce Identity Federation', 'Principal Access Boundary'].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setIamSubTab(tab)}
-                    className={`px-4 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                      iamSubTab === tab
-                        ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600'
-                        : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {iamSubTab === 'IAM' && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-4 p-5 rounded-2xl border border-slate-200 bg-white">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">ADD DIRECT MEMBER</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">DEVELOPER EMAIL</label>
-                      <input 
-                        type="email" 
-                        placeholder="developer@phrscrowd.local"
-                        value={newMemberEmail} 
-                        onChange={(e) => setNewMemberEmail(e.target.value)}
-                        className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-100 border-slate-300 text-slate-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">ACCESS ROLE</label>
-                      <select
-                        value={newMemberRole}
-                        onChange={(e) => setNewMemberRole(e.target.value)}
-                        className="w-full p-2.5 text-xs rounded-lg border focus:outline-none cursor-pointer bg-slate-100 border-slate-300 text-slate-900"
-                      >
-                        <option value="Owner">Owner (Full VPS root access)</option>
-                        <option value="Editor">Editor (SQLite and SMS write access)</option>
-                        <option value="Viewer">Viewer (Read-only analytics console)</option>
-                      </select>
-                    </div>
-
-                    <button 
-                      onClick={() => {
-                        if (!newMemberEmail.trim()) {
-                          setHomeToast('‚ö†Ô∏è Enter member email!');
-                          setTimeout(() => setHomeToast(null), 3000);
-                          return;
-                        }
-                        setIamMembers(prev => [...prev, { email: newMemberEmail, role: newMemberRole, addedAt: '2026-08-24' }]);
-                        setHomeToast(`‚úì Added direct member: ${newMemberEmail}`);
-                        setTimeout(() => setHomeToast(null), 3000);
-                        setNewMemberEmail('');
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold shadow-lg transition"
-                    >
-                      ADD WORKSPACE MEMBER
-                    </button>
-                  </div>
-                </div>
-
-                <div className="md:col-span-8 p-5 rounded-2xl border border-slate-200 bg-white">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">ACTIVE POLICY MEMBERS</h3>
-                  <div className="space-y-3 font-mono text-xs">
-                    {iamMembers.map((member, i) => (
-                      <div key={i} className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50/50">
-                        <div>
-                          <div className="font-bold text-slate-800">{member.email}</div>
-                          <div className="text-[10px] text-slate-400">Policy bound on: {member.addedAt}</div>
-                        </div>
-                        <span className="px-2.5 py-1 text-[10px] bg-indigo-100 text-indigo-600 font-bold rounded">
-                          {member.role}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {iamSubTab === 'Service Accounts' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Service Accounts</h3>
-                  <button className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold">Create Account</button>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { name: 'phrs-firebase-sdk', email: 'firebase-admin@phrs-crowd.iam.gserviceaccount.com' },
-                    { name: 'cloud-sql-proxy', email: 'sql-proxy@phrs-crowd.iam.gserviceaccount.com' }
-                  ].map((sa, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">{sa.name}</p>
-                        <p className="text-[10px] text-slate-500 font-mono mt-1">{sa.email}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="text-[10px] font-bold text-indigo-600">Keys</button>
-                        <button className="text-[10px] font-bold text-slate-400">Audit</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {iamSubTab !== 'IAM' && iamSubTab !== 'Service Accounts' && (
-              <div className="p-12 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 bg-white">
-                <Lock className="w-8 h-8 mb-3 opacity-20" />
-                <p className="text-sm font-mono italic">{iamSubTab} details are restricted or not yet configured.</p>
-              </div>
-            )}
-          </div>
+          <IamTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 11: MARKETPLACE TEMPLATES
             ============================================== */}
         {activeTab === 'marketplace' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <ShoppingCart className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">Marketplace templates</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Deploy lightweight, pre-configured software routers and SMS verification packages straight to your SQLite cluster storage buckets.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[
-                { id: 'app1', name: 'WhatsApp SMS Webhook', vendor: 'Meta Community', price: 'FREE', desc: 'Syncs dynamic phone verifications and trigger templates.' },
-                { id: 'app2', name: 'SQLite Backup cron daemon', vendor: 'PHRS Core Tech', price: 'FREE', desc: 'Auto-sync active .sqlite file backup intervals.' },
-                { id: 'app3', name: 'SMS Auth OTP Validator', vendor: 'Pharas Telecom', price: 'FREE', desc: 'Provides dynamic routing validation logs directly.' },
-                { id: 'app4', name: 'BigQuery DB Indexer', vendor: 'Analytical Labs', price: 'FREE', desc: 'Quick search indices on SQLite table columns.' }
-              ].map((app, i) => (
-                <div key={i} className={`p-5 rounded-2xl border flex flex-col justify-between bg-white transition ${selectedMarketplaceApp === app.id ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200'}`}>
-                  <div>
-                    <span className="text-[10px] font-mono text-slate-400 font-bold">{app.vendor}</span>
-                    <h3 className="font-bold text-sm text-slate-900 mt-1 mb-2">{app.name}</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed mb-4">{app.desc}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs font-mono font-bold">
-                      <span>COST:</span>
-                      <span className="text-emerald-600">{app.price}</span>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setSelectedMarketplaceApp(app.id);
-                        setHomeToast(`‚úì Imported template "${app.name}" into Compute Engine list!`);
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-mono text-[10px] py-1.5 rounded-lg font-semibold transition"
-                    >
-                      {selectedMarketplaceApp === app.id ? 'TEMPLATE READY' : 'IMPORT TEMPLATE'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <MarketplaceTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 12: AUTONOMOUS AGENT PLATFORM
             ============================================== */}
         {activeTab === 'agent_platform' && (
-          <div className="space-y-6 animate-fade-in">
-            {/* Header section with PHRS-like sub-navigation */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-              <div className="p-6 pb-2">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 text-blue-600" />
-                    <h2 className="text-xl font-bold tracking-tight text-slate-800">Agent Platform (‡∞°‡±à‡∞®‡∞Æ‡∞ø‡∞ï‡±ç ‡∞ï‡±ã‡∞∞‡±ç)</h2>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setAgentPlatformSubTab('agents');
-                      setHomeToast("Ready to create a new autonomous agent");
-                      setTimeout(() => setHomeToast(null), 2500);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition shadow-sm"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>CREATE AGENT</span>
-                  </button>
-                </div>
-                
-                {/* Internal Sub-Tabs */}
-                <div className="flex items-center gap-6 border-b border-slate-100">
-                  {['Overview', 'Studio', 'Models', 'Agents', 'Notebooks', 'Security'].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setAgentPlatformSubTab(tab.toLowerCase().replace(' ', '_') as any)}
-                      className={`pb-3 text-sm font-medium transition-colors relative ${
-                        agentPlatformSubTab === tab.toLowerCase().replace(' ', '_') 
-                          ? 'text-blue-600' 
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      {tab}
-                      {agentPlatformSubTab === tab.toLowerCase().replace(' ', '_') && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-6 pt-4 relative">
-                
-                {/* Admin Auth Modal Overlay */}
-                {showAuthModal && (
-                  <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center p-6 rounded-b-2xl">
-                    <div className="max-w-md w-full bg-white border border-slate-200 shadow-2xl rounded-2xl p-6 space-y-6 animate-scale-in">
-                      <div className="text-center space-y-2">
-                        <Lock className="w-10 h-10 text-blue-600 mx-auto" />
-                        <h3 className="text-lg font-bold text-slate-800">Admin Authorization Required</h3>
-                        <p className="text-xs text-slate-500">‡∞Ö‡∞°‡±ç‡∞Æ‡∞ø‡∞®‡±ç ‡∞Ö‡∞®‡±Å‡∞Æ‡∞§‡∞ø ‡∞≤‡±á‡∞ï‡±Å‡∞Ç‡∞°‡∞æ ‡∞è ‡∞ö‡∞∞‡±ç‡∞Ø ‡∞§‡±Ä‡∞∏‡±Å‡∞ï‡±ã‡∞¨‡∞°‡∞¶‡±Å. ‡∞¶‡∞Ø‡∞ö‡±á‡∞∏‡∞ø ‡∞™‡∞æ‡∞∏‡±ç‚Äå‡∞µ‡∞∞‡±ç‡∞°‡±ç ‡∞®‡∞Æ‡±ã‡∞¶‡±Å ‡∞ö‡±á‡∞Ø‡∞Ç‡∞°‡∞ø.</p>
-                      </div>
-
-                      {protocolStep === 'password' ? (
-                        <div className="space-y-4">
-                          <input 
-                            type="password" 
-                            placeholder="Enter Admin Password"
-                            value={adminPasswordInput}
-                            onChange={(e) => setAdminPasswordInput(e.target.value)}
-                            className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-center font-mono"
-                          />
-                          <button 
-                            onClick={() => {
-                              if (adminPasswordInput === ADMIN_PASSWORD) {
-                                setProtocolStep('confirm');
-                              } else {
-                                alert('Incorrect Password!');
-                                setAdminPasswordInput('');
-                              }
-                            }}
-                            className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition"
-                          >
-                            VERIFY PASSWORD
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-center">
-                            <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
-                            <p className="text-xs font-bold text-emerald-800">Password Verified Successfully!</p>
-                          </div>
-                          <p className="text-xs text-center text-slate-600">‡∞à ‡∞ö‡∞∞‡±ç‡∞Ø‡∞®‡±Å ‡∞ï‡±ä‡∞®‡∞∏‡∞æ‡∞ó‡∞ø‡∞Ç‡∞ö‡∞æ‡∞≤‡∞®‡±Å‡∞ï‡±Å‡∞Ç‡∞ü‡±Å‡∞®‡±ç‡∞®‡∞æ‡∞∞‡∞æ? (Confirm Action?)</p>
-                          <div className="flex gap-3">
-                            <button 
-                              onClick={() => {
-                                setShowAuthModal(false);
-                                setProtocolStep('password');
-                                setAdminPasswordInput('');
-                              }}
-                              className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition"
-                            >
-                              CANCEL
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setIsAdminAuthorized(true);
-                                setShowAuthModal(false);
-                                setProtocolStep('password');
-                                setAdminPasswordInput('');
-                                // Perform the pending action (deploying agent)
-                                if (newAgentName.trim()) {
-                                  const newAgent = {
-                                    id: `agent-${Date.now()}`,
-                                    name: newAgentName,
-                                    model: newAgentModel,
-                                    systemPrompt: newAgentPrompt || 'You are a helpful assistant.',
-                                    created: new Date().toISOString().split('T')[0]
-                                  };
-                                  setAgents([...agents, newAgent]);
-                                  setNewAgentName('');
-                                  setNewAgentPrompt('');
-                                  setModificationCount(prev => prev + 1);
-                                  setHomeToast(`‚úì Agent "${newAgentName}" deployed with Admin approval!`);
-                                  setTimeout(() => setHomeToast(null), 3000);
-                                  
-                                  // Rule reading trigger after 3 modifications
-                                  if ((modificationCount + 1) % 3 === 0) {
-                                    setTimeout(() => {
-                                      setShowSystemRules(true);
-                                      setRuleCountdown(50);
-                                    }, 1000);
-                                  }
-                                }
-                              }}
-                              className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition"
-                            >
-                              CONFIRM OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* System Rules Overlay (50 seconds) */}
-                {showSystemRules && (
-                  <div className="absolute inset-0 z-[60] bg-slate-900 flex flex-col items-center justify-center p-8 rounded-b-2xl animate-fade-in">
-                    <div className="max-w-2xl w-full space-y-6">
-                      <div className="flex items-center gap-3 text-blue-400 mb-4">
-                        <TerminalIcon className="w-6 h-6" />
-                        <h3 className="text-xl font-mono font-bold uppercase tracking-widest">Reading Agent Protocol Rules...</h3>
-                      </div>
-                      <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl font-mono text-xs text-blue-300 space-y-4 shadow-2xl overflow-y-auto max-h-[60vh]">
-                        <p className="text-amber-500 font-bold underline">MANDATORY SYSTEM PROTOCOL (40 GOLDEN RULES - 50 SECONDS TIMING)</p>
-                        <p>1. Admin Auth: Password 6606.ok and 'OK' mandatory.</p>
-                        <p>2. Pin-point Edits: No full file rewrites allowed.</p>
-                        <p>3. Zero-Bug Policy: Lint and Build must pass.</p>
-                        <p>4. Reporting: Mandatory Audit Report after edits.</p>
-                        <p>5. Deep Scan: 50s wait after every 2 edits.</p>
-                        <p>6. No Placeholders: Every code block must be functional.</p>
-                        <p>7. Security: API keys only via server-side proxy.</p>
-                        <p>8. PHRS Network: Node connections must be verified via IP mapping.</p>
-                        <p>9. Deployments: Live hosting updates require confirmation.</p>
-                        <p>10. Database: Realtime Cluster schema adjustments require validation.</p>
-                        <p>11. Authentication: User credentials must be encrypted in SQLite.</p>
-                        <p>12. Gateway: SMS & OTP limits strictly enforced at 25 INR recharge.</p>
-                        <p>13. Storage: Asset limits restricted to 50MB per upload.</p>
-                        <p>14. Kernel Logs: Terminal streams must reflect real container processes.</p>
-                        <p>15. UI Consistency: Tailwind CSS standard must be followed strictly.</p>
-                        <p>16. Mobile Sync: Android APK endpoints must align with main server routing.</p>
-                        <p>17. Firewall: Only whitelisted IP ranges can access the master console.</p>
-                        <p>18. Version Control: Local commits trigger auto-sync with the AI agent.</p>
-                        <p>19. Hybrid Bridge: AI agent connectivity requires WebSocket confirmation.</p>
-                        <p>20. Telemetry: VPS Metrics should update every 2 seconds.</p>
-                        <p>21. Rate Limiting: 100 requests per minute per node.</p>
-                        <p>22. Secrets: Environment variables must be masked in the dashboard.</p>
-                        <p>23. Backup: Nightly database snapshots to local dist/hosted/backups.</p>
-                        <p>24. Analytics: Traffic routing logs stored for 30 days.</p>
-                        <p>25. Webhooks: Third-party integration requires SSL endpoints.</p>
-                        <p>26. Error Handling: Silent catch and log for non-critical exceptions.</p>
-                        <p>27. Uptime: Auto-restart PM2 daemons on crash detection.</p>
-                        <p>28. Docker: Container orchestration requires root privilege escalations.</p>
-                        <p>29. Caching: Memorystore Redis fallback configured for sessions.</p>
-                        <p>30. Scale: Horizontal pod autoscaler triggers at 80% CPU.</p>
-                        <p>31. Isolation: Multi-tenant schemas must use distinct namespaces.</p>
-                        <p>32. Dependencies: NPM audit enforced on every cloud build.</p>
-                        <p>33. Access: Read-only views for unauthorized dashboard guests.</p>
-                        <p>34. Routing: 404 paths redirect to the custom PHRS fallback page.</p>
-                        <p>35. Styling: Dark mode and light mode must switch seamlessly.</p>
-                        <p>36. Feedback: Toast notifications must disappear after 3 seconds.</p>
-                        <p>37. Responsiveness: Dashboard components must flex on mobile displays.</p>
-                        <p>38. Modularity: Reusable React components for terminal loggers.</p>
-                        <p>39. Transparency: AI reasoning steps must be logged in audit trails.</p>
-                        <p>40. Finality: 50-Second rule timer ensures mandatory review protocol completion.</p>
-                        <p className="text-slate-500 italic">...All 40 rules are active and monitored in real-time on PHRS CROWD SERVER.</p>
-                        <div className="pt-4 flex items-center justify-between border-t border-slate-800">
-                          <span className="text-[10px] text-amber-500 italic font-bold">Deep scan in progress... Please wait {ruleCountdown}s.</span>
-                          <button 
-                            disabled={ruleCountdown > 0}
-                            onClick={() => setShowSystemRules(false)}
-                            className={`px-4 py-1 rounded font-bold transition ${ruleCountdown > 0 ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-500'}`}
-                          >
-                            {ruleCountdown > 0 ? `LOCKED (${ruleCountdown}s)` : 'ACKNOWLEDGE & RESUME'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {/* OVERVIEW SUB-TAB */}
-                {agentPlatformSubTab === 'overview' && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Active Agents</h3>
-                      <div className="text-3xl font-bold text-slate-800">{agents.length}</div>
-                    </div>
-                    <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Model Calls</h3>
-                      <div className="text-3xl font-bold text-slate-800">14.2k</div>
-                    </div>
-                    <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Health Status</h3>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                        <span className="text-xl font-bold text-slate-800">Operational</span>
-                      </div>
-                    </div>
-                    <div className="md:col-span-3 p-5 rounded-xl border border-blue-100 bg-blue-50/30">
-                      <h3 className="font-bold text-sm text-blue-800 mb-2">Welcome to the Dynamic Agent Core</h3>
-                      <p className="text-xs text-blue-600/80 leading-relaxed">
-                        The PHRS Agent Platform allows you to deploy autonomous system agents that can monitor SQLite clusters, 
-                        manage Gemini model load balancing, and automate routing tasks without manual intervention.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* STUDIO SUB-TAB (The interactive chat) */}
-                {agentPlatformSubTab === 'studio' && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    <div className="md:col-span-4 space-y-4">
-                      <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Target Agent</label>
-                        <select 
-                          value={selectedAgentId}
-                          onChange={(e) => setSelectedAgentId(e.target.value)}
-                          className="w-full p-2 text-xs rounded-lg border border-slate-200 focus:outline-none bg-white"
-                        >
-                          {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                        </select>
-                      </div>
-                      <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">System Instructions</label>
-                        <div className="text-[11px] text-slate-600 bg-white p-3 rounded-lg border border-slate-100 font-mono">
-                          {agents.find(a => a.id === selectedAgentId)?.systemPrompt || 'No instructions set.'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-8 flex flex-col h-[400px] border border-slate-200 rounded-xl bg-slate-50/20">
-                      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-                        {agentChatHistory.length === 0 && (
-                          <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
-                            <Sparkles className="w-8 h-8 mb-2" />
-                            <p className="text-xs font-mono">Select an agent and start a session...</p>
-                          </div>
-                        )}
-                        {agentChatHistory.map((msg, i) => (
-                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] p-3 rounded-2xl text-xs shadow-xs ${
-                              msg.role === 'user' 
-                                ? 'bg-blue-600 text-white rounded-tr-none' 
-                                : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
-                            }`}>
-                              <p className="leading-relaxed">{msg.text}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="p-3 border-t border-slate-100 bg-white rounded-b-xl flex gap-2">
-                        <input 
-                          type="text" 
-                          placeholder="Command agent to inspect cluster..."
-                          value={agentChatInput}
-                          onChange={(e) => setAgentChatInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && agentChatInput.trim()) {
-                              setAgentChatHistory(prev => [...prev, { role: 'user', text: agentChatInput }]);
-                              setTimeout(() => {
-                                setAgentChatHistory(prev => [...prev, { role: 'model', text: `Agent [${agents.find(a => a.id === selectedAgentId)?.name}]: Executing query on SQLite cluster... Optimization complete. Health 100%.` }]);
-                              }, 800);
-                              setAgentChatInput('');
-                            }
-                          }}
-                          className="flex-1 px-4 py-2 text-xs rounded-full bg-slate-100 border-none focus:ring-1 focus:ring-blue-500"
-                        />
-                        <button 
-                          onClick={() => {
-                            if (agentChatInput.trim()) {
-                              setAgentChatHistory(prev => [...prev, { role: 'user', text: agentChatInput }]);
-                              setTimeout(() => {
-                                setAgentChatHistory(prev => [...prev, { role: 'model', text: `Agent [${agents.find(a => a.id === selectedAgentId)?.name}]: Verified port routing. All systems responding nominal.` }]);
-                              }, 800);
-                              setAgentChatInput('');
-                            }
-                          }}
-                          className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
-                        >
-                          <Send className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* MODELS SUB-TAB */}
-                {agentPlatformSubTab === 'models' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { name: 'Gemini 1.5 Pro', desc: 'High intelligence, large context windows (2M tokens).', status: 'Active' },
-                      { name: 'Gemini 1.5 Flash', desc: 'Fast, lightweight optimized for routing & speed.', status: 'Active' },
-                      { name: 'DeepSeek-V3', desc: 'Open-weights specialized for coding tasks.', status: 'Standby' },
-                      { name: 'Llama 3.1 70B', desc: 'Meta open model for versatile deployments.', status: 'Standby' }
-                    ].map((m, i) => (
-                      <div key={i} className="p-4 rounded-xl border border-slate-200 bg-white flex justify-between items-center">
-                        <div>
-                          <h4 className="font-bold text-sm text-slate-800">{m.name}</h4>
-                          <p className="text-[11px] text-slate-500">{m.desc}</p>
-                        </div>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${m.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                          {m.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* AGENTS SUB-TAB (Dynamic List & Create) */}
-                {agentPlatformSubTab === 'agents' && (
-                  <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                      {/* Create Agent Form */}
-                      <div className="md:w-1/3 p-5 rounded-2xl border border-blue-100 bg-blue-50/20">
-                        <h3 className="text-sm font-bold text-blue-800 mb-4 flex items-center gap-2">
-                          <Plus className="w-4 h-4" /> CREATE NEW AGENT
-                        </h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Agent Name</label>
-                            <input 
-                              type="text" 
-                              value={newAgentName}
-                              onChange={(e) => setNewAgentName(e.target.value)}
-                              placeholder="e.g. Storage Manager"
-                              className="w-full p-2 text-xs rounded-lg border border-slate-200 focus:outline-none bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Base Model</label>
-                            <select 
-                              value={newAgentModel}
-                              onChange={(e) => setNewAgentModel(e.target.value)}
-                              className="w-full p-2 text-xs rounded-lg border border-slate-200 focus:outline-none bg-white"
-                            >
-                              <option>Gemini 1.5 Flash</option>
-                              <option>Gemini 1.5 Pro</option>
-                              <option>DeepSeek Chat</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">System Prompt</label>
-                            <textarea 
-                              rows={3}
-                              value={newAgentPrompt}
-                              onChange={(e) => setNewAgentPrompt(e.target.value)}
-                              placeholder="Describe agent behavior..."
-                              className="w-full p-2 text-xs rounded-lg border border-slate-200 focus:outline-none bg-white font-mono"
-                            />
-                          </div>
-                          <button 
-                            onClick={() => {
-                              if (!newAgentName.trim()) {
-                                setHomeToast("Please provide an agent name");
-                                setTimeout(() => setHomeToast(null), 2500);
-                                return;
-                              }
-                              setShowAuthModal(true);
-                            }}
-                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition"
-                          >
-                            DEPLOY AGENT (REQUIRES AUTH)
-                          </button>
-                        </div>
-                      </div>
-                      {/* Agent List */}
-                      <div className="md:w-2/3">
-                        <h3 className="text-sm font-bold text-slate-800 mb-4">DEPLOYED AGENTS</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {agents.map(a => (
-                            <div key={a.id} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 transition group">
-                              <div className="flex justify-between items-start mb-2">
-                                <h4 className="font-bold text-sm text-slate-800">{a.name}</h4>
-                                <button 
-                                  onClick={() => {
-                                    setAgents(agents.filter(ag => ag.id !== a.id));
-                                    setHomeToast(`Agent ${a.name} decommissioned.`);
-                                    setTimeout(() => setHomeToast(null), 2500);
-                                  }}
-                                  className="text-slate-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                              <div className="space-y-1 text-[10px] font-mono text-slate-500">
-                                <div>MODEL: <span className="text-blue-600">{a.model}</span></div>
-                                <div>DEPLOYED: {a.created}</div>
-                              </div>
-                              <button 
-                                onClick={() => {
-                                  setSelectedAgentId(a.id);
-                                  setAgentPlatformSubTab('studio');
-                                }}
-                                className="mt-4 w-full py-1.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-[10px] font-bold text-slate-600 transition"
-                              >
-                                OPEN IN STUDIO
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {agentPlatformSubTab === 'security' && (
-                  <div className="space-y-6">
-                    <div className="p-5 rounded-2xl border border-blue-200 bg-blue-50/20">
-                      <div className="flex items-center gap-3 mb-4">
-                        <Lock className="w-5 h-5 text-blue-600" />
-                        <h3 className="text-lg font-bold text-blue-900">Admin Protocol Settings & Atomic Deep Scan</h3>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-4">
-                          <div className="flex justify-between items-center mb-4">
-                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Protocol Rules & Deep Scan</h4>
-                            <button 
-                              onClick={() => { setShowSystemRules(true); setRuleCountdown(50); }}
-                              className="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-[10px] font-bold rounded transition"
-                            >
-                              VIEW ALL 40 RULES
-                            </button>
-                          </div>
-                          <ul className="text-[11px] text-slate-600 space-y-3 list-disc pl-4">
-                            <li>‡∞Ö‡∞°‡±ç‡∞Æ‡∞ø‡∞®‡±ç ‡∞Ö‡∞®‡±Å‡∞Æ‡∞§‡∞ø ‡∞≤‡±á‡∞ï‡±Å‡∞Ç‡∞°‡∞æ ‡∞è ‡∞ö‡∞∞‡±ç‡∞Ø ‡∞§‡±Ä‡∞∏‡±Å‡∞ï‡±ã‡∞¨‡∞°‡∞¶‡±Å.</li>
-                            <li>‡∞™‡±ç‡∞∞‡∞§‡∞ø ‡∞Æ‡∞æ‡∞∞‡±ç‡∞™‡±Å‡∞ï‡±Å ‡∞™‡∞æ‡∞∏‡±ç‚Äå‡∞µ‡∞∞‡±ç‡∞°‡±ç ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞ï‡∞®‡±ç‡∞´‡∞∞‡±ç‡∞Æ‡±á‡∞∑‡∞®‡±ç ‡∞Ö‡∞µ‡∞∏‡∞∞‡∞Ç.</li>
-                            <li>‡∞Ö‡∞ï‡±ç‡∞∑‡∞∞‡∞æ‡∞≤ ‡∞∏‡±ç‡∞•‡∞æ‡∞Ø‡∞ø ‡∞∏‡∞µ‡∞∞‡∞£‡∞≤‡±Å ‡∞Æ‡∞æ‡∞§‡±ç‡∞∞‡∞Æ‡±á ‡∞Ö‡∞®‡±Å‡∞Æ‡∞§‡∞ø‡∞Ç‡∞ö‡∞¨‡∞°‡∞§‡∞æ‡∞Ø‡∞ø.</li>
-                            <li className="text-blue-700 font-bold">100-Second Atomic Deep Scan: ‡∞™‡±ç‡∞∞‡∞§‡∞ø ‡∞∏‡∞¨‡±ç-‡∞´‡±Ä‡∞ö‡∞∞‡±ç, ‡∞¨‡∞ü‡∞®‡±ç, ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞ï‡±ã‡∞°‡±ç ‡∞≤‡±à‡∞®‡±ç ‡∞®‡∞ø‡∞∞‡∞Ç‡∞§‡∞∞‡∞Ç 100 ‡∞∏‡±Ü‡∞ï‡∞®‡±ç‡∞≤ ‡∞ü‡±à‡∞Æ‡∞∞‡±ç‚Äå‡∞§‡±ã ‡∞µ‡±Ü‡∞∞‡∞ø‡∞´‡±à ‡∞ö‡±á‡∞Ø‡¥™‡µç‡¥™‡µÜ‡¥ü‡∞æ‡∞≤‡∞ø.</li>
-                            <li className="text-emerald-700 font-bold">Agent Timing Scheduler: ‡∞è‡∞ú‡±Ü‡∞Ç‡∞ü‡±ç‡∞≤‡±Å ‡∞Æ‡∞∞‡∞ø‡∞Ø‡±Å ‡∞Ü‡∞ü‡±ã‡∞Æ‡±á‡∞ü‡±Ü‡∞°‡±ç ‡∞ü‡∞æ‡∞∏‡±ç‡∞ï‡±ç‚Äå‡∞≤‡±Å ‡∞ü‡±à‡∞Æ‡∞ø‡∞Ç‡∞ó‡±ç ‡∞∏‡±Ü‡∞ü‡±ç ‡∞ö‡±á‡∞∏‡±Å‡∞ï‡±Å‡∞®‡∞ø ‡∞¨‡±ç‡∞Ø‡∞æ‡∞ï‡±ç‚Äå‡∞ó‡±ç‡∞∞‡±å‡∞Ç‡∞°‡±ç‚Äå‡∞≤‡±ã ‡∞∞‡∞®‡±ç ‡∞Ö‡∞µ‡±ç‡∞µ‡∞æ‡∞≤‡∞ø.</li>
-                          </ul>
-                        </div>
-                        <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-4">
-                          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest">100s Atomic Deep Scan Scheduler</h4>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                              <div>
-                                <div className="text-xs font-bold text-slate-800">Scan Status</div>
-                                <div className="text-[10px] text-slate-500 font-mono">
-                                  {isAtomicScanning ? `Scanning... Time remaining: ${deepScanTimer}s` : 'Ready for Atomic Scan'}
-                                </div>
-                              </div>
-                              <button
-                                onClick={startAtomicDeepScan}
-                                disabled={isAtomicScanning}
-                                className={`px-4 py-2 rounded-lg font-bold text-xs text-white transition ${
-                                  isAtomicScanning ? 'bg-amber-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                                }`}
-                              >
-                                {isAtomicScanning ? `SCANNING (${deepScanTimer}s)` : 'START 100s DEEP SCAN'}
-                              </button>
-                            </div>
-
-                            {/* Live Atomic Scan Logs */}
-                            <div className="bg-slate-950 text-emerald-400 font-mono text-[10px] p-3 rounded-xl h-36 overflow-y-auto space-y-1">
-                              {atomicLogs.length === 0 ? (
-                                <span className="text-slate-500">Click start to run 100s atomic deep scan with live timer...</span>
-                              ) : (
-                                atomicLogs.map((log, idx) => (
-                                  <div key={idx} className="leading-tight">{log}</div>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* NOTEBOOKS SUB-TAB */}
-                {agentPlatformSubTab === 'notebooks' && (
-                  <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl text-slate-400">
-                    <FileCode className="w-8 h-8 mb-2" />
-                    <p className="text-xs font-mono">Dynamic AI Notebooks feature coming soon to Cloud Hub.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <AgentPlatformTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 13: KUBERNETES CONTAINER DEPLOYER
             ============================================== */}
         {activeTab === 'kubernetes' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <Layers className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">PHRS Kubernetes Engine (PKE)</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Monitor your container runtime replicas. Scale docker pods, verify telemetry memory allocation, and secure localized port forwarding rules.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl border border-slate-200 bg-white">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase">RUNNING CONTAINER REPLICAS</h3>
-                <button 
-                  onClick={() => {
-                    const newPodId = Math.floor(100 + Math.random() * 900);
-                    setK8sPods(prev => [...prev, { name: `phrs-api-replica-${newPodId}`, status: 'Running', cpu: 0.8, ram: 110 }]);
-                    setHomeToast(`‚úì Spun up GKE Pod: phrs-api-replica-${newPodId}`);
-                    setTimeout(() => setHomeToast(null), 3000);
-                  }}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-[10px] px-3 py-1.5 rounded-lg font-semibold transition"
-                >
-                  SPIN UP CONTAINER REPLICA
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {k8sPods.map((pod, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 font-mono text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                      <span className="font-bold text-slate-800">{pod.name}</span>
-                    </div>
-                    <div className="flex gap-6 mt-2 sm:mt-0 text-[10px] text-slate-500">
-                      <div>CPU Load: <strong className="text-slate-700">{pod.cpu}%</strong></div>
-                      <div>RAM usage: <strong className="text-slate-700">{pod.ram} MB</strong></div>
-                      <div>Status: <span className="text-emerald-600 font-bold">{pod.status}</span></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <KubernetesTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 14: CLOUD STORAGE BUCKETS
             ============================================== */}
         {activeTab === 'cloud_storage' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <Database className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">Cloud Storage Buckets</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Store binary assets, static webpage layouts, and raw analytical .sqlite database backups in regionally distributed static buckets.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              <div className="md:col-span-5 p-5 rounded-2xl border border-slate-200 bg-white">
-                <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">CREATE NEW BUCKET</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-500 mb-1">UNIQUE BUCKET NAME</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. static-phrs-assets"
-                      value={newBucketName} 
-                      onChange={(e) => setNewBucketName(e.target.value)}
-                      className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-100 border-slate-300 text-slate-900"
-                    />
-                  </div>
-
-                  <button 
-                    onClick={() => {
-                      if (!newBucketName.trim()) {
-                        alert('Enter bucket name!');
-                        return;
-                      }
-                      setBuckets(prev => [...prev, { name: newBucketName.toLowerCase().replace(/\s+/g, '-'), region: 'asia-south1', size: '0 Bytes', created: '2026-08-24' }]);
-                      setHomeToast(`‚úì Created storage bucket: ${newBucketName}`);
-                      setTimeout(() => setHomeToast(null), 3000);
-                      setNewBucketName('');
-                    }}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
-                  >
-                    CREATE BUCKET
-                  </button>
-                </div>
-
-                <div className="mt-6 border-t border-slate-100 pt-6">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-3">UPLOAD MOCK FILE</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">FILE NAME</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. index.html"
-                        value={uploadFileName} 
-                        onChange={(e) => setUploadFileName(e.target.value)}
-                        className="w-full p-2 text-xs rounded-lg border font-mono bg-slate-100 border-slate-300 text-slate-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">TARGET STORAGE BUCKET</label>
-                      <select 
-                        value={uploadTargetBucket} 
-                        onChange={(e) => setUploadTargetBucket(e.target.value)}
-                        className="w-full p-2 text-xs rounded-lg border cursor-pointer bg-slate-100 border-slate-300 text-slate-900"
-                      >
-                        {buckets.map((b, idx) => (
-                          <option key={idx} value={b.name}>{b.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        if (!uploadFileName.trim()) {
-                          alert('Enter upload file name!');
-                          return;
-                        }
-                        setIsUploading(true);
-                        setTimeout(() => {
-                          setStorageFiles(prev => [...prev, { name: uploadFileName, size: '42 KB', bucket: uploadTargetBucket }]);
-                          setIsUploading(false);
-                          setHomeToast(`‚úì Uploaded "${uploadFileName}" to bucket ${uploadTargetBucket}`);
-                          setTimeout(() => setHomeToast(null), 3000);
-                          setUploadFileName('');
-                        }, 800);
-                      }}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
-                    >
-                      {isUploading ? 'UPLOADING...' : 'UPLOAD TO BUCKET'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="md:col-span-7 p-5 rounded-2xl border border-slate-200 bg-white">
-                <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4 font-semibold">STORAGE INVENTORY BUCKETS</h3>
-                <div className="space-y-4 font-mono text-xs">
-                  {buckets.map((bucket, i) => (
-                    <div key={i} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-bold text-slate-800">{bucket.name}</span>
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-bold rounded">
-                          {bucket.region}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-slate-400">Created: {bucket.created} | Size: {bucket.size}</div>
-                      <div className="mt-3 pt-3 border-t border-slate-100">
-                        <span className="text-[9px] font-bold text-indigo-500 block mb-1">CONTAINED FILES:</span>
-                        <div className="space-y-1">
-                          {storageFiles.filter(f => f.bucket === bucket.name).length === 0 ? (
-                            <span className="text-[10px] text-slate-400 italic">No files in bucket.</span>
-                          ) : (
-                            storageFiles.filter(f => f.bucket === bucket.name).map((f, fileIdx) => (
-                              <div key={fileIdx} className="flex justify-between text-[10px] text-slate-600">
-                                <span>üìÑ {f.name}</span>
-                                <span>{f.size}</span>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <CloudStorageTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 15: SECURITY SYSTEM
             ============================================== */}
         {activeTab === 'security' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Lock className="w-6 h-6 text-indigo-600" />
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Security Command Center</h2>
-                    <p className="text-xs text-slate-500 max-w-2xl mt-1">
-                      Centralized security, compliance, and posture management for all configured cloud environments.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-4 border-b border-slate-100">
-                {['Security Command Center', 'Overview', 'Graph Search', 'Issues', 'Findings', 'Assets', 'Compliance', 'Posture Management'].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => {
-                      setSecuritySubTab(tab);
-                      setHomeToast(`Security: Navigated to ${tab}`);
-                      setTimeout(() => setHomeToast(null), 2500);
-                    }}
-                    className={`px-4 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                      securitySubTab === tab
-                        ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600'
-                        : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {securitySubTab === 'Security Command Center' && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-5 p-5 rounded-2xl border border-slate-200 bg-white">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">TERMINAL KEYPAIR GENERATOR</h3>
-                  <p className="text-xs text-slate-500 mb-4">Click below to generate a secure RSA 2048-bit keypair for root ssh operations onto standalone local networks.</p>
-                  
-                  <button 
-                    onClick={() => {
-                      const randomId = Math.random().toString(36).substring(7);
-                      setGeneratedKeyPair({
-                        public: `ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8u6PHRS_${randomId}...`,
-                        private: `-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAsPHRS_${randomId}...\n-----END RSA PRIVATE KEY-----`
-                      });
-                      setHomeToast("‚úì Cryptographic SSH Keypair compiled!");
-                      setTimeout(() => setHomeToast(null), 3000);
-                    }}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2.5 rounded-lg font-semibold transition mb-4"
-                  >
-                    GENERATE 2048-BIT SSH KEYPAIR
-                  </button>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-[9px] font-mono text-slate-400 mb-1">ACTIVE PROTECTION ROUTE POLICY</label>
-                      <div className="flex gap-2">
-                        {['strict', 'balanced', 'permissive'].map((policy) => (
-                          <button 
-                            key={policy}
-                            onClick={() => setFirewallPolicy(policy)}
-                            className={`flex-1 py-1.5 px-2 text-[10px] font-mono rounded border transition ${firewallPolicy === policy ? 'bg-indigo-50 border-indigo-500 text-indigo-600 font-bold' : 'bg-slate-50 border-slate-200 text-slate-500'}`}
-                          >
-                            {policy.toUpperCase()}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="md:col-span-7 p-5 rounded-2xl border border-slate-200 bg-white">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4 font-semibold">SECURITY BLUEPRINTS & CREDENTIALS</h3>
-                  {generatedKeyPair ? (
-                    <div className="space-y-4 font-mono text-[10px]">
-                      <div>
-                        <span className="text-indigo-500 font-bold block mb-1">PUBLIC KEY (remote authorized_keys):</span>
-                        <div className="p-3 bg-slate-100 border border-slate-200 rounded-lg select-all max-h-[60px] overflow-y-auto">
-                          {generatedKeyPair.public}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-amber-600 font-bold block mb-1">PRIVATE KEY (local server identification - keep secret!):</span>
-                        <div className="p-3 bg-slate-900 text-emerald-400 border border-slate-800 rounded-lg select-all max-h-[100px] overflow-y-auto whitespace-pre">
-                          {generatedKeyPair.private}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-[200px] text-slate-400 font-mono text-xs italic">
-                      No keys generated yet. Click generate on the left.
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-
-            {securitySubTab === 'Overview' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Security Command Center Overview</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                   <div className="p-6 bg-rose-50 border border-rose-100 rounded-xl hover:shadow-md transition cursor-pointer">
-                     <p className="text-sm font-semibold text-rose-900 mb-1">Critical Vulnerabilities</p>
-                     <p className="text-4xl font-black text-rose-600">2</p>
-                   </div>
-                   <div className="p-6 bg-amber-50 border border-amber-100 rounded-xl hover:shadow-md transition cursor-pointer">
-                     <p className="text-sm font-semibold text-amber-900 mb-1">Open Security Issues</p>
-                     <p className="text-4xl font-black text-amber-600">14</p>
-                   </div>
-                   <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-xl hover:shadow-md transition cursor-pointer">
-                     <p className="text-sm font-semibold text-emerald-900 mb-1">Threats Blocked (24h)</p>
-                     <p className="text-4xl font-black text-emerald-600">83</p>
-                   </div>
-                </div>
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center">
-                  <p className="text-xs text-slate-600"><strong>System Status:</strong> Overall security posture is stable. 2 Critical patches require immediate attention.</p>
-                  <button onClick={() => setSecuritySubTab('Issues')} className="px-3 py-1 bg-white border border-slate-200 rounded text-xs font-bold shadow-sm hover:bg-slate-50">View Issues</button>
-                </div>
-              </div>
-            )}
-
-            {securitySubTab === 'Graph Search' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
-                <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase mb-4">Graph Search Builder</h3>
-                <p className="text-xs text-slate-500 mb-4">Run complex security queries across your PHRS Crowd resources to identify access paths and vulnerabilities.</p>
-                <div className="flex gap-4">
-                  <input type="text" defaultValue="MATCH (n:VirtualMachine) WHERE n.publicIp IS NOT NULL RETURN n" className="flex-1 p-3 border border-slate-200 rounded-lg font-mono text-xs focus:ring-1 focus:ring-indigo-500 bg-slate-50" />
-                  <button onClick={() => alert('Executing graph query on analytical backend...')} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 transition shadow-sm">SEARCH</button>
-                </div>
-                <div className="mt-6 border-2 border-dashed border-slate-200 rounded-xl h-40 flex items-center justify-center text-slate-400 font-mono text-xs bg-slate-50">
-                  Ready to execute CYPHER query...
-                </div>
-              </div>
-            )}
-
-            {securitySubTab === 'Issues' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Active Security Issues</h3>
-                  <button onClick={() => alert('Exporting issues as CSV...')} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded transition">Export CSV</button>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { id: 'SEC-001', title: 'Open SSH port exposed to internet', severity: 'Critical', resource: 'vps-core-node-1' },
-                    { id: 'SEC-002', title: 'IAM policy grants overly broad permissions', severity: 'High', resource: 'Project Wide' },
-                    { id: 'SEC-003', title: 'Unencrypted storage bucket detected', severity: 'High', resource: 'static-phrs-assets' },
-                    { id: 'SEC-004', title: 'Weak SSL Cipher Suite in Load Balancer', severity: 'Medium', resource: 'load-balancer-int' }
-                  ].map((issue, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-start gap-4">
-                        <div className={`mt-0.5 w-3 h-3 rounded-full ${issue.severity === 'Critical' ? 'bg-rose-500' : issue.severity === 'High' ? 'bg-amber-500' : 'bg-blue-500'}`}></div>
-                        <div>
-                          <p className="font-semibold text-slate-900 text-sm">{issue.title}</p>
-                          <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-500 font-mono">
-                            <span className="font-bold">ID: {issue.id}</span>
-                            <span>‚Ä¢</span>
-                            <span>Resource: {issue.resource}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button onClick={() => alert(`Initiating automated fix for ${issue.id}...`)} className="mt-4 sm:mt-0 px-4 py-1.5 bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 rounded-lg text-xs font-medium text-slate-700 shadow-sm transition-colors">
-                        Resolve Issue
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {securitySubTab === 'Findings' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Vulnerability Findings</h3>
-                  <button onClick={() => alert('Running deep vulnerability scanner...')} className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded hover:bg-indigo-100">Scan System</button>
-                </div>
-                <table className="w-full text-left text-xs font-mono border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 bg-slate-50">
-                      <th className="py-3 px-4 font-bold">FINDING CATEGORY</th>
-                      <th className="py-3 px-4 font-bold">DETECTOR MODULE</th>
-                      <th className="py-3 px-4 font-bold">CURRENT STATE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition">
-                      <td className="py-4 px-4 font-bold text-slate-700">Container Privilege Escalation</td>
-                      <td className="py-4 px-4 text-slate-600">Event Threat Detection</td>
-                      <td className="py-4 px-4"><span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded font-bold text-[10px]">MITIGATED</span></td>
-                    </tr>
-                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition">
-                      <td className="py-4 px-4 font-bold text-slate-700">Anomalous IAM Grant</td>
-                      <td className="py-4 px-4 text-slate-600">Web Security Scanner</td>
-                      <td className="py-4 px-4"><span className="px-2 py-1 bg-rose-100 text-rose-700 rounded font-bold text-[10px]">ACTIVE</span></td>
-                    </tr>
-                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition">
-                      <td className="py-4 px-4 font-bold text-slate-700">Exposed API Key in Codebase</td>
-                      <td className="py-4 px-4 text-slate-600">Secret Manager Agent</td>
-                      <td className="py-4 px-4"><span className="px-2 py-1 bg-amber-100 text-amber-700 rounded font-bold text-[10px]">INVESTIGATING</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {securitySubTab === 'Assets' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Discovered Assets Inventory</h3>
-                  <button onClick={() => alert('Triggering network asset discovery scan...')} className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 shadow-sm">Discover Assets</button>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { label: 'Compute Instances', count: 14, icon: 'üñ•Ô∏è' },
-                    { label: 'Storage Buckets', count: 8, icon: 'ü™£' },
-                    { label: 'Cloud SQL DBs', count: 3, icon: 'üóÑÔ∏è' },
-                    { label: 'VPC Networks', count: 2, icon: 'üåê' }
-                  ].map(asset => (
-                    <div key={asset.label} className="p-5 border border-slate-200 bg-slate-50 hover:bg-white hover:shadow-md transition rounded-xl text-center cursor-pointer" onClick={() => alert(`Viewing details for ${asset.label}`)}>
-                      <div className="text-3xl mb-3">{asset.icon}</div>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{asset.label}</p>
-                      <p className="text-3xl font-black text-slate-800 mt-1">{asset.count}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {securitySubTab === 'Compliance' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Compliance Frameworks</h3>
-                  <button onClick={() => alert('Downloading compliance report...')} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded">Export Report</button>
-                </div>
-                <div className="space-y-4">
-                  {[
-                    { name: 'CIS Google Cloud Computing Foundations v1.2.0', score: 85, pass: 42, fail: 8 },
-                    { name: 'PCI DSS v3.2.1', score: 92, pass: 104, fail: 3 },
-                    { name: 'ISO 27001', score: 78, pass: 88, fail: 15 }
-                  ].map(standard => (
-                    <div key={standard.name} className="p-5 border border-slate-200 rounded-xl flex flex-col md:flex-row md:justify-between md:items-center bg-slate-50 hover:bg-white hover:shadow-sm transition cursor-pointer" onClick={() => alert(`Generating detailed PDF report for ${standard.name}`)}>
-                      <div className="font-bold text-sm text-slate-800 mb-4 md:mb-0">{standard.name}</div>
-                      <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-auto">
-                        <div className="flex gap-4 text-xs justify-between md:justify-start w-full md:w-auto">
-                          <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">{standard.pass} PASS</span>
-                          <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded">{standard.fail} FAIL</span>
-                        </div>
-                        <div className="w-full md:w-48 bg-slate-200 rounded-full h-2.5">
-                          <div className={`h-2.5 rounded-full ${standard.score > 90 ? 'bg-emerald-500' : standard.score > 80 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{width: standard.score + "%"}}></div>
-                        </div>
-                        <span className="text-xs font-mono font-bold text-slate-700">{standard.score}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {securitySubTab === 'Posture Management' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
-                <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase mb-4">Security Posture Dashboard</h3>
-                <div className="p-8 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition">
-                  <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-                  </div>
-                  <h4 className="text-xl font-bold text-slate-800 mb-2">Posture is Healthy</h4>
-                  <p className="text-sm text-slate-500 max-w-md mx-auto">No major organizational misconfigurations detected. All VPC perimeters are secured and IAM grants are within acceptable bounds.</p>
-                  <button onClick={() => alert('Refreshing organization posture state...')} className="mt-6 px-6 py-2 bg-slate-900 shadow-md rounded-lg text-sm font-bold text-white hover:bg-slate-800 transition">Run Full Posture Scan</button>
-                </div>
-              </div>
-            )}
-          </div>
+          <SecurityTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 16: BIGQUERY CONSOLE
             ============================================== */}
         {activeTab === 'bigquery' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <Search className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">BigQuery analytical console</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Analyze and query structural route telemetry, transaction latencies, and SMS metadata logs stored safely in the database.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl border border-slate-200 bg-white">
-              <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-3">EXECUTE BIGQUERY SQL ANALYSIS</h3>
-              <div className="space-y-3 font-mono text-xs">
-                <textarea 
-                  rows={3}
-                  value={bqQuery}
-                  onChange={(e) => setBqQuery(e.target.value)}
-                  className="w-full p-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-900 text-emerald-400 border-slate-800"
-                />
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-slate-400">Database partition is auto-mounted locally to SQLite indexes.</span>
-                  <button 
-                    onClick={() => {
-                      setBqRunning(true);
-                      setTimeout(() => {
-                        setBqResults([
-                          { prompt: 'Check DB cluster', target: 'Gemini 1.5 Flash', latency: 420, cost: 0.00008, state: 'SUCCESS' },
-                          { prompt: 'Translate error log', target: 'DeepSeek Chat', latency: 980, cost: 0.00015, state: 'SUCCESS' }
-                        ]);
-                        setBqRunning(false);
-                        setHomeToast("‚úì BigQuery execution complete! Records loaded successfully.");
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }, 1000);
-                    }}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold transition"
-                  >
-                    {bqRunning ? 'ANALYZING DATABASE...' : 'RUN BIGQUERY'}
-                  </button>
-                </div>
-              </div>
-
-              {bqResults && (
-                <div className="mt-6 border-t border-slate-100 pt-6">
-                  <h4 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-3">QUERY RESULTS</h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left font-mono text-[11px] text-slate-600">
-                      <thead>
-                        <tr className="border-b border-slate-100 text-slate-400 text-[10px]">
-                          <th className="pb-2">LOG PROMPT</th>
-                          <th className="pb-2">MODEL ENGINE</th>
-                          <th className="pb-2">LATENCY</th>
-                          <th className="pb-2">COMPUTE COST</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {bqResults.map((row, i) => (
-                          <tr key={i}>
-                            <td className="py-2.5 text-slate-800 font-bold">"{row.prompt}"</td>
-                            <td className="py-2.5 text-indigo-600">{row.target}</td>
-                            <td className="py-2.5 text-emerald-600">{row.latency}ms</td>
-                            <td className="py-2.5 text-slate-500">${row.cost}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <BigqueryTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 17: SYSTEM HEALTH MONITORING
             ============================================== */}
         {activeTab === 'monitoring' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200">
-              <div className="flex items-center gap-3 mb-2">
-                <Activity className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">System Monitoring & Logs</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Analyze VPS node metrics. Track system uptime, trigger mock warning alerts, and configure diagnostic warning thresholds.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              <div className="md:col-span-4 p-5 rounded-2xl border border-slate-200 bg-white font-mono text-xs">
-                <h3 className="font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">HARDWARE METRIC DIALS</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>UPTIME:</span>
-                    <span className="font-bold text-slate-800">{monitorUptime}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>PORT 3000 STATUS:</span>
-                    <span className="font-bold text-emerald-600">LIVE</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>ACTIVE CONNECTIONS:</span>
-                    <span className="font-bold text-indigo-600">42 active socket.io sessions</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="md:col-span-8 p-5 rounded-2xl border border-slate-200 bg-white">
-                <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">DIAGNOSTIC ALERTS TESTING</h3>
-                <p className="text-xs text-slate-500 mb-4">Trigger a simulated system warning alert to test email dispatchers and operational SMS triggers instantly.</p>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => {
-                      setActiveAlerts(prev => [...prev, `[ALERT] CPU Usage reached 92% at ${new Date().toLocaleTimeString()}`]);
-                      setHomeToast("‚ö†Ô∏è Warning alert dispatch simulated! Check terminal status");
-                      setTimeout(() => setHomeToast(null), 3000);
-                    }}
-                    className="bg-amber-600 hover:bg-amber-500 text-white font-mono text-xs px-4 py-2 rounded-lg font-semibold transition"
-                  >
-                    TRIGGER MOCK HARDWARE WARNING
-                  </button>
-                  <button 
-                    onClick={() => setActiveAlerts([])}
-                    className="border border-slate-200 hover:bg-slate-50 text-slate-600 font-mono text-xs px-4 py-2 rounded-lg transition"
-                  >
-                    CLEAR ALERTS
-                  </button>
-                </div>
-
-                {activeAlerts.length > 0 && (
-                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 font-mono text-[11px] text-amber-800">
-                    {activeAlerts.map((alertItem, i) => (
-                      <div key={i}>‚Ä¢ {alertItem}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <MonitoringTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 18: CLOUD RUN SERVERLESS MODULE
             ============================================== */}
         {activeTab === 'cloud_run' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Play className="w-6 h-6 text-indigo-600" />
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Cloud Run Serverless Containers</h2>
-                    <p className="text-xs text-slate-500 max-w-2xl mt-1">
-                      Host isolated, auto-scaling dockerized Node instances that run custom backend configurations on local port mappings.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-4 border-b border-slate-100">
-                {['Overview', 'Services', 'Jobs', 'Worker pools', 'Domain mappings'].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setCloudRunSubTab(tab)}
-                    className={`px-4 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                      cloudRunSubTab === tab
-                        ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600'
-                        : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {cloudRunSubTab === 'Overview' && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-5 p-5 rounded-2xl border border-slate-200 bg-white">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">CONTAINER SETTINGS</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">IMAGE SOURCE URL</label>
-                      <input 
-                        type="text" 
-                        value={cloudRunImage} 
-                        onChange={(e) => setCloudRunImage(e.target.value)}
-                        className="w-full p-2.5 text-xs rounded-lg border font-mono bg-slate-100 border-slate-300 text-slate-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">ENVIRONMENT VARIABLES</label>
-                      <textarea 
-                        rows={3}
-                        value={cloudRunEnvVars} 
-                        onChange={(e) => setCloudRunEnvVars(e.target.value)}
-                        className="w-full p-2.5 text-xs rounded-lg border font-mono bg-slate-100 border-slate-300 text-slate-900"
-                      />
-                    </div>
-
-                    <button 
-                      onClick={() => {
-                        setHomeToast("‚úì Deployed container image to active Cloud Run service revision!");
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
-                    >
-                      DEPLOY ACTIVE REVISION
-                    </button>
-                  </div>
-                </div>
-
-                <div className="md:col-span-7 p-5 rounded-2xl border border-slate-200 bg-white">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4 font-semibold">TRAFFIC SPLITTING</h3>
-                  <p className="text-xs text-slate-500 mb-4">Control what percentage of inbound traffic is routed to the new container image revision (Revision 2).</p>
-                  
-                  <div className="space-y-4 font-mono text-xs">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">TRAFFIC SPLIT (Revision 1 vs Revision 2)</label>
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max="100" 
-                        value={revisionTraffic} 
-                        onChange={(e) => setRevisionTraffic(Number(e.target.value))}
-                        className="w-full cursor-pointer"
-                      />
-                      <div className="flex justify-between text-[8px] text-slate-300 mt-0.5">
-                        <span>Revision 1 (Stable): {100 - revisionTraffic}%</span>
-                        <span>Revision 2 (Candidate): {revisionTraffic}%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {cloudRunSubTab === 'Services' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200">
-                <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase mb-4">Active Services</h3>
-                <div className="space-y-3">
-                  {[
-                    { name: 'phrs-auth-v1', status: 'Healthy', region: 'asia-southeast1', traffic: '100%' },
-                    { name: 'phrs-media-proxy', status: 'Healthy', region: 'asia-southeast1', traffic: '100%' }
-                  ].map((service, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm">{service.name}</p>
-                          <p className="text-[10px] text-slate-500 uppercase">{service.region} ‚Ä¢ {service.traffic} traffic</p>
-                        </div>
-                      </div>
-                      <button className="text-xs font-bold text-indigo-600 hover:underline" onClick={() => alert(`‚úì ${service.name} is running healthy at region: ${service.region}`)}>Manage</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {cloudRunSubTab === 'Jobs' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 space-y-6">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Serverless Jobs</h3>
-                  <button 
-                    onClick={() => setIsCreatingJob(!isCreatingJob)} 
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-3 py-1.5 rounded-lg font-semibold transition"
-                  >
-                    {isCreatingJob ? 'Cancel' : '+ Create Job'}
-                  </button>
-                </div>
-
-                {isCreatingJob && (
-                  <div className="p-4 border border-indigo-100 bg-indigo-50/20 rounded-xl space-y-4 max-w-md font-mono text-xs">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">JOB NAME</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. phrs-cache-pruner" 
-                        value={newJobName} 
-                        onChange={(e) => setNewJobName(e.target.value)}
-                        className="w-full p-2 border rounded-lg bg-white text-slate-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">CRON SCHEDULE EXPRESSION</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. */10 * * * *" 
-                        value={newJobSchedule} 
-                        onChange={(e) => setNewJobSchedule(e.target.value)}
-                        className="w-full p-2 border rounded-lg bg-white text-slate-800"
-                      />
-                    </div>
-                    <button 
-                      onClick={() => {
-                        if (!newJobName) {
-                          alert('Job Name is required!');
-                          return;
-                        }
-                        const newJob = {
-                          name: newJobName,
-                          status: 'Succeeded',
-                          schedule: newJobSchedule,
-                          lastRun: 'Never'
-                        };
-                        setCloudRunJobs(prev => [...prev, newJob]);
-                        setVpsLogStream(prev => [...prev, `[CLOUD-RUN-JOB] Provisioned job: ${newJobName} on schedule ${newJobSchedule}`]);
-                        setNewJobName('');
-                        setIsCreatingJob(false);
-                        setHomeToast('‚úì Serverless job registered successfully!');
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-semibold"
-                    >
-                      REGISTER SERVERLESS JOB
-                    </button>
-                  </div>
-                )}
-
-                <div className="space-y-3 font-mono text-xs">
-                  {cloudRunJobs.map((job, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">{job.name}</p>
-                        <p className="text-[10px] text-slate-500 uppercase">Schedule: {job.schedule} ‚Ä¢ Last run: {job.lastRun}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => {
-                            setVpsLogStream(prev => [...prev, `[CLOUD-RUN-JOB] Manual execution triggered for: ${job.name}`]);
-                            alert(`‚úì Manual run triggered for job: ${job.name}. Logging details to VPS telemetry.`);
-                          }}
-                          className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg"
-                        >
-                          Run Now
-                        </button>
-                        <button 
-                          onClick={() => {
-                            if (confirm(`Delete serverless job: ${job.name}?`)) {
-                              setCloudRunJobs(prev => prev.filter(j => j.name !== job.name));
-                              setVpsLogStream(prev => [...prev, `[CLOUD-RUN-JOB] Deleted job: ${job.name}`]);
-                            }
-                          }}
-                          className="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 px-2.5 py-1.5 rounded-lg"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {cloudRunSubTab === 'Worker pools' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 space-y-6">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                  <div>
-                    <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Compute Worker Pools</h3>
-                    <p className="text-[11px] text-slate-500">Manage private worker pools for restricted egress and internal VPC connectivity.</p>
-                  </div>
-                  <button 
-                    onClick={() => setIsCreatingPool(!isCreatingPool)} 
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-3 py-1.5 rounded-lg font-semibold transition shrink-0"
-                  >
-                    {isCreatingPool ? 'Cancel' : '+ Add Worker Pool'}
-                  </button>
-                </div>
-
-                {isCreatingPool && (
-                  <div className="p-4 border border-indigo-100 bg-indigo-50/20 rounded-xl space-y-4 max-w-md font-mono text-xs">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">POOL NAME</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. phrs-egress-mesh-02" 
-                        value={newPoolName} 
-                        onChange={(e) => setNewPoolName(e.target.value)}
-                        className="w-full p-2 border rounded-lg bg-white text-slate-800"
-                      />
-                    </div>
-                    <button 
-                      onClick={() => {
-                        if (!newPoolName) {
-                          alert('Pool Name is required!');
-                          return;
-                        }
-                        const newPool = {
-                          name: newPoolName,
-                          region: 'asia-southeast1',
-                          nodes: 2,
-                          status: 'Active'
-                        };
-                        setWorkerPools(prev => [...prev, newPool]);
-                        setVpsLogStream(prev => [...prev, `[WORKER-POOL] Provisioned new private compute pool: ${newPoolName}`]);
-                        setNewPoolName('');
-                        setIsCreatingPool(false);
-                        setHomeToast('‚úì Private compute worker pool initialized!');
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-semibold"
-                    >
-                      PROVISION WORKER POOL
-                    </button>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
-                  {workerPools.map((pool, idx) => (
-                    <div key={idx} className="p-4 border border-slate-100 bg-slate-50 rounded-xl flex justify-between items-start">
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">{pool.name}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Region: {pool.region} ‚Ä¢ Provisioned Nodes: {pool.nodes}</p>
-                        <span className="inline-block mt-2 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                          {pool.status}
-                        </span>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          if (confirm(`Deprovision worker pool ${pool.name}?`)) {
-                            setWorkerPools(prev => prev.filter(p => p.name !== pool.name));
-                            setVpsLogStream(prev => [...prev, `[WORKER-POOL] Deprovisioned compute pool: ${pool.name}`]);
-                          }
-                        }}
-                        className="text-rose-500 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {cloudRunSubTab === 'Domain mappings' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200 space-y-6">
-                {/* Header matching Screenshot 2 */}
-                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Domain mappings</h3>
-                    <span className="px-2 py-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full">
-                      Preview
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setIsCreatingDomain(!isCreatingDomain)} 
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-3.5 py-1.5 rounded-lg font-semibold transition"
-                    >
-                      {isCreatingDomain ? 'Cancel' : '+ Map Domain'}
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setHomeToast('Domain mappings options');
-                        setTimeout(() => setHomeToast(null), 2000);
-                      }}
-                      className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
-                      title="More actions"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {isCreatingDomain && (
-                  <div className="p-4 border border-indigo-100 bg-indigo-50/20 rounded-xl space-y-4 max-w-md font-mono text-xs animate-fade-in">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">DOMAIN NAME / HOSTNAME</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. app.ai.studio or portal.phrs-crowd.local" 
-                        value={newDomainName} 
-                        onChange={(e) => setNewDomainName(e.target.value)}
-                        className="w-full p-2 border rounded-lg bg-white text-slate-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">ROUTE TO CONTAINER SERVICE</label>
-                      <select 
-                        value={newDomainService}
-                        onChange={(e) => setNewDomainService(e.target.value)}
-                        className="w-full p-2 border rounded-lg bg-white text-slate-800 cursor-pointer"
-                      >
-                        <option value="phrs-auth-v1">phrs-auth-v1</option>
-                        <option value="phrs-media-proxy">phrs-media-proxy</option>
-                        <option value="phrs-core-engine">phrs-core-engine</option>
-                      </select>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        if (!newDomainName) {
-                          alert('Domain Name is required!');
-                          return;
-                        }
-                        const newMapping = {
-                          domain: newDomainName,
-                          type: newDomainType,
-                          service: newDomainService,
-                          status: 'Active'
-                        };
-                        setDomainMappings(prev => [...prev, newMapping]);
-                        setVpsLogStream(prev => [...prev, `[DOMAIN-MAPPING] Registered DNS mapping: https://${newDomainName} -> ${newDomainService}`]);
-                        setNewDomainName('');
-                        setIsCreatingDomain(false);
-                        setHomeToast('‚úì DNS Custom mapping configured!');
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-semibold"
-                    >
-                      VALIDATE & MAP DOMAIN
-                    </button>
-                  </div>
-                )}
-
-                {/* Filter / Search Bar matching Screenshot 2 */}
-                <div className="flex items-center justify-between gap-4 py-2 px-3 border border-slate-200 rounded-lg bg-slate-50/50">
-                  <div className="flex items-center gap-2 flex-1 max-w-md">
-                    <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span className="text-xs text-slate-500 font-medium">Filter</span>
-                    <input 
-                      type="text" 
-                      placeholder="Filter domains" 
-                      value={domainFilterQuery}
-                      onChange={(e) => setDomainFilterQuery(e.target.value)}
-                      className="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full ml-1"
-                    />
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setHomeToast('Columns customized');
-                      setTimeout(() => setHomeToast(null), 2000);
-                    }}
-                    className="p-1 text-slate-400 hover:text-slate-600 rounded transition"
-                    title="Configure columns"
-                  >
-                    <Sliders className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Domain Mappings Table matching Screenshot 2 */}
-                <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                  <table className="w-full text-left text-xs font-sans">
-                    <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold">
-                      <tr>
-                        <th className="py-3 px-4 w-8"></th>
-                        <th className="py-3 px-2 w-8"></th>
-                        <th className="py-3 px-4 font-semibold">URL</th>
-                        <th className="py-3 px-4 font-semibold">Type</th>
-                        <th className="py-3 px-4 text-right font-semibold">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {domainMappings
-                        .filter(dm => dm.domain.toLowerCase().includes(domainFilterQuery.toLowerCase()))
-                        .map((mapping, idx) => {
-                          const isSelected = selectedDomain === mapping.domain;
-                          return (
-                            <tr 
-                              key={idx} 
-                              onClick={() => setSelectedDomain(mapping.domain)}
-                              className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${isSelected ? 'bg-blue-50/30' : ''}`}
-                            >
-                              <td className="py-3.5 px-4 w-8">
-                                <input 
-                                  type="radio" 
-                                  name="domain_selection" 
-                                  checked={isSelected}
-                                  onChange={() => setSelectedDomain(mapping.domain)}
-                                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                                />
-                              </td>
-                              <td className="py-3.5 px-2 w-8">
-                                <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white" title="Active & Validated">
-                                  <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                </div>
-                              </td>
-                              <td className="py-3.5 px-4 font-medium text-slate-900">
-                                <a 
-                                  href={`https://${mapping.domain}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1.5 w-fit"
-                                >
-                                  <span>{mapping.domain}</span>
-                                  <ExternalLink className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                                </a>
-                              </td>
-                              <td className="py-3.5 px-4 text-slate-600">{mapping.type || 'Custom URL'}</td>
-                              <td className="py-3.5 px-4 text-right text-slate-400">
-                                <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                  <span className="text-slate-300 select-none">‚Äî</span>
-                                  <button 
-                                    onClick={() => {
-                                      if (confirm(`Remove domain mapping for ${mapping.domain}?`)) {
-                                        setDomainMappings(prev => prev.filter(dm => dm.domain !== mapping.domain));
-                                        setVpsLogStream(prev => [...prev, `[DOMAIN-MAPPING] Removed domain mapping: ${mapping.domain}`]);
-                                      }
-                                    }}
-                                    className="text-rose-400 hover:text-rose-600 p-1 rounded transition opacity-0 hover:opacity-100 group-hover:opacity-100"
-                                    title="Delete mapping"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
+          <CloudRunTab state={globalState} />
         )}
 
         {/* ==============================================
             TAB 19: VPC NETWORK CONTROLLER
             ============================================== */}
+
+
         {activeTab === 'vpc_network' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Wifi className="w-5 h-5 text-blue-600" />
-                  <h2 className="text-xl font-bold tracking-tight text-slate-800">VPC Network (‡∞®‡±Ü‡∞ü‡±ç‚Äå‡∞µ‡∞∞‡±ç‡∞ï‡±ç ‡∞Æ‡±á‡∞®‡±á‡∞ú‡±ç‡∞Æ‡±Ü‡∞Ç‡∞ü‡±ç)</h2>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold ${isAutoInternetEnabled ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-200'}`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${isAutoInternetEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                    {isAutoInternetEnabled ? 'AUTO-CONNECT ACTIVE' : 'MANUAL MODE'}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-6 border-b border-slate-100 mb-6">
-                {['Overview', 'IP Addresses', 'Firewall', 'Routes', 'Mobile Bridge'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setVpcSubTab(tab.toLowerCase().replace(' ', '_') as any)}
-                    className={`pb-3 text-sm font-medium transition-colors relative ${
-                      vpcSubTab === tab.toLowerCase().replace(' ', '_') 
-                        ? 'text-blue-600' 
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    {tab}
-                    {vpcSubTab === tab.toLowerCase().replace(' ', '_') && (
-                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* OVERVIEW SUB-TAB */}
-              {vpcSubTab === 'overview' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Network Latency</h3>
-                      <div className="text-3xl font-bold text-slate-800">{networkLatency}ms</div>
-                      <p className="text-[10px] text-slate-500 mt-1">Status: <span className="text-emerald-600 font-bold">Optimal</span></p>
-                    </div>
-                    <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Active Subnets</h3>
-                      <div className="text-3xl font-bold text-slate-800">{subnets.length}</div>
-                      <p className="text-[10px] text-slate-500 mt-1">Internal routing: Enabled</p>
-                    </div>
-                    <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">IP Utilization</h3>
-                      <div className="text-3xl font-bold text-slate-800">{Math.round((ipInventory.filter(ip => ip.status === 'Active').length / 254) * 100)}%</div>
-                      <p className="text-[10px] text-slate-500 mt-1">Available: 248 IPs</p>
-                    </div>
-                    <div className="p-5 rounded-xl border border-blue-100 bg-blue-50/20">
-                      <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">Bridge Status</h3>
-                      <div className={`text-2xl font-bold ${isBridgeActive ? 'text-emerald-600' : 'text-slate-400'}`}>
-                        {isBridgeActive ? 'ACTIVE' : 'OFFLINE'}
-                      </div>
-                      <p className="text-[10px] text-blue-500 mt-1">Mobile Gateway</p>
-                    </div>
-                  </div>
-
-                  <div className="p-5 rounded-xl border border-blue-100 bg-blue-50/30 flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-sm text-blue-800 mb-1">Automatic Internet Management (‡∞Ü‡∞ü‡±ã‡∞Æ‡±á‡∞ü‡∞ø‡∞ï‡±ç ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞ü‡∞ø‡∞Ç‡∞ó‡±ç)</h3>
-                      <p className="text-xs text-blue-600/80 leading-relaxed max-w-xl">
-                        When enabled, the PHRS Cloud Engine automatically optimizes IP routing and gateway configurations to maintain 99.99% uptime for all VPS instances.
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setIsAutoInternetEnabled(!isAutoInternetEnabled);
-                        setHomeToast(`‚úì Automatic Connection Management ${!isAutoInternetEnabled ? 'Enabled' : 'Disabled'}`);
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isAutoInternetEnabled ? 'bg-blue-600' : 'bg-slate-200'}`}
-                    >
-                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isAutoInternetEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-
-                  {/* Hybrid Bridge Integration - Moved to Overview for Visibility */}
-                  <div className={`p-5 rounded-2xl border-2 transition-all ${isHybridDevMode ? 'bg-indigo-50 border-indigo-400 shadow-lg shadow-indigo-100' : 'bg-white border-slate-200'}`}>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${isHybridDevMode ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
-                            <Cpu className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-slate-800">AI Agent Hybrid Bridge (AI ‡∞è‡∞ú‡±Ü‡∞Ç‡∞ü‡±ç ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞∑‡∞®‡±ç)</div>
-                            <p className="text-[10px] text-slate-500">Link AI Studio Agent to Local Node: <span className="font-mono font-bold text-indigo-600">{remoteNodeIp}</span></p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <label className="text-[8px] font-bold text-slate-400 uppercase mb-1">Bridge Mode</label>
-                          <button 
-                            onClick={() => {
-                              setIsHybridDevMode(!isHybridDevMode);
-                              setHomeToast(isHybridDevMode ? "Hybrid Bridge Disabled" : "‚úì AI Agent linked to Local PHRS Node!");
-                              setTimeout(() => setHomeToast(null), 3000);
-                            }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isHybridDevMode ? 'bg-indigo-600' : 'bg-slate-200'}`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isHybridDevMode ? 'translate-x-6' : 'translate-x-1'}`} />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="h-px bg-slate-100 w-full" />
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${isAiServerBypassed ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                            {isAiServerBypassed ? <WifiOff className="w-5 h-5" /> : <Cloud className="w-5 h-5" />}
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-slate-800">Temporary Bypass (‡∞è‡∞ê ‡∞∏‡∞∞‡±ç‡∞µ‡∞∞‡±ç ‡∞ï‡∞®‡±Ü‡∞ï‡±ç‡∞∑‡∞®‡±ç)</div>
-                            <p className="text-[10px] text-slate-500">
-                              {isAiServerBypassed 
-                                ? "PHRS AI Engine is DISCONNECTED (‡∞ü‡±Ü‡∞Ç‡∞™‡∞∞‡∞∞‡±Ä‡∞ó‡∞æ ‡∞Ü‡∞™‡∞ø‡∞µ‡±á‡∞Ø‡∞¨‡∞°‡∞ø‡∞Ç‡∞¶‡∞ø)" 
-                                : "PHRS AI Engine is ACTIVE (‡∞™‡±Ä‡∞π‡±Ü‡∞ö‡±ç‚Äå‡∞Ü‡∞∞‡±ç‡∞é‡∞∏‡±ç ‡∞è‡∞ê ‡∞á‡∞Ç‡∞ú‡∞ø‡∞®‡±ç ‡∞Ø‡∞æ‡∞ï‡±ç‡∞ü‡∞ø‡∞µ‡±ç‚Äå‡∞ó‡∞æ ‡∞â‡∞Ç‡∞¶‡∞ø)"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <label className="text-[8px] font-bold text-slate-400 uppercase mb-1">Bypass AI</label>
-                          <button 
-                            onClick={() => {
-                              setIsAiServerBypassed(!isAiServerBypassed);
-                              setHomeToast(!isAiServerBypassed ? "‚ö† PHRS AI Engine Disconnected" : "‚úì PHRS AI Engine Restored");
-                              setTimeout(() => setHomeToast(null), 3000);
-                            }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isAiServerBypassed ? 'bg-rose-500' : 'bg-slate-200'}`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isAiServerBypassed ? 'translate-x-6' : 'translate-x-1'}`} />
-                         xúÏ]{oWvˇ?≈5Ñ‘÷§®óc´2äÀl(íKRNS√àÜú+r¢·ÃÏÃ–£∞1∞›E∫iãAÄEÄ ≈¢õ¶A"X¨˚OÙì˘$=Áﬁô·ºÓ©G‚5ö ÁuüÁÒ;è{/ŸZÓO«–+?#Çˇ∂ñı©Ëq C·#˜A“x@öl€MyLÔÁÃ‚±åâÆP•x¢ëæa)‘rˇmMvhqµ\&˝aÒx§:4'h»h-X®COú‚âM›)ˆM!Ï/Ó.7Ó◊sïÓ˛vSÍΩ›Íº’›Z≠	äé4ÿxJ≠CÕ8.ûÂâcﬂ9r_£¡/èãáM„M—Ë°CBÕ¥e›Ü≈ç®¨àü„V∞6w˚·±\ÅŒ∆b.gÉ41MjdõÚWØîÕì')mr€öŒ~qçò'≈’\ol-;£À~ﬂ°C’–ØRBΩM:≤>ºR+vaòéÂiV‹J„ØåŸ€r˙Ü26®NUhqJ‹|æ6 ©”qjO˙:uÏ“X6∏∏M‘%røB
-Ω∑»ùﬁ?UœÇM!©oÁyu«"Uòñ™¿2ï–àN›uâùé’æÃU∞%>9É1K%˜‘J≈n`±≤≠ E€ò8£ï+ïÀ?6t#X√ø·R€’ZûQ√êì„u§S$!KKgiÙäÙ(÷L∂]N'Ãu⁄πs∫¸s≤◊⁄Æ7$≤›©ÔÏJ§w±W›&?_év‰Ù©9ËN˙=πOÓﬂøOÚc£ØjÙ›æ•*Cö'Øøû¿Q1oõÚ ÿØx'ë“„ZÏNDuıµâØπÿÔçÚÚjŸWu´'öHïEä>‘Ë	¡äC#ceì˝∂åcÚﬁƒv‘√i±OùcJuÍqlmG∂|è_®Ó@´Ü≤)ËJZÁW”RÇ ’ÜQïÀ∫~…wèMôÏ‰QªF∂Ÿtà/´ƒLRÎ≥íﬂÄ÷@≤™˙∞hQM>°
-À'≈„‚XIQÁ__<ˇ5ˇÛ·≈˘Wœwq˛Ì≈Ûè‡÷ø^ú	/Œø∏8ˇû‡üÁøΩ8?øx˛¡≈˘'Áﬂ¡≠ª8ˇò?˘«ãÛœ‡≥~˝˚ãÛ?≥∑>Çgº†OÿáÅ«xÈñ5¸Ò^ˇ√≈˘≥ãÛœ°∂<Åw˛ìW,n‚◊¯È˘˜Áﬂ@´foæJt[¬ﬂ¸ªıÕ¨Ÿ/XWŒy;/Œˇ¬J˙#+™¯ÇøÒ!{„k3RËMtùjKÏ_ºJæd]¯å∑‡¨s/ÿÉ?≤ÚüÒ~îR§åy	Ãô∆!«ñlí›Ø•Qqåë◊}¨)∆•åˆJŸ#Y(hèIòMcmX)mê±™a>^y#VmÍ1 Áx,‘"êÛ·[ÆRì-KÖ™ÎÌßÎ§∞Cü™∫¥µå≈¶÷^¡8†î+g¸}™∞Z‹öÎÊYÍ¶ÙÚvíÈB–äe7ò:¶ñ¨)É‡Kﬁıù~ıÊavÆ≤±KjªÕjèTé˙îfı>£πØ(°∏ñ¥'}M Ω‹ ë∞A‡Ük‚πàÉ€¨$„zZ}thœ° M}]0Në—·∞w÷Ú1ò^KSu ß/>kπîä3pZáZ‘’é√∂‚*¬ˇÕëÂ
-©Ç©YÏNıÅKÕ©¶»õ˚s¡B¨ì±Sº;7Ú@w@6[Õ¸>_- „„SER„~
-XöØ»,≈ìP ÈÅ	BœÎ4`©◊NUõ£$>È‰MíCﬂñH√<ŸdÔà¨˝¸Ÿ¡Y¶m“zƒsÅ¥»(1√Ê»‡jﬁÁÃ§IòD≥—ó5@
-ïÍL}|yŸ
-„“Åôí]Gv&ˆ&Iòéë ãôﬂ{™ §˝∞”%Æòe≥”º:E<‡≠Õg√9FˆöjÅπN3∆Õ¶N=4
-Ö[·QY˙€Ïc⁄3d€)ƒF4ÁŒ+øMvT€3™‰`(s?|˙ÔdfWÿì¡Ä⁄6jˇ)·∆û‚∑rÛ¥§ßé©1q
-ºÛ°¶ÈPË“m≤V.ó3J:õWªüÄŸ g5Ñ\¬nANÓæﬂE$,:G¯ÅQXf‚›U_Ωπü¨Ã$Üß•y\ ˚Ô˙∆ñ/oQê\ZÁ%Ù°€kµ]Àûµ®€´vzﬁç¥öÊVwsÎá!4ç‡?à–Ï‚
-”≥ÀU&⁄◊R†
-Çr=ËRKRl+Ât7T†…}™Ö‹Ωö18"ã¡?‘s+π
-„]Ê8$=ŸRgkôü—õj¿â	nË#XS∂@Fº‹	éø7àÄPÊCêU‘AˇdzCŒN9vÀ0è0_¶Õ›àÔ)¿/Ó†KàøYIÒÅ±>.ÛN^M˛UÉ§¨)∆=C°ÛëBí˙ÃòÒ\•*uã´w»nmèòñÏ“¡§““Uï›KŒZù#û0˝¿“HU*Ú∞_
-Ãä•’|@6’ÿ£¨≤ñÎ ◊#ƒñä·ÇUñ<8B†£G ¥©@√û°´éa•˘˜6-6B#˝Ù ¨;¥Ì¬j?Ì£*ÎÍ˚oBo√HÕÖˆô^éÖaáAB#¯∑ÎXT≥F’ç"®Mk…e∏0>~˜ÔïÀAkù3ë@JÕØ≈ “å∏\ÆTlZH»ÂwNYÿóÄ∫råq—XÜ¶ıeK8ˇÒ„DFÙJi#oò1
-uâ2yæÊÃ„Sùì∏.,ï£adç"Ü	*+,ù=qgR@;™Æ®CÉ±w•ﬁ¨˜6Ω◊Î¿w™¨©Ô£Aƒ‰{M3&ä«óí>U_*ïR‹¿?uﬂ<ﬁcù´Ó˜˙ù„™ä<îuhÂàíc’4&Òù\‰Wø"m¬˝∫yˆrwña|÷S Ñ~GπMK®ç!?’ÅIÖV≠ã=˜·cúﬂbΩπS,Ø<yâ˚(è˚¿Á¨ì›wö≥^VÎ§:D∞˙päÜ£ÔH0ÙÕxIæ3h¢÷´?í‹R^‚~áπ)Õò¥™ÊdßÉljÄúó±€†Œ®OL7… ˙ÿ^Z®wæ¢öh^6I@è-ﬂÖVºKﬁñUVÈ°aUcº∞Ë/'@lvØ§ÍÏ%PCÛKŸ◊ø)éyRπóÌò•ˇ°∆™Áîä;’`ÃÂ<Xò·_±ÍÄl‰*aòzDRZ"mã⁄6…ÌËzC˙‰.˜(åU€Üπæ @'€O®±Ê˙‰p∂;‰Ê	'"0èÛ(RR¶”ò*Ídú´pãC™Ìw$"5kùw⁄Ωz´πI<ñ«&]GZJïÆNGß∏3e&<¢Œ∂∏3ÌPÓY:´‘RµC≠›n∫≥„S/ÍmR›ŸÈH›Æ‘] ÛB5ﬂï)ë⁄&^$€,âh<ïr¿¸1gí…ë‚fN39êöÚ:Ä®•'X]
-M0¨iJraúñÄ“◊–)∏¬#üIn9ÈéÅç˜€Õëπì+uI$FØ^ÉhLLÅb˙ÂPrSW‰˜@z—Œùdôíßâ©yâV≈∆πí˜“Cµ[È…X—¸C7x† Ÿ'3ˇPX@ojf&@äøÊ—éÀ_◊…∆®üù@)Ü√2⁄êñÌñë}9oÓÂJv2˛w™ö>„Û<L’ú'3+	”K"[[ Sêe∏ûï–¡¸s–ëí+ºÁI7Tïù(Ûés?\	 êsØa pÆm<·õw]'âA–;ëêá«‰û†ù'B fôUúÓ?f‰åt
-Fü/Ì‡⁄åˇ˘rTíè˘•ÑAhnmy/´ÖFò◊˛”éqÌ«¸J+LÚcsU¨Ê… æ¸å
-–ßè"03 ‡^Rmƒ3„≥ÇgÛ^z™±8—85Õ8%…¯ÍpˆAΩ#Ω]m4Ä≤á™EèeMª°¸·îU0úq\ı„ÒÍÅÄ+ög˝¶%ùlU5j95’D7C√<JÏë•ÍG≈2¶ÔîK‚‘èî]^ÿ›xäÆê»∏cL¨âFm"[î5£/c@_6MMÂ}|√„5õyﬁ–¢©6Ü˙Kd˙'O@=Ç‡:ºÑ˜çct.Ä‚<<ú~hc≤5@o]˜ÕÜNoJrïrâ˝ø\ﬁZ∆Ø*…I≠£QãÁ$Q)H07±<™ﬁ‹EÉètˆ“§≤ì«O=^Í‡4sêÑ30I9… J¨6éìîì≥ò)ò	√∞@FNôÀeû∏G.sX$≠?êí1Ñ2ÕkHÀ˛—Ré°µ¿∫+Âp…-äËF<PAˇñØP"TíbJ˘ÛãìY2À…
-ØﬂH∫òê¨]î5k†ªÃËZÛ√f l'cbË¶;<ıÄ¸äTE~eqf≥◊bô}zÊ˚õƒ¥±dÔÙZ8_ñg!Öò√Ûnñ9õ˘€ﬁ›9ízñlèVÇÀYﬁ“´•¡äPÀ˙ÿ:≠˝ﬁBﬁ5Ù⁄œÌWcQÃ˘}‹Æ‘Xı~(2ã˝ï&;D¢˝â£¥˙<Ç?Ó¬lﬁÂ~∫‰)M∆ >s‰Í‡»ê±¨ÀC`(›!ÄÛë J`ÚœX}ª3‹@ÅÀ | ’π Œ§ /P,»>©î»û¨OdÕ°pèRπ•* O‹∏ÜmàÌ"
-I}'r#HPHJ˜˙/Tíﬁjyìt§F=‚’©5Z˚;§˚¯’jˆ:≠FCÍÑæY¨∫eüÚTYü¶#~◊˛eg∂üq(+¥®Fù"IkıíRt¬jsF‚1:û3˘[‰yﬁ⁄ëÅF–s(B·n¯`Cê1≥á	+Ô"ﬁiw«˘Î  w√{=§S`›j¨IôÇÛg è/ΩK^€»ú30Ÿ<Ré\håÜMl!KâåËX∂K…{òaà±O≈3∆^ˆmﬁG`.m2÷â&OÅ˚‡Æ¨+Ñû–r^òòv™«x0)πk±î–ïU¡˙ X∞KŸÑä®ΩaÆÕK¢•0∞∫ıp™<¢8V„Õ-úH¥÷ë™=âtk•Ω*
-ÖÜîlà~D¥ 8äﬁ<yçQd9å¨µ§Y›ìR”∑T›ú8¢ÑxÙÓqBœâ^15ËÍôZ˜s¥4,˘É¸.WÕ¢UAOeP,˜1®œ∏;'B ÜŒ=5˜O‘6ﬂh…aIª%V®–◊ëòlâëG¡åT_ l¢ QÆÖ=™∏¸/±÷deûöKyÕîPk5ˆ˜ö]≤#=¿‹$Pg7Këâ≠Åt∏Ãƒ‚wØ“ƒ¶-=ôs…âzH
-∑ÇSr,u\XZJY§"£«´êó∏QÀp⁄|∑Ú)K8,ÍL,]Ù\4	á‘å
-˘eŸTóï˛Ú¿¢8~¨ ¸Ìîé©32îMío∑∫Ω¸m·{ø¢Æ:"˘àUÄEÏÂ·SÊ0M∫¸ûmËyr&.˝≠õ‰Ô∫≠f…fπC ˘ßlX6Ipxoª∫’û›F™$gK¢°=(ÅÆ◊e)˙ßÑçÑâK}ı}˙
-$$|´‰.˚I#∂∫ß˚KçcûÇi—ßŸÀõÜn;‰P’Äz¿T∏O≥ø.8¯Ω√\‰‡V÷6ﬂÏ^∆!Nd‰q©TÚ ø(‚I⁄◊g©eá-‡˙®£EÍ‰ã3¬&yÌ4“Ê≥É¨íCz'ü∆EgÑb‚W⁄ sÊ<ê,À∞¸÷PºJmàà≈‰¨º	%ßO9N∑C¡öP»ÌlŒ≈Ñ›ÿÃ›∆)K§0úa¸2 ë«,„¨,d∂'È
-¶öã:é©eLO·áF⁄ /0◊brºÍÇ:¡B∫ƒıFÅÑ+?` ∑Å‹ô–r;œjö≠QôE÷*OªRSÍ Vf∞3Q1ä<Q…ñV¢M3%ﬁXÿîòõ_*◊Jê∂ï`ß\ :ÒRn…NÜª⁄ï»vµˆ÷~[ü∏Ï¡5pœˆQ¡ûÏåJáörb•L˛Ü_Â( ÚsrOºFîKâmnö&ä	‡¿Aˇ®»ÿ+<;`∫ÅÀéYpΩ€Ú≤Ke¶H!Ç‰I~	îbüÎ˜óï{¿i∂˙>ë_)≠ìΩÌ|öh	Ò)[c[3∆¶FQ¥Ñuna√ƒM¿§)∆±Æ≤í≤ÿˆÊe¬B¬ h?ÛÓÆU>tˆõ§ﬁÏˆ™Õ”øú`/#'Ê∂Ω◊ƒ;ú⁄>˘Ò¿[ˇ(+ÏñrãGŸ÷Ê	≠e'˜eEÊç˚‰*º√Äû˚G%U…ä˘ÃÌa.Óöl:∏fëóçlö^z˙√¥≈Y)˚ﬁÿT;tEpÆÇÌ@^O]Ä%lFRÿCH}◊%‘ëZ◊r◊◊‘z$u’•∑s7%Gõë⁄9$„ƒŒêQz6^Ä⁄œ¬n„5˘
-©=Saﬁ8·˜8÷?†¸Î$~¥∫Âª ˆ:9 ”’@ £\&A1ûígüê’ññÆYµ,yZRmˆóH	a˘yìÃÆJ’áŒàlÓù1¯.ÏÊır_ÊÕ;D¥≤…ıÌU€]“nT{ZùΩõä
-ô#À~88Ï|e¢B{≤ŸVuÚc≈Ñ¯‹¡àí6tÈ–∞∆DÖV˘ÚØ/,¥Àùÿ|îDû“EÜ‘Ä÷ò#'FäúâBYÑG3Ù!ør®*—±ÿ~:@~7	w¿ˇÁR¡∆”’v„ΩÍª˚ù*wùˇïƒ∏H⁄ﬂn‘k¨oIÔ\ŸÌoB#éar≤\ˇ(§™¶˙ù.‚¯ﬂÛøzï‹˛74≥=©!ÌIΩŒ;§æÛ£ÑsÿúrÖ‰ÚXÂãŒn‰˚WiûØ¡≈˜9ÃTwÁ-–MÓf ÏÇ˚|˝§æÜó√ˇ»õ’F˝$é≈`∏^%'‰uô†⁄v•V£Uc˙å%‹’õªDjÓ¥[ıfO‡DLDvl—∑ÿ·y˙8øKçÅÅiÔ®É–/∑£ÚîuÙZÍ	øeÒmïÁüp+ïÍäi K≥R”wÛcˆ´WLä®ä¨?FvÎ≤Ø®"π_œZì-¢NXn·
-∑◊f;Òª"›≥Ã\¬Ìj7N®öaØzwŸ—ÃtÈ* fI6axØúçrú&√⁄F∏πù0£›ke…1ˆë‚j@qa
-©83u!ˇKÃÑYO˛©|è·¸´≠„{•„È)„[µÒ5)•¯2?A≈ßOŒ$*:√‰œñéã°ƒFπ8≠7ao∂‰+
-PÊ[„“˙œÅ˜aj¯:ó–Êï–ì/uQ‹ºSnŒêâÕRLG‘€aT–c”2N¶%‚Ó‡AdPIÚæ%∫¸äπ ˙ÍÿˆÛ[	3OoHZÛ2BÎ=¯p,´zàÿJ.√@:Ê‘BÀ6í6ΩuË>≠µªJv˘√âmµºí∞‹/qSÿpøÃ ˇ˛Y-Øﬁq∑=≤åc≈€ÔàTqy∂‘∆dj=•JâlOTÕa°<æﬂüËŒmb]ë5‹ãW°¶fL1ì9öCºµÃ{8ª≈∞Ï¿ÎÓ·Ü ÓQ,Âút§ùzG™ıZ∏øSm0l£˙N`,OÌ±l9,≠zœÄFÖ›019°‚A™*•X&Ô„®ïüdØ;		0@ßÀw ,∆§XÜâπÿVTíƒ6Pvw8h√$8‚nÌ≈v	ª–AE\U¶L∏ˇÉâI‹êmG∂épƒ–ä‚{Qr7¨Aª™&;è"(<æ vÒ]˛¸„ûÿŸEàK‚µ*–ôÕh√/È»JÙa%$˜\X¡‡EhÉ†dèñH ' B<;+∂ömúÏÛÍ"!˚Wÿaœ<Éw¡ŒÕ¯äùd¡Ÿ¯ú˝˛˛]Üôì‘D÷˙ Wkπ[lπ˚√˝Îˇ mö»∂|ﬂcö‡Jb6,∆`7ÃÊ‹LäCí‰’@ë›Û˝ıˆ·-`ô0ıñ°ØÃ@aπpJä’¯p¸È«∏P°Õ¿HF[Û¯˝ƒ;—$lÈZ⁄à¨«¨è˜z„›∫«œ
-√≥‡ÆÓAFı?*Û5øIÀœcg‡Ñ¯ÌÆWb|+∞l[«g*¡¡x\E¶1’≈w9ò«A^‚˘7¸‘ùbœ~Î1Ø{ÍN2?ˇô]ä'Ê‡ÔgÅo‹Éjnâ–° &6Ãœœ*s·˘“ì$_ªGÌ‡˘8ﬂ≤ÛÉÏúﬂ‡=¯‡ÔçgÏP†œŸ;_∏ù;ˇ˛ˆ<«ëÇÚ*ß°Õ}D∑ƒ«ÔOÓDÓ?x&—ÔàˇiD›ó&ñ6+Å0ë¯°`PÚôD_≤	‚G˘g }·ùWƒé‚Á}ÀFÎso®\π˚ù˜¯ÔÒgº"Ô–•oΩ?Ê%~ÂM•[éwñÕ¸ OV˙g~ZëG ü˘ß,}ƒ»‚;ØÜoºó‹ë˝÷ì~O¯o¬ûÛ”öæ#∏Ó‰ÑıiV–{≥zŒ^¸ã?Vøa≈ø‡„(Ë˘∑.ÂàÒ£‡ã¶se¨óπ™ÇtL@{“,cµûà—≈˚Ü#πÈ˚R∑Gˆ;çÕ{.Z§pQL2b{#«17óóEl∞àòxUÜùY
-[›ﬁÕç:K.∂≥ânYRh£Î√¬”´√õ:4µ‘M^,˚2O”ÇµWm∑•“k‹Œ≠^ìRÊ+{∆NùŸî∑¸çsJ˙ë`∆í<_/Ì§,4%Ω˝fSjêFµ'5kÔ\ÅBnörÈÓ2∂IA:PMÉÒXåGí5s‘˜ˆ±±;‰miõ40›≤⁄≠N/aUzlSnÅ◊1yò†9∂+`⁄‰-√MÙ‡Yi#È;|˜™–˙ˆ(qaKô‹≈”û}€;πã`ë≥H¡Í¸.§ 9T∫’ÊŒvÎÔŸ\x”∞		,ãÔ:ú∏+Ωhzf∑{€ÕìV≥QoJäËπFLã‰IÓU‚˘èDiÄôY*o$®§5·ﬁ9°ryìÏ©ÀÆø&îèO–-Õ›ΩÅ]óKdì‡/Y≈ΩÁcÊSQ—Ì"?–ËâøœÄ∑Qr»s\:8#]¨ ^––õ`≤]¿ …CJ@t√`Ú4õRRå1Õ’∞PdÃÕ≈ıDãôv√ÚSÚË3?gëo|¸Ñ¥Cˆµs,‘L\–ü2D}ÂÀ≥√»√^ØÕFûBùÏ(úÃﬁpƒ›Û?iË⁄e≠KgÀœìõ2œ“ÁÉ”^"í›U«d=ñ¥√w&_(í˝S◊m¬6GŸiv}ˆ»Ée˝k†',òhOıëŒ!Xöè%Ω$ƒ4”ˆë√„◊bN=ﬂ
-àº˘Fÿ=.êÃ·•◊HÇxƒ&ﬂ=¶Ü~mô	∑Rùè ?◊âÈ¯k)äéß·	’„Å«ı˛‡AHÇ1CTÑƒNÜb91Ï0º tœ^í+Nt§ı≥¿Å€Ë|¡ì∏øÒè›&Öö:€=ö$∫í4’É,º∫ÙBô˛M‡µ≥ü˝   ˇˇ .∏z
+          <VpcNetworkTab state={globalState} />
+        )}
+      </main>
+    </div>
+  </div>
+</div>
+);
+}
