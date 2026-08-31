@@ -224,7 +224,7 @@ export default function VpcNetworkTab({ state }: { state: any }) {
                          <div className="flex items-center gap-3">
                            <Activity className="text-emerald-500 w-5 h-5 animate-pulse" />
                            <div>
-                             <div className="text-xs font-bold text-slate-800">Tethering Active (100.64.137.224)</div>
+                             <div className="text-xs font-bold text-slate-800">Tethering Active (104.21.42.180)</div>
                              <div className="text-[10px] text-slate-500">Routing internet requests through mobile node...</div>
                            </div>
                          </div>

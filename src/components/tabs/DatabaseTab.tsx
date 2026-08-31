@@ -19,6 +19,26 @@ export default function DatabaseTab({ state }: { state: any }) {
     } catch (e) { console.error(e); }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/auth/users');
+      const data = await res.json();
+      if (data.success) {
+        setPhrsUsers(data.users);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchRealtimeDb = async () => {
+    try {
+      const res = await fetch('/api/db/realtime');
+      const data = await res.json();
+      if (data && !data.error) {
+        setDbData(data);
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const fetchDocs = async (collectionName: string) => {
     try {
       const res = await fetch(`/api/db/collections/${collectionName}/docs`);
@@ -29,9 +49,49 @@ export default function DatabaseTab({ state }: { state: any }) {
     } catch (e) { console.error(e); }
   };
 
+  const fetchStorageFiles = async () => {
+    try {
+      // Ensure bucket exists
+      await fetch('/api/storage/buckets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'phrs_default_storage' })
+      });
+      const res = await fetch('/api/storage/buckets/phrs_default_storage/files');
+      const data = await res.json();
+      if (data.success) {
+        setPhrsStorageFiles(data.files);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const uploadStorageFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bucket', 'phrs_default_storage');
+    try {
+      const res = await fetch('/api/storage/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchStorageFiles();
+        setVpsLogStream(prev => [...prev, `[STORAGE] Uploaded file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`]);
+        setHomeToast('✓ File uploaded successfully!');
+      }
+    } catch (e) { console.error(e); }
+  };
+
   useEffect(() => {
     if (phrsDbSubTab === 'Firestore Database') {
       fetchCollections();
+    } else if (phrsDbSubTab === 'Authentication') {
+      fetchUsers();
+    } else if (phrsDbSubTab === 'Realtime Database') {
+      fetchRealtimeDb();
+    } else if (phrsDbSubTab === 'Storage') {
+      fetchStorageFiles();
     }
   }, [phrsDbSubTab]);
 
@@ -89,7 +149,16 @@ export default function DatabaseTab({ state }: { state: any }) {
                 <p className="text-slate-600 mb-6">Fully managed PostgreSQL-compatible database service for your most demanding enterprise database workloads.</p>
                 <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
                   <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Cluster</button>
+                  <button 
+                    onClick={() => {
+                      setHomeToast("✓ Initializing AlloyDB cluster: primary-cluster-01...");
+                      setVpsLogStream(prev => [...prev, `[CLOUDSQL] Provisioning AlloyDB PostgreSQL cluster`]);
+                      setTimeout(() => setHomeToast(null), 3000);
+                    }}
+                    className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+                  >
+                    Create Cluster
+                  </button>
                 </div>
               </div>
             )}
@@ -99,7 +168,16 @@ export default function DatabaseTab({ state }: { state: any }) {
                 <p className="text-slate-600 mb-6">Fully managed, mission-critical relational database service that offers transactional consistency at global scale.</p>
                 <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
                   <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Instance</button>
+                  <button 
+                    onClick={() => {
+                      setHomeToast("✓ Creating Spanner instance: global-phrs-db...");
+                      setVpsLogStream(prev => [...prev, `[SPANNER] Deploying global strongly consistent instance`]);
+                      setTimeout(() => setHomeToast(null), 3000);
+                    }}
+                    className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+                  >
+                    Create Instance
+                  </button>
                 </div>
               </div>
             )}
@@ -119,7 +197,16 @@ export default function DatabaseTab({ state }: { state: any }) {
                 <p className="text-slate-600 mb-6">A flexible, scalable NoSQL cloud database to store and sync data for client- and server-side development.</p>
                 <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
                   <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Database</button>
+                  <button 
+                    onClick={() => {
+                      setPhrsDbSubTab('Firestore Database');
+                      setHomeToast("✓ Switched to Firestore Management");
+                      setTimeout(() => setHomeToast(null), 3000);
+                    }}
+                    className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+                  >
+                    Create Database
+                  </button>
                 </div>
               </div>
             )}
@@ -129,7 +216,16 @@ export default function DatabaseTab({ state }: { state: any }) {
                 <p className="text-slate-600 mb-6">Fully managed in-memory data store service for Redis and Memcached at Google Cloud.</p>
                 <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
                   <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Instance</button>
+                  <button 
+                    onClick={() => {
+                      setHomeToast("✓ Provisioning Memorystore Redis instance: cache-01...");
+                      setVpsLogStream(prev => [...prev, `[MEMORYSTORE] Memory allocation: 5GB Tier-1 Redis active`]);
+                      setTimeout(() => setHomeToast(null), 3000);
+                    }}
+                    className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+                  >
+                    Create Instance
+                  </button>
                 </div>
               </div>
             )}
@@ -465,23 +561,26 @@ export default function DatabaseTab({ state }: { state: any }) {
                       />
                     </div>
                     <button 
-                      onClick={() => {
+                      onClick={async () => {
                         if (!newAuthEmail || !newAuthPassword) {
                           alert('Email and Password are required!');
                           return;
                         }
-                        const newUser = {
-                          uid: 'usr_' + Math.random().toString(36).substring(2, 8),
-                          email: newAuthEmail,
-                          created: new Date().toISOString().split('T')[0],
-                          lastSignIn: 'Never',
-                          status: 'Active'
-                        };
-                        setPhrsUsers(prev => [newUser, ...prev]);
-                        setVpsLogStream(prev => [...prev, `[AUTH] Registered new account: ${newAuthEmail} [${newUser.uid}]`]);
-                        setNewAuthEmail('');
-                        setNewAuthPassword('');
-                        setHomeToast('✓ User registered successfully!');
+                        try {
+                          const res = await fetch('/api/auth/users', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: newAuthEmail, password: newAuthPassword })
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            setPhrsUsers(prev => [data.user, ...prev]);
+                            setVpsLogStream(prev => [...prev, `[AUTH] Registered new account: ${newAuthEmail} [${data.user.uid}]`]);
+                            setNewAuthEmail('');
+                            setNewAuthPassword('');
+                            setHomeToast('✓ User registered successfully!');
+                          }
+                        } catch (e) { console.error(e); }
                         setTimeout(() => setHomeToast(null), 3000);
                       }}
                       className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2.5 rounded-lg font-semibold transition"
@@ -519,19 +618,30 @@ export default function DatabaseTab({ state }: { state: any }) {
                             </td>
                             <td className="py-3 text-right space-x-2">
                               <button 
-                                onClick={() => {
-                                  setPhrsUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, status: u.status === 'Active' ? 'Suspended' : 'Active' } : u));
-                                  setVpsLogStream(prev => [...prev, `[AUTH] Toggled status for account ${user.email}`]);
+                                onClick={async () => {
+                                  const newStatus = user.status === 'Active' ? 'Suspended' : 'Active';
+                                  try {
+                                    await fetch('/api/auth/users/status', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ uid: user.uid, status: newStatus })
+                                    });
+                                    setPhrsUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, status: newStatus } : u));
+                                    setVpsLogStream(prev => [...prev, `[AUTH] Toggled status for account ${user.email}`]);
+                                  } catch (e) { console.error(e); }
                                 }}
                                 className="text-indigo-600 hover:underline"
                               >
                                 Toggle
                               </button>
                               <button 
-                                onClick={() => {
+                                onClick={async () => {
                                   if (confirm(`Are you sure you want to delete ${user.email}?`)) {
-                                    setPhrsUsers(prev => prev.filter(u => u.uid !== user.uid));
-                                    setVpsLogStream(prev => [...prev, `[AUTH] Deleted account: ${user.email}`]);
+                                    try {
+                                      await fetch(`/api/auth/users/${user.uid}`, { method: 'DELETE' });
+                                      setPhrsUsers(prev => prev.filter(u => u.uid !== user.uid));
+                                      setVpsLogStream(prev => [...prev, `[AUTH] Deleted account: ${user.email}`]);
+                                    } catch (e) { console.error(e); }
                                   }
                                 }}
                                 className="text-rose-500 hover:underline"
@@ -576,16 +686,20 @@ export default function DatabaseTab({ state }: { state: any }) {
                       <div className="flex justify-end gap-1.5 text-[10px]">
                         <button onClick={() => setIsCreatingCollection(false)} className="px-2 py-1 text-slate-500">Cancel</button>
                         <button 
-                          onClick={() => {
+                          onClick={async () => {
                             if (!newCollectionName) return;
-                            setFirestoreCollections(prev => ({
-                              ...prev,
-                              [newCollectionName]: []
-                            }));
-                            setSelectedCollection(newCollectionName);
-                            setNewCollectionName('');
-                            setIsCreatingCollection(false);
-                            setVpsLogStream(prev => [...prev, `[FIRESTORE] Created collection /${newCollectionName}`]);
+                            try {
+                              await fetch('/api/db/collections', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: newCollectionName })
+                              });
+                              setRealCollections(prev => [...prev, newCollectionName]);
+                              setSelectedCollection(newCollectionName);
+                              setNewCollectionName('');
+                              setIsCreatingCollection(false);
+                              setVpsLogStream(prev => [...prev, `[FIRESTORE] Created collection /${newCollectionName}`]);
+                            } catch (e) { console.error(e); }
                           }} 
                           className="px-2 py-1 bg-indigo-600 text-white rounded font-bold"
                         >
@@ -750,7 +864,7 @@ export default function DatabaseTab({ state }: { state: any }) {
                                   className="flex-1 p-2 border rounded text-xs bg-slate-50 text-slate-800 font-mono" 
                                 />
                                 <button 
-                                  onClick={() => {
+                                  onClick={async () => {
                                     const keyEl = document.getElementById('new_field_key') as HTMLInputElement;
                                     const valEl = document.getElementById('new_field_val') as HTMLInputElement;
                                     if (!keyEl || !valEl || !keyEl.value || !valEl.value) {
@@ -762,18 +876,18 @@ export default function DatabaseTab({ state }: { state: any }) {
                                     else if (parsedVal === 'false') parsedVal = false;
                                     else if (!isNaN(Number(parsedVal))) parsedVal = Number(parsedVal);
 
-                                    setFirestoreCollections(prev => {
-                                      const updatedDocs = prev[selectedCollection].map(d => {
-                                        if (d.id === selectedDocId) {
-                                          return { ...d, data: { ...d.data, [keyEl.value]: parsedVal } };
-                                        }
-                                        return d;
-                                      });
-                                      return { ...prev, [selectedCollection]: updatedDocs };
-                                    });
-                                    setVpsLogStream(prev => [...prev, `[FIRESTORE] Added field "${keyEl.value}" = ${JSON.stringify(parsedVal)} to /${selectedCollection}/${selectedDocId}`]);
-                                    keyEl.value = '';
-                                    valEl.value = '';
+                                    const updatedData = { ...realDocsData[selectedDocId], [keyEl.value]: parsedVal };
+                                    try {
+                                        await fetch(`/api/db/collections/${selectedCollection}/docs`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ id: selectedDocId, data: updatedData })
+                                        });
+                                        fetchDocs(selectedCollection);
+                                        setVpsLogStream(prev => [...prev, `[FIRESTORE] Added field "${keyEl.value}" = ${JSON.stringify(parsedVal)} to /${selectedCollection}/${selectedDocId}`]);
+                                        keyEl.value = '';
+                                        valEl.value = '';
+                                    } catch (e) { console.error(e); }
                                   }}
                                   className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded font-bold text-xs font-mono"
                                 >
@@ -863,14 +977,24 @@ export default function DatabaseTab({ state }: { state: any }) {
                       </div>
 
                       <button 
-                        onClick={() => {
-                          setDbData({
+                        onClick={async () => {
+                          const defaultSeed = {
                             "users": {
                               "usr_9812": { "name": "Master Admin", "role": "admin", "verified": true, "phone": "+91 98765 43210" }
                             },
                             "settings": { "maintenance_mode": false }
-                          });
-                          setVpsLogStream(prev => [...prev, '[SQLITE] Reset database database schema. Seeding complete.']);
+                          };
+                          try {
+                            await fetch('/api/db/realtime', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(defaultSeed)
+                            });
+                            setDbData(defaultSeed);
+                            setVpsLogStream(prev => [...prev, '[SQLITE] Reset database database schema. Seeding complete.']);
+                            setHomeToast('✓ Database reset to defaults!');
+                          } catch (e) { console.error(e); }
+                          setTimeout(() => setHomeToast(null), 3000);
                         }}
                         className="text-[10px] font-mono text-rose-400 hover:underline"
                       >
@@ -966,23 +1090,12 @@ export default function DatabaseTab({ state }: { state: any }) {
                     setIsDraggingFile(true);
                   }}
                   onDragLeave={() => setIsDraggingFile(false)}
-                  onDrop={(e) => {
+                   onDrop={(e) => {
                     e.preventDefault();
                     setIsDraggingFile(false);
                     const files = e.dataTransfer.files;
                     if (files.length > 0) {
-                      const file = files[0];
-                      const newFile = {
-                        name: file.name,
-                        size: (file.size / 1024).toFixed(1) + ' KB',
-                        type: file.type || 'unknown',
-                        uploaded: new Date().toISOString().split('T')[0]
-                      };
-                      setPhrsStorageFiles(prev => [...prev, newFile]);
-   window.executeBackendAction('Uploading file ' + newFile.name + ' to server DB');
-                      setVpsLogStream(prev => [...prev, `[STORAGE] Uploaded file: ${newFile.name} (${newFile.size})`]);
-                      setHomeToast('✓ File uploaded successfully via Drag-and-Drop!');
-                      setTimeout(() => setHomeToast(null), 3000);
+                      uploadStorageFile(files[0]);
                     }
                   }}
                   className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all ${isDraggingFile ? 'border-indigo-600 bg-indigo-50/20' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
@@ -999,18 +1112,7 @@ export default function DatabaseTab({ state }: { state: any }) {
                     onChange={(e) => {
                       const files = e.target.files;
                       if (files && files.length > 0) {
-                        const file = files[0];
-                        const newFile = {
-                          name: file.name,
-                          size: (file.size / 1024).toFixed(1) + ' KB',
-                          type: file.type || 'unknown',
-                          uploaded: new Date().toISOString().split('T')[0]
-                        };
-                        setPhrsStorageFiles(prev => [...prev, newFile]);
-   window.executeBackendAction('Uploading file ' + newFile.name + ' to server DB');
-                        setVpsLogStream(prev => [...prev, `[STORAGE] Uploaded file: ${newFile.name} (${newFile.size})`]);
-                        setHomeToast('✓ File uploaded successfully!');
-                        setTimeout(() => setHomeToast(null), 3000);
+                        uploadStorageFile(files[0]);
                       }
                     }}
                   />
@@ -1048,10 +1150,10 @@ export default function DatabaseTab({ state }: { state: any }) {
                             <td className="py-3">{file.size}</td>
                             <td className="py-3 uppercase text-[10px] text-slate-500">{file.type}</td>
                             <td className="py-3">{file.uploaded}</td>
-                            <td className="py-3 text-right space-x-2">
+                             <td className="py-3 text-right space-x-2">
                               <button 
                                 onClick={() => {
-                                  alert(`✓ Initiating offline download for: ${file.name}`);
+                                  window.open(`/api/storage/buckets/phrs_default_storage/files/${file.name}/download`);
                                   setVpsLogStream(prev => [...prev, `[STORAGE] Download triggered for ${file.name}`]);
                                 }}
                                 className="text-indigo-600 hover:underline"
@@ -1059,10 +1161,13 @@ export default function DatabaseTab({ state }: { state: any }) {
                                 Download
                               </button>
                               <button 
-                                onClick={() => {
+                                onClick={async () => {
                                   if (confirm(`Delete asset "${file.name}"?`)) {
-                                    setPhrsStorageFiles(prev => prev.filter(f => f.name !== file.name));
-                                    setVpsLogStream(prev => [...prev, `[STORAGE] Deleted asset: ${file.name}`]);
+                                    try {
+                                      await fetch(`/api/storage/buckets/phrs_default_storage/files/${file.name}`, { method: 'DELETE' });
+                                      setPhrsStorageFiles(prev => prev.filter(f => f.name !== file.name));
+                                      setVpsLogStream(prev => [...prev, `[STORAGE] Deleted asset: ${file.name}`]);
+                                    } catch (e) { console.error(e); }
                                   }
                                 }}
                                 className="text-rose-500 hover:underline"

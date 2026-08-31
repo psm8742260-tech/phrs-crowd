@@ -92,7 +92,7 @@ export default function SmsTab({ state }: { state: any }) {
                 <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase">STANDALONE SERVER PACKAGE</h3>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">Self-Hosted [6606.0k]</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">Self-Hosted [6606.ok]</span>
                   </div>
                   <p className="text-xs text-slate-500 mb-4">
                     Completely independent of External Platforms. Export the full standalone server package as a ZIP file to host on your local mobile IP or private VPS.
@@ -111,12 +111,12 @@ export default function SmsTab({ state }: { state: any }) {
 
                   <button
                     onClick={() => {
-                      setVpsLogStream(prev => [...prev, `[STANDALONE-6606.0k] Generated complete standalone server ZIP package. Ready for offline deployment on local mobile IP.`]);
-                      alert('✓ PHRS_Crowd_Server_Standalone_6606.0k.zip Download Initialized!\n\nExtract and run:\n1. npm install\n2. npm run build\n3. npm start (Runs on local IP without External Platforms dependency)');
+                      setVpsLogStream(prev => [...prev, `[STANDALONE-6606.ok] Generated complete standalone server ZIP package. Ready for offline deployment on local mobile IP.`]);
+                      alert('✓ PHRS_Crowd_Server_Standalone_6606.ok.zip Download Initialized!\n\nExtract and run:\n1. npm install\n2. npm run build\n3. npm start (Runs on local IP without External Platforms dependency)');
                     }}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2.5 rounded-lg font-semibold shadow-lg transition-all flex items-center justify-center gap-2"
                   >
-                    <span>📦 DOWNLOAD STANDALONE ZIP [6606.0k]</span>
+                    <span>📦 DOWNLOAD STANDALONE ZIP [6606.ok]</span>
                   </button>
                 </div>
 
@@ -269,7 +269,7 @@ export default function SmsTab({ state }: { state: any }) {
                     onClick={() => {
                       if (confirm('Are you sure you want to clear the SMS history?')) {
                         setPhrsSmsHistory([]);
-                        localStorage.removeItem('phrs_sms_history');
+                        fetch('/api/sms/history', { method: 'DELETE' }).catch(err => console.error("History clear failed:", err));
                       }
                     }}
                     className="px-3 py-1.5 rounded-lg border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 font-mono text-[11px] font-semibold transition"

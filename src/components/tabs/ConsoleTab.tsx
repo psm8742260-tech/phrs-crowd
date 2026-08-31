@@ -64,72 +64,6 @@ export default function ConsoleTab({ state }: { state: any }) {
                 </div>
               </div>
 
-              {/* Master Standalone Server & APK Download Card for 157.50.81.156 */}
-              <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-2xl border border-indigo-500/30 mb-8">
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-                  <div>
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase">Master IP: 157.50.81.156 Ready</span>
-                    <h3 className="text-lg font-black tracking-tight mt-2">📥 1-CLICK STANDALONE & APK DEPLOYMENT CONSOLE</h3>
-                    <p className="text-xs text-indigo-200 mt-1 max-w-xl">
-                      పూర్తి PHRS Crowd అప్లికేషన్ మాస్టర్‌ను ఒకవైపు సింగిల్ HTML ఫైల్‌గా లేదా మరోవైపు నేరుగా ఆండ్రాయిడ్ APK ప్యాకేజీలా డౌన్‌లోడ్ చేసుకోండి!
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 shrink-0">
-                    <button
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/standalone.html');
-                          const htmlText = await res.text();
-                          const blob = new Blob([htmlText], { type: 'text/html' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = 'phrs_crowd_standalone_master.html';
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                          setHomeToast('✓ Standalone HTML Master Bundle downloaded successfully!');
-                          setTimeout(() => setHomeToast(null), 3000);
-                        } catch (e) {
-                          window.open('/standalone.html', '_blank');
-                        }
-                      }}
-                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-xs px-5 py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>DOWNLOAD HTML</span>
-                    </button>
-                    
-                    <button
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/standalone.html');
-                          const htmlText = await res.text();
-                          const blob = new Blob([htmlText], { type: 'text/html' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = 'PHRS_Crowd_Master_v1.0.apk.html';
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                          setHomeToast('✓ Android APK Installer Package initialized successfully!');
-                          setTimeout(() => setHomeToast(null), 3000);
-                        } catch (e) {
-                          window.open('/standalone.html', '_blank');
-                        }
-                      }}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-5 py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2"
-                    >
-                      <Smartphone className="w-4 h-4" />
-                      <span>DOWNLOAD APK</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
               {/* Three Beautiful Symmetrical Integration Code Boards Side-by-Side */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
@@ -157,16 +91,15 @@ export default function ConsoleTab({ state }: { state: any }) {
                       <pre className="w-full bg-slate-950 text-emerald-400 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
 {`import { initializeApp } from "@phrs/cloud";
 
-// లోకల్ స్టోరేజ్ లేదా డిఫాల్ట్ వాల్యూస్
-const currentIP = localStorage.getItem('phrs_ip') || "${remoteNodeIp}";
-const currentSerial = localStorage.getItem('phrs_serial') || "${deviceSerial}";
-const currentDeepSeekKey = localStorage.getItem('phrs_deepseek') || "${deepseekApiKey}";
+// లోకల్ స్టోరేజ్ లేదా పర్మనెంట్ వాల్యూస్
+const permanentIP = localStorage.getItem('phrs_ip') || "104.21.42.180"; // పర్మనెంట్ ఐపీ
+const currentSerial = localStorage.getItem('phrs_serial') || "10BF4C1HQ2000R1"; // సీరియల్
+const secureDomain = "https://phrscrowd.online"; // ప్రైమరీ డొమైన్
 
 export const phrsConfig = {
-  apiKey: "PHRS_AUTH_8742260",
-  deepseekApiKey: currentDeepSeekKey,
   deviceSerial: currentSerial,
-  authDomain: currentIP,
+  authDomain: secureDomain,
+  nodeIp: permanentIP,
   projectId: "phrs-master-cloud",
   appId: "1:8742260:web:phrs_master_node"
 };
@@ -178,16 +111,15 @@ export const app = initializeApp(phrsConfig);`}
                         onClick={() => {
                           const code = `import { initializeApp } from "@phrs/cloud";
 
-// లోకల్ స్టోరేజ్ లేదా డిఫాల్ట్ వాల్యూస్
-const currentIP = localStorage.getItem('phrs_ip') || "${remoteNodeIp}";
-const currentSerial = localStorage.getItem('phrs_serial') || "${deviceSerial}";
-const currentDeepSeekKey = localStorage.getItem('phrs_deepseek') || "${deepseekApiKey}";
+// లోకల్ స్టోరేజ్ లేదా పర్మనెంట్ వాల్యూస్
+const permanentIP = localStorage.getItem('phrs_ip') || "104.21.42.180"; // పర్మనెంట్ ఐపీ
+const currentSerial = localStorage.getItem('phrs_serial') || "10BF4C1HQ2000R1"; // సీరియల్
+const secureDomain = "https://phrscrowd.online"; // ప్రైమరీ డొమైన్
 
 export const phrsConfig = {
-  apiKey: "PHRS_AUTH_8742260",
-  deepseekApiKey: currentDeepSeekKey,
   deviceSerial: currentSerial,
-  authDomain: currentIP,
+  authDomain: secureDomain,
+  nodeIp: permanentIP,
   projectId: "phrs-master-cloud",
   appId: "1:8742260:web:phrs_master_node"
 };
@@ -209,10 +141,9 @@ export const app = initializeApp(phrsConfig);`;
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
                           `import { initializeApp } from "@phrs/cloud";
-const currentIP = localStorage.getItem('phrs_ip') || "${remoteNodeIp}";
-const currentSerial = localStorage.getItem('phrs_serial') || "${deviceSerial}";
-const currentDeepSeekKey = localStorage.getItem('phrs_deepseek') || "${deepseekApiKey}";
-export const phrsConfig = { apiKey: "PHRS_AUTH_8742260", deepseekApiKey: currentDeepSeekKey, deviceSerial: currentSerial, authDomain: currentIP, projectId: "phrs-master-cloud", appId: "1:8742260:web:phrs_master_node" };
+const permanentIP = localStorage.getItem('phrs_ip') || "104.21.42.180";
+const currentSerial = localStorage.getItem('phrs_serial') || "10BF4C1HQ2000R1";
+export const phrsConfig = { deviceSerial: currentSerial, authDomain: "https://phrscrowd.online", nodeIp: permanentIP, projectId: "phrs-master-cloud", appId: "1:8742260:web:phrs_master_node" };
 export const app = initializeApp(phrsConfig);`
                         )}`} 
                         alt="MODULE QR" 
@@ -245,24 +176,22 @@ export const app = initializeApp(phrsConfig);`
 
                     <div className="relative group">
                       <pre className="w-full bg-slate-950 text-indigo-300 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
-{`import { PHRS, db, OTP, DeepSeekAI } from "@phrs/cloud";
+{`import { PHRS, db, OTP } from "@phrs/cloud";
 import { phrsConfig } from "./phrs-config.js";
 
 PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
 db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);
-DeepSeekAI.connect(phrsConfig.deepseekApiKey);`}
+OTP.node(phrsConfig.authDomain);`}
                       </pre>
                       <button 
                         className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
                         onClick={() => {
-                          const code = `import { PHRS, db, OTP, DeepSeekAI } from "@phrs/cloud";
+                          const code = `import { PHRS, db, OTP } from "@phrs/cloud";
 import { phrsConfig } from "./phrs-config.js";
 
 PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
 db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);
-DeepSeekAI.connect(phrsConfig.deepseekApiKey);`;
+OTP.node(phrsConfig.authDomain);`;
                           navigator.clipboard.writeText(code);
                           setHomeToast('✓ main.js (SCRIPT) copied!');
                           setTimeout(() => setHomeToast(null), 3000);
@@ -278,12 +207,11 @@ DeepSeekAI.connect(phrsConfig.deepseekApiKey);`;
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3 w-32 h-32 flex items-center justify-center overflow-hidden">
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                          `import { PHRS, db, OTP, DeepSeekAI } from "@phrs/cloud";
+                          `import { PHRS, db, OTP } from "@phrs/cloud";
 import { phrsConfig } from "./phrs-config.js";
 PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
 db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);
-DeepSeekAI.connect(phrsConfig.deepseekApiKey);`
+OTP.node(phrsConfig.authDomain);`
                         )}`} 
                         alt="SCRIPT QR" 
                         className="w-full h-full object-contain mix-blend-multiply"
@@ -315,24 +243,34 @@ DeepSeekAI.connect(phrsConfig.deepseekApiKey);`
 
                     <div className="relative group">
                       <pre className="w-full bg-slate-950 text-indigo-200 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
-{`window.savePHRSSettings = function(newIP, newSerial, newDeepSeekKey) {
-  localStorage.setItem('phrs_ip', newIP);
-  localStorage.setItem('phrs_serial', newSerial);
-  localStorage.setItem('phrs_deepseek', newDeepSeekKey);
+{`window.savePHRSSettings = function(customDeepSeekKey) {
+  const permanentIP = "104.21.42.180";
+  const secureDomain = "https://phrscrowd.online";
+  const defaultSerial = "10BF4C1HQ2000R1";
+
+  localStorage.setItem('phrs_ip', permanentIP);
+  localStorage.setItem('phrs_domain', secureDomain);
+  localStorage.setItem('phrs_serial', defaultSerial);
+  if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
   
-  alert("PHRS సర్వర్ సెట్టింగ్స్ విజయవంతంగా అప్‌డేట్ అయ్యాయి! సిస్టమ్ రీస్టార్ట్ అవుతోంది...");
+  alert("PHRS సర్వర్ (phrscrowd.online) సెట్టింగ్స్ అప్‌డేట్ అయ్యాయి! రీస్టార్ట్ అవుతోంది...");
   location.reload();
 };`}
                       </pre>
                       <button 
                         className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
                         onClick={() => {
-                          const code = `window.savePHRSSettings = function(newIP, newSerial, newDeepSeekKey) {
-  localStorage.setItem('phrs_ip', newIP);
-  localStorage.setItem('phrs_serial', newSerial);
-  localStorage.setItem('phrs_deepseek', newDeepSeekKey);
+                          const code = `window.savePHRSSettings = function(customDeepSeekKey) {
+  const permanentIP = "104.21.42.180";
+  const secureDomain = "https://phrscrowd.online";
+  const defaultSerial = "10BF4C1HQ2000R1";
+
+  localStorage.setItem('phrs_ip', permanentIP);
+  localStorage.setItem('phrs_domain', secureDomain);
+  localStorage.setItem('phrs_serial', defaultSerial);
+  if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
   
-  alert("PHRS సర్వర్ సెట్టింగ్స్ విజయవంతంగా అప్‌డేట్ అయ్యాయి! సిస్టమ్ రీస్టార్ట్ అవుతోంది...");
+  alert("PHRS సర్వర్ (phrscrowd.online) సెట్టింగ్స్ అప్‌డేట్ అయ్యాయి! రీస్టార్ట్ అవుతోంది...");
   location.reload();
 };`;
                           navigator.clipboard.writeText(code);
@@ -350,11 +288,15 @@ DeepSeekAI.connect(phrsConfig.deepseekApiKey);`
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3 w-32 h-32 flex items-center justify-center overflow-hidden">
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                          `window.savePHRSSettings = function(newIP, newSerial, newDeepSeekKey) {
-  localStorage.setItem('phrs_ip', newIP);
-  localStorage.setItem('phrs_serial', newSerial);
-  localStorage.setItem('phrs_deepseek', newDeepSeekKey);
-  alert("PHRS సర్వర్ సెట్టింగ్స్ విజయవంతంగా అప్డేట్ అయ్యాయి! సిస్టమ్ రీస్టార్ట్ అవుతోంది...");
+                          `window.savePHRSSettings = function(customDeepSeekKey) {
+  const permanentIP = "104.21.42.180";
+  const secureDomain = "https://phrscrowd.online";
+  const defaultSerial = "10BF4C1HQ2000R1";
+  localStorage.setItem('phrs_ip', permanentIP);
+  localStorage.setItem('phrs_domain', secureDomain);
+  localStorage.setItem('phrs_serial', defaultSerial);
+  if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
+  alert("PHRS సర్వర్ (phrscrowd.online) సెట్టింగ్స్ అప్డేట్ అయ్యాయి! రీస్టార్ట్ అవుతోంది...");
   location.reload();
 };`
                         )}`} 

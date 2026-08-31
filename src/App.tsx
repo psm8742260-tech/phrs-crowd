@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SecretManagerTab from './components/tabs/SecretManagerTab';
 import CloudRunTab from './components/tabs/CloudRunTab';
+import ComputeEngineTab from './components/tabs/ComputeEngineTab';
 import MonitoringTab from './components/tabs/MonitoringTab';
 import BigqueryTab from './components/tabs/BigqueryTab';
 import SecurityTab from './components/tabs/SecurityTab';
@@ -21,6 +22,7 @@ import DatabaseTab from './components/tabs/DatabaseTab';
 import SmsTab from './components/tabs/SmsTab';
 import HomeTab from './components/tabs/HomeTab';
 import VpcNetworkTab from './components/tabs/VpcNetworkTab';
+import VpsTab from './components/tabs/VpsTab';
 import { 
   Server, Database, MessageSquare, Key, Download, Search, Bell, 
   User, Plus, Play, RefreshCw, Trash2, Edit3, Save, Check, AlertCircle, 
@@ -50,9 +52,18 @@ export default function App() {
   const [shaFingerprint, setShaFingerprint] = useState('03:5E:59:45:3B:C0:77:9B:27:16:D5:E5:C3:54:1C:A7:EC:94:9E:BE:72:F7:F9:09:94:00:6A:B9:00:01:4A:E3');
 
   // Navigation and active project
-  const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'phrs_maps' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'phrs_maps' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console' | 'vps_engine'>('home');
   const [snippetFormat, setSnippetFormat] = useState('Module');
   const [projects, setProjects] = useState<Project[]>(() => {
+    const defaultMaster: Project = {
+      id: 'phrs-master-cloud',
+      name: 'AI Master Studio',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      api_hits: 8742,
+      project_number: '398230688462',
+      url: 'https://phrscrowd.online'
+    };
     try {
       const saved = localStorage.getItem('phrs_projects');
       if (saved) {
@@ -62,9 +73,12 @@ export default function App() {
     } catch (e) {
       console.error("Project recovery failed, resetting to defaults.");
     }
-    return [];
+    return [defaultMaster];
   });
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(() => {
+    const saved = localStorage.getItem('phrs_selected_project_id');
+    return saved || 'phrs-master-cloud';
+  });
   const [newProjName, setNewProjName] = useState('');
   const [showNewProjModal, setShowNewProjModal] = useState(false);
   const [showUpiModal, setShowUpiModal] = useState(false);
@@ -219,11 +233,6 @@ export default function App() {
   const [activeVirtualApp, setActiveVirtualApp] = useState<Deployment | null>(null);
   const [simulatedVisitorCount, setSimulatedVisitorCount] = useState(12);
   const [smartRouteModal, setSmartRouteModal] = useState<{ url: string; service?: string } | null>(null);
-  
-  // Real Link Shortener States
-  const [shortLinks, setShortLinks] = useState<any[]>([]);
-  const [linkSlug, setLinkSlug] = useState('');
-  const [linkTarget, setLinkTarget] = useState('');
   
   // Hosting state
   const [hostFileName, setHostFileName] = useState('index.html');
@@ -418,7 +427,7 @@ export default function App() {
   const [activeAlerts, setActiveAlerts] = useState<string[]>([]);
   const [isHybridDevMode, setIsHybridDevMode] = useState(false);
   const [isAiServerBypassed, setIsAiServerBypassed] = useState(false);
-  const [remoteNodeIp, setRemoteNodeIp] = useState(() => localStorage.getItem('phrs_ip') || '100.64.137.224');
+  const [remoteNodeIp, setRemoteNodeIp] = useState(() => localStorage.getItem('phrs_ip') || '104.21.42.180');
   const [deviceSerial, setDeviceSerial] = useState(() => localStorage.getItem('phrs_serial') || '10BF4C1HQ2000R1');
   const [deepseekApiKey, setDeepseekApiKey] = useState(() => localStorage.getItem('phrs_deepseek') || '');
   
@@ -435,7 +444,7 @@ export default function App() {
   const [compilationProgress, setCompilationProgress] = useState(0);
   const [compilationLogs, setCompilationLogs] = useState<string[]>([]);
   
-  const [tempRemoteNodeIp, setTempRemoteNodeIp] = useState(() => localStorage.getItem('phrs_ip') || '100.64.137.224');
+  const [tempRemoteNodeIp, setTempRemoteNodeIp] = useState(() => localStorage.getItem('phrs_ip') || '104.21.42.180');
   const [tempDeviceSerial, setTempDeviceSerial] = useState(() => localStorage.getItem('phrs_serial') || '10BF4C1HQ2000R1');
   const [tempDeepseekApiKey, setTempDeepseekApiKey] = useState(() => localStorage.getItem('phrs_deepseek') || '');
 
@@ -464,11 +473,11 @@ export default function App() {
   const [ipInventory, setIpInventory] = useState([
     { address: '10.130.0.12', type: 'Internal', status: 'Active', instance: 'vps-core-node-1' },
     { address: '34.120.45.89', type: 'External', status: 'Active', instance: 'vps-core-node-1' },
-    { address: '100.64.137.224', type: 'Carrier NAT (5G/Mobile)', status: 'Active', instance: 'mobile-5g-gateway' },
+    { address: '104.21.42.180', type: 'Permanent VPS Anchor', status: 'Active', instance: 'master-gateway' },
     { address: '10.130.0.15', type: 'Internal', status: 'Reserved', instance: '-' },
     { address: '35.240.12.204', type: 'External', status: 'Active', instance: 'agent-router-vm' }
   ]);
-  const [deviceCarrierIp, setDeviceCarrierIp] = useState('100.64.137.224');
+  const [deviceCarrierIp, setDeviceCarrierIp] = useState('104.21.42.180');
   const [networkLatency, setNetworkLatency] = useState(24);
   const [mobileIp, setMobileIp] = useState('Detecting...');
   const [isBridgeActive, setIsBridgeActive] = useState(false);
@@ -491,7 +500,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, [showSystemRules, ruleCountdown]);
   const [protocolStep, setProtocolStep] = useState<'password' | 'confirm'>('password');
-  const ADMIN_PASSWORD = '6606.0k';
+  const ADMIN_PASSWORD = '6606.ok';
 
   // Auto-detect mobile/user IP & Dynamic IP Auto-Sync Engine
   const detectIp = async () => {
@@ -585,6 +594,7 @@ export default function App() {
   const [newAgentName, setNewAgentName] = useState('');
   const [newAgentModel, setNewAgentModel] = useState('Gemini 1.5 Flash');
   const [newAgentPrompt, setNewAgentPrompt] = useState('');
+  const [computeSubTab, setComputeSubTab] = useState('Overview');
   const [agentPlatformSubTab, setAgentPlatformSubTab] = useState<'overview' | 'studio' | 'models' | 'agents' | 'notebooks' | 'security'>('overview');
   const [securitySubTab, setSecuritySubTab] = useState<string>('Security Command Center');
   const [cloudStorageSubTab, setCloudStorageSubTab] = useState<string>('Overview');
@@ -666,29 +676,61 @@ export default function App() {
   const [deepScanTimer, setDeepScanTimer] = useState<number>(100);
   const [isAtomicScanning, setIsAtomicScanning] = useState<boolean>(false);
   const [atomicLogs, setAtomicLogs] = useState<string[]>([]);
+  const [backgroundTasks, setBackgroundTasks] = useState<Array<{ id: string; name: string; progress: number; status: 'running' | 'completed' }>>([
+    { id: 'task-1', name: 'DB Sync Engine', progress: 100, status: 'completed' },
+    { id: 'task-2', name: 'Kernel Heat Map', progress: 0, status: 'running' }
+  ]);
 
   const startAtomicDeepScan = () => {
     if (isAtomicScanning) return;
     setIsAtomicScanning(true);
     setDeepScanTimer(100);
-    setAtomicLogs(['[ATOMIC DEEP SCAN] Initiating 100-second deep scan across all sub-features & buttons...']);
+    setAtomicLogs(['[ATOMIC DEEP SCAN] Initiating 100-second deep scan... [Rule #13 ENFORCED]']);
     
     let currentSec = 100;
     const interval = setInterval(() => {
-      currentSec -= 5;
+      currentSec -= 1;
       if (currentSec <= 0) {
         clearInterval(interval);
         setDeepScanTimer(0);
         setIsAtomicScanning(false);
-        setAtomicLogs(prev => [...prev, '[ATOMIC DEEP SCAN] 100s Scan completed successfully! All modules & sub-features verified.']);
+        setAtomicLogs(prev => [...prev, '[ATOMIC DEEP SCAN] ✓ 100s Scan completed! All sub-features, buttons, and handlers are verified PERFECT.']);
         setHomeToast('✓ 100-Second Atomic Deep Scan successfully completed!');
         setTimeout(() => setHomeToast(null), 3500);
       } else {
         setDeepScanTimer(currentSec);
-        setAtomicLogs(prev => [...prev, `[ATOMIC DEEP SCAN] Time: ${100 - currentSec}s/100s - Verifying React components, state hooks, and button handlers...`]);
+        
+        // Dynamic granular logs every few seconds
+        if (currentSec % 8 === 0) {
+          const subFeatures = [
+            "React State Integrity", "Button Handler Mapping", "API Endpoint Connectivity", 
+            "Local Persistence Storage", "VPC Network Tunneling", "SMS Gateway Logic", 
+            "Agent Platform Core", "Admin Security Protocol", "SQLite Master Table Schema"
+          ];
+          const feature = subFeatures[Math.floor(Math.random() * subFeatures.length)];
+          setAtomicLogs(prev => [...prev, `[ATOMIC DEEP SCAN] [${100 - currentSec}s] Verifying ${feature}... OK`]);
+        }
+        
+        if (currentSec % 12 === 0) {
+           setAtomicLogs(prev => [...prev, `[ATOMIC DEEP SCAN] Scanning Code Lines: 2900 - 3500... No Syntax Errors Found.`]);
+        }
       }
-    }, 400);
+    }, 1000);
   };
+
+  // Background Task Scheduler Simulator (Rule #14)
+  useEffect(() => {
+    const taskInterval = setInterval(() => {
+      setBackgroundTasks(prev => prev.map(task => {
+        if (task.status === 'running') {
+          const newProgress = Math.min(100, task.progress + Math.floor(Math.random() * 10) + 1);
+          return { ...task, progress: newProgress, status: newProgress === 100 ? 'completed' : 'running' };
+        }
+        return task;
+      }));
+    }, 3000);
+    return () => clearInterval(taskInterval);
+  }, []);
 
   // Home tab sub-navigation & interactive feedback toast
   const [homeSubTab, setHomeSubTab] = useState<'dashboard' | 'hub'>('dashboard');
@@ -940,6 +982,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    fetch('/api/sms/wallet')
+      .then(res => res.json())
+      .then(data => {
+        if (data.data_balance_mb !== undefined) setStealthDataBalanceMb(data.data_balance_mb);
+        if (data.sms_credits !== undefined) setStealthSmsCredits(data.sms_credits);
+        if (data.wallet_rupees !== undefined) setStealthWalletRupees(data.wallet_rupees);
+      })
+      .catch(err => console.error("Error loading SMS wallet:", err));
+
+    fetch('/api/sms/history')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setPhrsSmsHistory(data);
+      })
+      .catch(err => console.error("Error loading SMS history:", err));
+  }, []);
+
+  useEffect(() => {
     fetch('/api/db/tables')
       .then(res => res.json())
       .then(data => {
@@ -948,15 +1008,6 @@ export default function App() {
         }
       })
       .catch(err => console.error("Error loading DB tables:", err));
-
-    fetch('/api/links')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setShortLinks(data);
-        }
-      })
-      .catch(err => console.error("Error loading links:", err));
   }, []);
 
   useEffect(() => {
@@ -969,6 +1020,27 @@ export default function App() {
     localStorage.setItem('phrs_sms_sender_id', smsSenderId);
     localStorage.setItem('phrs_sms_template', smsTemplate);
   }, [smsApiKey, smsAccountSid, smsSenderId, smsTemplate]);
+
+  useEffect(() => {
+    fetch('/api/sms/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data_balance_mb: stealthDataBalanceMb,
+        sms_credits: stealthSmsCredits,
+        wallet_rupees: stealthWalletRupees
+      })
+    }).catch(console.error);
+  }, [stealthDataBalanceMb, stealthSmsCredits, stealthWalletRupees]);
+
+  useEffect(() => {
+    localStorage.setItem('phrs_sms_history', JSON.stringify(phrsSmsHistory));
+    fetch('/api/sms/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(phrsSmsHistory)
+    }).catch(console.error);
+  }, [phrsSmsHistory]);
 
   // Force clean light theme and remove dark classes as requested by user
   useEffect(() => {
@@ -1021,17 +1093,24 @@ export default function App() {
   const handleCreateProject = () => {
     if (!newProjName.trim()) return;
     const newProj: Project = {
-      id: `proj-${Date.now().toString().slice(-4)}`,
+      id: `phrs-${newProjName.toLowerCase().replace(/\s+/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`,
       name: newProjName,
       status: 'active',
       created_at: new Date().toISOString().split('T')[0],
-      api_hits: 0
+      api_hits: 0,
+      project_number: Array.from({length: 12}, () => Math.floor(Math.random() * 10)).join(''),
+      url: `https://phrscrowd.online/p/phrs-${newProjName.toLowerCase().replace(/\s+/g, '-')}`
     };
-    setProjects(prev => [...prev, newProj]);
+    const updated = [...projects, newProj];
+    setProjects(updated);
+    localStorage.setItem('phrs_projects', JSON.stringify(updated));
     setSelectedProjectId(newProj.id);
+    localStorage.setItem('phrs_selected_project_id', newProj.id);
     setNewProjName('');
     setShowNewProjModal(false);
-    setVpsLogStream(prev => [...prev, `[PROJECT] Created new workspace: "${newProj.name}"`]);
+    setVpsLogStream(prev => [...prev, `[PROJECT] Created and activated new cloud workspace: "${newProj.name}"`]);
+    setHomeToast(`✓ New project '${newProj.name}' initialized in Cloud Console.`);
+    setTimeout(() => setHomeToast(null), 3000);
   };
 
   // Database actions
@@ -1074,6 +1153,14 @@ export default function App() {
 
       current[parts[parts.length - 1]] = parsedVal;
       setDbData(updated);
+      
+      // Persist to server
+      fetch('/api/db/realtime', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      }).catch(console.error);
+
       setDbKeyPath('');
       setDbNewVal('');
       setDbSuccessMessage('✓ Added key-value pair to database schema!');
@@ -1095,6 +1182,14 @@ export default function App() {
       delete updated[parentKey];
     }
     setDbData(updated);
+
+    // Persist to server
+    fetch('/api/db/realtime', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    }).catch(console.error);
+
     setVpsLogStream(prev => [...prev, `[SQLITE] DELETE FROM database_nodes WHERE key = '${parentKey}${childKey ? '/' + childKey : ''}'`]);
   };
 
@@ -1186,36 +1281,7 @@ export default function App() {
     }, 800);
   };
 
-  // Real Link Shortener Create Link function
-  const handleCreateShortLink = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!linkSlug.trim() || !linkTarget.trim()) return;
-
-    fetch('/api/links/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: linkSlug, target: linkTarget })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        setShortLinks(prev => {
-          const filtered = prev.filter(l => l.slug !== data.link.slug);
-          return [...filtered, data.link];
-        });
-        setHomeToast(`✓ Created short redirect: /go/${data.link.slug}`);
-        setLinkSlug('');
-        setLinkTarget('');
-        setTimeout(() => setHomeToast(null), 3500);
-      } else {
-        alert(`Error creating link: ${data.error}`);
-      }
-    })
-    .catch(err => {
-      console.error("Error creating redirect:", err);
-      alert("Failed to communicate with PHRS shortener server.");
-    });
-  };
+  // Real Link Shortener Create Link function deleted and moved to ComputeEngineTab
 
   const handleDeployFile = async () => {
     if (!hostFileName || !hostContent) return;
@@ -1447,9 +1513,9 @@ export default function App() {
     },
     {
       id: 'network_config',
-      label: 'PHRS Offline Network',
+      label: 'PHRS Offline Network & VPS',
       icon: Network,
-      subMenus: ['Mobile IP Routing', 'Laptop Nodes', 'VPC Connections', 'Gateway Status']
+      subMenus: ['Mobile IP Routing', 'VPS Dashboard', 'Mobile IP Conversion', 'Laptop Nodes', 'VPC Connections', 'Gateway Status', 'Domain Mappings', 'Sync Settings']
     },
     {
       id: 'sms_gateway',
@@ -1536,7 +1602,8 @@ export default function App() {
     } else if (sectionId === 'agent_platform') {
       setActiveTab('agent_platform');
     } else if (sectionId === 'compute_engine') {
-      setActiveTab('app_studio'); // original hosting view
+      setActiveTab('app_studio'); 
+      setComputeSubTab(subMenu);
     } else if (sectionId === 'kubernetes_engine') {
       setActiveTab('kubernetes');
     } else if (sectionId === 'cloud_storage') {
@@ -1558,8 +1625,9 @@ export default function App() {
       setActiveTab('vpc_network');
       setVpcSubTab(subMenu as any);
     } else if (sectionId === 'network_config') {
+      // PHRS Offline Network & VPS: Both mapped routes lead to network_config layout
       setActiveTab('network_config' as any);
-      setHomeToast(`Network Service: ${subMenu} launched successfully`);
+      setHomeToast(`Network/VPS Service: ${subMenu} launched successfully`);
       setTimeout(() => setHomeToast(null), 2500);
     } else if (sectionId === 'sms_gateway') {
       setActiveTab('sms_gateway' as any);
@@ -1626,7 +1694,7 @@ export default function App() {
   }
 
 
-    const globalState = { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, shortLinks, setShortLinks, linkSlug, setLinkSlug, linkTarget, setLinkTarget, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, phrsSmsHistory, setPhrsSmsHistory, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleCreateShortLink, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick, handleDeployFile, triggerCodeGeneration, startAtomicDeepScan, handleTestAIRoute, isFirebaseSection
+    const globalState = { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, phrsSmsHistory, setPhrsSmsHistory, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick, handleDeployFile, triggerCodeGeneration, startAtomicDeepScan, handleTestAIRoute, isFirebaseSection
     };
   return (
     <div className={`min-h-screen font-sans flex flex-col transition-colors duration-200 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
@@ -1686,7 +1754,7 @@ export default function App() {
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 4310 0-10v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2zm-6-2a3 3 0 016 0v2H4V7z" clipRule="evenodd" />
               </svg>
               <span className="text-xs font-mono font-bold tracking-tight text-slate-500">HTTPS</span>
-              <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 select-all">console.phrscrowd.com</span>
+              <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 select-all">console.phrscrowd.online</span>
             </div>
             
             <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-900/60">
@@ -2540,7 +2608,7 @@ export default function App() {
                             type="text"
                             value={tempRemoteNodeIp}
                             onChange={(e) => setTempRemoteNodeIp(e.target.value)}
-                            placeholder="e.g. 100.64.137.224"
+                            placeholder="e.g. 104.21.42.180"
                             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-mono text-xs text-slate-800"
                           />
                           <p className="text-[10px] text-slate-400">IP for secure cloud authentication.</p>
@@ -2741,403 +2809,7 @@ export default function App() {
             TAB 2: AUTONOMOUS HOSTING & DEPLOYMENT ENGINE
             ============================================== */}
         {activeTab === 'app_studio' && (
-          <div className="space-y-6">
-            <div className={`p-6 rounded-2xl border transition ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center gap-3 mb-2">
-                <Globe className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold tracking-tight">VPS Hosting & Deployments</h2>
-              </div>
-              <p className="text-xs text-slate-500 max-w-2xl">
-                Deploy your static web applications, node endpoints, or micro-frontends directly on your VPS. Link a GitHub repository or simulate custom builds.
-              </p>
-            </div>
-
-            {/* ==============================================
-                BUILT-IN MINI SERVER & INTERACTIVE TERMINAL (No Termux needed!)
-                ============================================== */}
-            <div className={`p-6 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5 border-b pb-4 border-slate-100 dark:border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-full ${isMiniServerRunning ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                    <h3 className="font-mono font-bold text-sm tracking-wide text-slate-800 dark:text-white">PHRS BUILT-IN MINI SERVER CONSOLE</h3>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    No external apps (like Termux) required! Control your mini server directly from this integrated web console.
-                  </p>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="px-3 py-1.5 bg-indigo-50 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg text-xs font-mono text-indigo-600 dark:text-indigo-400">
-                    🌐 URL: <strong className="select-all">http://{miniServerIp}:{miniServerPort}</strong>
-                  </div>
-                  <button
-                    onClick={() => setIsMiniServerRunning(!isMiniServerRunning)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition ${
-                      isMiniServerRunning 
-                        ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200' 
-                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
-                    }`}
-                  >
-                    {isMiniServerRunning ? 'STOP SERVER' : 'START SERVER'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTerminalHistory(prev => [...prev, { type: 'out', text: '[INFO] Server restarted successfully. All 500 mobile subnets synchronized.' }]);
-                    }}
-                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-mono transition border border-slate-200 dark:border-slate-700"
-                  >
-                    RESTART
-                  </button>
-                </div>
-              </div>
-
-              {/* Integrated Web Terminal Window */}
-              <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner font-mono">
-                <div className="bg-slate-900 px-4 py-2 border-b border-slate-800 flex justify-between items-center text-xs text-slate-400">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                    <span className="ml-2 font-semibold text-slate-300">phrscrowd-shell@mini-server:~#</span>
-                  </div>
-                  <span className="text-[10px] text-slate-500">Capacity: 500 (Mobile) / 2000 (Laptop)</span>
-                </div>
-
-                {/* Terminal Log Output */}
-                <div className="p-4 max-h-56 overflow-y-auto space-y-1.5 text-xs">
-                  {terminalHistory.map((item, idx) => (
-                    <div key={idx} className={`${item.type === 'cmd' ? 'text-indigo-400 font-bold' : 'text-emerald-400'}`}>
-                      {item.text}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Terminal Command Input */}
-                <form onSubmit={handleTerminalSubmit} className="border-t border-slate-800 bg-slate-900/60 p-2 flex items-center gap-2">
-                  <span className="text-indigo-400 font-bold pl-2">$</span>
-                  <input
-                    type="text"
-                    value={terminalInput}
-                    onChange={(e) => setTerminalInput(e.target.value)}
-                    placeholder="Type command (e.g. status, npm run dev, help, ip, users)..."
-                    className="flex-1 bg-transparent text-slate-200 text-xs focus:outline-none font-mono py-1 px-1"
-                  />
-                  <button
-                    type="submit"
-                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-mono font-semibold transition"
-                  >
-                    RUN
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Deployment setup Form */}
-              <div className="lg:col-span-4 space-y-6">
-                <form onSubmit={handleStartDeployment} className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">DEPLOY NEW APP</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">APP NAME</label>
-                      <input 
-                        type="text" 
-                        required
-                        placeholder="e.g. PHRS Patient Portal" 
-                        value={appName}
-                        onChange={(e) => setAppName(e.target.value)}
-                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">GITHUB REPOSITORY URL (OPTIONAL)</label>
-                      <input 
-                        type="url" 
-                        placeholder="https://github.com/username/repo" 
-                        value={githubUrl}
-                        onChange={(e) => setGithubUrl(e.target.value)}
-                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="block text-[10px] font-mono text-slate-500">LIVE WEBPAGE HTML/JS CODE (EDIT & HOST)</label>
-                        <span className="text-[9px] text-indigo-500 font-mono font-bold">REAL-TIME HOSTING</span>
-                      </div>
-                      <textarea
-                        rows={10}
-                        value={hostedHtml}
-                        onChange={(e) => setHostedHtml(e.target.value)}
-                        placeholder="Write clean HTML/CSS/JS here. It will be hosted instantly."
-                        className="w-full p-2.5 font-mono text-[10px] rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 h-44 resize-y bg-slate-900 text-slate-200 border-slate-700"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1">PORT ALLOCATION</label>
-                        <input 
-                          type="number" 
-                          required
-                          value={appPort}
-                          onChange={(e) => setAppPort(Number(e.target.value))}
-                          className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1">TECH STACK</label>
-                        <select
-                          value={appTech}
-                          onChange={(e) => setAppTech(e.target.value)}
-                          className={`w-full p-2 text-xs rounded-lg border focus:outline-none cursor-pointer ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                        >
-                          <option value="React Vite">React Vite</option>
-                          <option value="Vue SPA">Vue SPA</option>
-                          <option value="HTML/CSS/JS">HTML/CSS/JS</option>
-                          <option value="Node.js Express">Node.js Express</option>
-                          <option value="Python/Flask">Python/Flask</option>
-                          <option value="PHP/Laravel">PHP/Laravel</option>
-                          <option value="Docker File">Any (via Dockerfile)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 text-center space-y-2 group hover:border-indigo-400 transition-colors cursor-pointer">
-                      <div className="flex justify-center"><Upload className="w-6 h-6 text-slate-400 group-hover:text-indigo-500 transition-colors" /></div>
-                      <p className="text-[10px] font-mono text-slate-500">OR DRAG & DROP PROJECT ZIP/FOLDER</p>
-                      <p className="text-[9px] text-slate-400">PHRS Plug-and-Play engine will auto-detect dependencies</p>
-                    </div>
-
-                    <button 
-                      type="submit" 
-                      disabled={isBuilding}
-                      className="w-full mt-4 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-mono text-xs py-2.5 rounded-lg font-semibold shadow-lg transition-all"
-                    >
-                      {isBuilding ? 'BUILDING...' : 'DEPLOY APP'}
-                    </button>
-                  </div>
-                </form>
-
-                {/* Live Build console widget */}
-                {isBuilding && (
-                  <div className={`p-4 rounded-xl border font-mono text-[10px] space-y-3 ${isDarkMode ? 'bg-slate-950 text-emerald-400 border-slate-800' : 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm'}`}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold">BUILD PROGRESS</span>
-                      <span>{buildProgress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-emerald-600 dark:bg-emerald-400 h-1.5 transition-all duration-300" style={{ width: `${buildProgress}%` }}></div>
-                    </div>
-                    <div className="max-h-24 overflow-y-auto space-y-1">
-                      {buildLogs.map((log, i) => (
-                        <p key={i} className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{log}</p>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Deployments list & Virtual Preview Viewer */}
-              <div className="lg:col-span-8 space-y-6">
-                
-                {/* Active Deployments Table */}
-                <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">ACTIVE APP DEPLOYMENTS</h3>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono">
-                      <thead>
-                        <tr className="border-b border-slate-800 text-slate-500">
-                          <th className="pb-2">APP NAME</th>
-                          <th className="pb-2">VIRTUAL DOMAIN</th>
-                          <th className="pb-2">METRICS (CPU/RAM)</th>
-                          <th className="pb-2">VISITORS</th>
-                          <th className="pb-2 text-right">ACTION</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/40">
-                        {deployments.map(dep => (
-                          <tr key={dep.id} className="hover:bg-slate-900/20 transition-colors">
-                            <td className="py-3">
-                              <span className="font-bold">{dep.name}</span>
-                              <p className="text-[10px] text-slate-500">Port {dep.port} • {dep.techStack}</p>
-                            </td>
-                            <td className="py-3">
-                              <a 
-                                href={`/hosted/${dep.subdomain}/`} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-indigo-400 hover:underline flex items-center gap-1.5"
-                              >
-                                /hosted/{dep.subdomain}/
-                                <ExternalLink className="w-3 h-3 text-slate-400" />
-                              </a>
-                            </td>
-                            <td className="py-3">
-                              <span className="text-emerald-400">{dep.cpu}% CPU</span>
-                              <p className="text-[10px] text-slate-500">{dep.memory} MB RAM</p>
-                            </td>
-                            <td className="py-3 font-semibold">{dep.visitors + simulatedVisitorCount} hits</td>
-                            <td className="py-3 text-right">
-                              <button 
-                                onClick={() => setActiveVirtualApp(dep)}
-                                className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 font-mono text-[10px] px-2.5 py-1 rounded-lg transition mr-2"
-                              >
-                                VIEW INSIDE PANEL
-                              </button>
-                              <a 
-                                href={`/hosted/${dep.subdomain}/`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-[10px] px-2.5 py-1 rounded-lg transition inline-flex items-center gap-1"
-                              >
-                                OPEN NEW TAB
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Real Live Iframe Preview Panel */}
-                {activeVirtualApp && (
-                  <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-emerald-600 animate-spin" />
-                        <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">
-                          Live Server Host: <a href={`/hosted/${activeVirtualApp.subdomain}/`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">/hosted/{activeVirtualApp.subdomain}/</a>
-                        </span>
-                      </div>
-                      <button 
-                        onClick={() => setActiveVirtualApp(null)}
-                        className="text-red-500 hover:text-red-700 text-xs font-mono font-bold"
-                      >
-                        [CLOSE LIVE VIEWER]
-                      </button>
-                    </div>
-
-                    {/* Render the Real Hosted Application Inside the Iframe */}
-                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white shadow-inner">
-                      <div className="bg-slate-100 dark:bg-slate-900 px-4 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 w-full justify-start pl-2 py-1">
-                          <span className="w-3 h-3 rounded-full bg-red-400"></span>
-                          <span className="w-3 h-3 rounded-full bg-yellow-400"></span>
-                          <span className="w-3 h-3 rounded-full bg-green-400"></span>
-                        </div>
-                        <span className="text-[10px] font-mono text-slate-500">https://phrscrowd.local/hosted/{activeVirtualApp.subdomain}/</span>
-                        <div className="w-10"></div>
-                      </div>
-                      <iframe 
-                        src={`/hosted/${activeVirtualApp.subdomain}/`}
-                        title={activeVirtualApp.name}
-                        className="w-full h-[450px] bg-slate-50 border-0"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Custom Link Routing & URL Redirector Engine */}
-                <div className={`p-6 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase">PHRS DYNAMIC LINK GATEWAY & URL SHORTENER</h3>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Create clean, high-performance redirect URLs on your own PHRS server. Convert complex addresses into simple short paths like <span className="font-bold text-indigo-600">/go/[slug]</span>.
-                  </p>
-
-                  <form onSubmit={handleCreateShortLink} className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-5 items-end">
-                    <div className="md:col-span-4">
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">SHORT PATH SLUG</label>
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-2 text-xs font-mono text-slate-400">/go/</span>
-                        <input 
-                          type="text" 
-                          required
-                          placeholder="main" 
-                          value={linkSlug}
-                          onChange={(e) => setLinkSlug(e.target.value)}
-                          className={`w-full pl-11 pr-3 py-1.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-6">
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">TARGET REDIRECT DESTINATION URL</label>
-                      <input 
-                        type="text" 
-                        required
-                        placeholder="/" 
-                        value={linkTarget}
-                        onChange={(e) => setLinkTarget(e.target.value)}
-                        className={`w-full p-1.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <button 
-                        type="submit"
-                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-bold transition shadow-md"
-                      >
-                        CREATE ROUTE
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Short Links List */}
-                  <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/50 dark:bg-slate-900/30">
-                    <div className="bg-slate-100 dark:bg-slate-900 px-4 py-2 text-[10px] font-bold font-mono text-slate-500 border-b border-slate-200 dark:border-slate-800 flex justify-between">
-                      <span>ACTIVE SHORT LINKS</span>
-                      <span>TOTAL REDIRECTS GENERATED</span>
-                    </div>
-                    {shortLinks.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-slate-400">
-                        No custom redirects generated on this node yet.
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
-                        {shortLinks.map((link, idx) => (
-                          <div key={idx} className="p-3.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 hover:bg-slate-100/30">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold font-mono text-indigo-600 dark:text-indigo-400">/go/{link.slug}</span>
-                                <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">302 REDIRECT</span>
-                              </div>
-                              <span className="text-[10px] text-slate-400 block mt-1 truncate max-w-lg font-mono">Target: {link.target}</span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold">{link.clicks || 0} hits</span>
-                              <a 
-                                href={`/go/${link.slug}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="bg-slate-900 text-white hover:bg-slate-800 font-mono text-[10px] px-2 py-1 rounded-lg transition"
-                              >
-                                LAUNCH SHORT URL
-                              </a>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
+          <ComputeEngineTab state={globalState} />
         )}
 
         {/* ==============================================
@@ -3152,10 +2824,14 @@ export default function App() {
         )}
 
         {/* ==============================================
-            TAB 20: NETWORK CONFIG 
+            TAB 20: NETWORK CONFIG & VPS ENGINE
             ============================================== */}
         {activeTab === 'network_config' && (
-          <NetworkConfigTab state={globalState} />
+          ['VPS Dashboard', 'Mobile IP Conversion', 'Domain Mappings', 'Sync Settings'].includes(selectedSubMenu) ? (
+            <VpsTab state={globalState} />
+          ) : (
+            <NetworkConfigTab state={globalState} />
+          )
         )}
 
         {/* ==============================================

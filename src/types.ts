@@ -4,6 +4,8 @@ export interface Project {
   status: 'active' | 'maintenance' | 'idle';
   created_at: string;
   api_hits: number;
+  project_number?: string;
+  url?: string;
 }
 
 export interface Deployment {

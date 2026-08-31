@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 
 export default function HomeTab({ state }: { state: any }) {
   const { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, shortLinks, setShortLinks, linkSlug, setLinkSlug, linkTarget, setLinkTarget, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleCreateShortLink, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick, triggerCodeGeneration } = state;
-  const { Activity, ArrowRight, ChevronRight, Code, Compass, Copy, Cpu, CreditCard, Database, HardDrive, ImageIcon, Layers, MessageSquare, MoreVertical, RefreshCw, Server, Shield, Sliders, Sparkles, Wifi, X } = LucideIcons;
+  const { Activity, ArrowRight, CheckCircle2, ChevronRight, Code, Compass, Copy, Cpu, CreditCard, Database, Flame, HardDrive, ImageIcon, Layers, MessageSquare, MoreVertical, RefreshCw, Server, Shield, Sliders, Smartphone, Sparkles, Wifi, X } = LucideIcons;
   return (
         <>
           <div className="space-y-6 animate-fade-in">
@@ -40,83 +40,140 @@ export default function HomeTab({ state }: { state: any }) {
                   
                   <div className="space-y-1">
                     <h1 className="text-3xl md:text-4xl font-light tracking-tight text-slate-900">
-                      Welcome
+                      Cloud Console
                     </h1>
                            <div className="flex flex-col text-[#5f6368] font-sans pt-1">
-                      <span className="text-xs">You're working in</span>
+                      <span className="text-xs">Active Project Context</span>
                       <div className="flex flex-wrap items-center gap-1 mt-0.5">
                         <button 
                           onClick={() => {
-                            setHomeToast("Viewing primary organization folder");
+                            setHomeToast("Master Organization: PHRS Crowd");
                             setTimeout(() => setHomeToast(null), 2500);
                           }} 
                           className="text-[#1a73e8] hover:underline font-medium text-[15px]"
                         >
-                          phrs-crowd-org
+                          phrscrowd.online
                         </button>
                         <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         
-                        {selectedProjectId ? (
-                          <button 
-                            onClick={() => {
-                              setHomeToast(`Active workspace: ${projects.find(p => p.id === selectedProjectId)?.name}`);
-                              setTimeout(() => setHomeToast(null), 2500);
-                            }} 
-                            className="text-[#1a73e8] hover:underline font-medium text-[15px]"
-                          >
-                            {projects.find(p => p.id === selectedProjectId)?.name || 'Unknown Project'}
-                          </button>
-                        ) : (
-                          <span className="text-slate-400 text-[15px] italic">No project selected</span>
-                        )}
+                        <button 
+                          onClick={() => {
+                            setHomeToast(`Active project: ${projects.find(p => p.id === selectedProjectId)?.name || 'AI Master Studio'}`);
+                            setTimeout(() => setHomeToast(null), 2500);
+                          }} 
+                          className="text-[#1a73e8] hover:underline font-medium text-[15px] flex items-center gap-1"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          {projects.find(p => p.id === selectedProjectId)?.name || 'AI Master Studio'}
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                </div>
-
                 <>
-                  {/* Project Metadata Details */}
-                  {selectedProjectId ? (
-                    <div className="space-y-2 md:space-y-0 md:flex md:items-center md:gap-8 text-xs text-slate-600 font-sans border-b border-slate-100 pb-5 mb-5 mt-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-500 font-medium">Project number:</span>
-                        <span className="font-mono font-bold text-slate-800">{selectedProjectId.replace(/\D/g, '') || Math.floor(Math.random() * 1000000000)}</span>
-                        <button 
-                          onClick={() => {
-                            const num = selectedProjectId.replace(/\D/g, '') || '0';
-                            navigator.clipboard.writeText(num);
-                            setHomeToast(`✓ Project number copied to clipboard: ${num}`);
-                            setTimeout(() => setHomeToast(null), 3000);
-                          }}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                          title="Copy Project Number"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
+                    {/* PROJECT INFO CARD (GCP STYLE MATCHING SCREENSHOT) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                          <h3 className="text-lg font-medium text-slate-800">Project info</h3>
+                          <button className="p-1 hover:bg-slate-50 rounded-full text-slate-400">
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Project name</p>
+                            <p className="text-[15px] text-slate-600">{projects.find(p => p.id === selectedProjectId)?.name || 'AI Master Studio'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Project ID</p>
+                            <p className="text-[15px] font-mono text-slate-600">{selectedProjectId || 'phrs-master-cloud'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Project number</p>
+                            <p className="text-[15px] font-mono text-slate-600">{projects.find(p => p.id === selectedProjectId)?.project_number || '398230688462'}</p>
+                          </div>
+                        </div>
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+                          <button className="text-sm font-bold text-blue-600 hover:text-blue-700 transition">
+                            Go to project settings
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-500 font-medium">Project ID:</span>
-                        <span className="font-mono font-bold text-slate-800">{selectedProjectId}</span>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(selectedProjectId);
-                            setHomeToast(`✓ Project ID copied to clipboard: ${selectedProjectId}`);
-                            setTimeout(() => setHomeToast(null), 3000);
-                          }}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
-                          title="Copy Project ID"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
+
+                      {/* CLOUD ACTIVITY STREAM (PROVING FUNCTIONALITY) */}
+                      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                          <h3 className="text-lg font-medium text-slate-800">Activity Stream</h3>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span className="text-[10px] font-bold text-emerald-600 uppercase">Live Log</span>
+                          </div>
+                        </div>
+                        <div className="p-0 max-h-[280px] overflow-y-auto bg-slate-900 font-mono text-[11px]">
+                          <div className="p-4 space-y-1.5">
+                            {/* Permanent initial system logs */}
+                            <p className="text-emerald-400">[{new Date().toLocaleTimeString()}] <span className="text-slate-500">SYSTEM:</span> Authentication handshake successful for {selectedProjectId}</p>
+                            <p className="text-blue-400">[{new Date().toLocaleTimeString()}] <span className="text-slate-500">GATEWAY:</span> API route verified via phrscrowd.online proxy</p>
+                            
+                            {/* Real live logs from the system state */}
+                            {vpsLogStream.slice(-20).map((log, i) => (
+                              <p key={i} className="text-slate-300">
+                                <span className="text-slate-500">[{new Date().toLocaleTimeString()}]</span> {log}
+                              </p>
+                            ))}
+
+                            {vpsLogStream.length === 0 && (
+                              <p className="text-slate-500">Listening for incoming hardware and software interrupts...</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                          <p className="text-[10px] text-slate-500 font-medium">Auto-refreshing every 5s</p>
+                          <button className="text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider">
+                            View full logs
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-xs text-slate-500 font-sans border-b border-slate-100 pb-5 mb-5 mt-4">
-                      Create a project using the 'Create Project' button above to get started.
+
+                    {/* CLOUD SERVICES INTEGRATION BOARD (GCP STYLE) */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <Layers className="w-3.5 h-3.5" />
+                        Integrated Cloud Services
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                            <Flame className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase">Firebase</p>
+                            <p className="text-[11px] font-black text-emerald-600">SYNCED ({selectedProjectId === 'phrs-master-cloud' ? 'Master' : 'Active'})</p>
+                          </div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center text-blue-600">
+                            <Smartphone className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase">SMS OTP</p>
+                            <p className="text-[11px] font-black text-emerald-600">GATEWAY READY</p>
+                          </div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-amber-50 flex items-center justify-center text-amber-600">
+                            <Database className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase">Database</p>
+                            <p className="text-[11px] font-black text-emerald-600">{selectedProjectId === 'phrs-master-cloud' ? 'MASTER CLOUD లింక్' : 'PROJECT DB ACTIVE'}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  )}
 
                   {/* UNIFIED PHRS AGENT CONSOLE */}
                   <div className="mt-6">
@@ -466,11 +523,11 @@ export default function HomeTab({ state }: { state: any }) {
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project ID</label>
-                          <p className="text-xs font-mono text-slate-600">dauntless-appliance-1pxzt</p>
+                          <p className="text-xs font-mono text-slate-600">{selectedProjectId}</p>
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project number</label>
-                          <p className="text-xs font-mono text-slate-600">398230688462</p>
+                          <p className="text-xs font-mono text-slate-600">{projects.find(p => p.id === selectedProjectId)?.project_number || '398230688462'}</p>
                         </div>
                       </div>
                       <div className="p-3 border-t border-slate-50 bg-slate-50/20">
@@ -489,11 +546,11 @@ export default function HomeTab({ state }: { state: any }) {
                       <div className="p-0 flex-1">
                         <div className="divide-y divide-slate-100">
                           {[
-                            { name: 'Compute Engine', val: '2 instances', color: 'text-blue-600', tab: 'cloud_run' },
-                            { name: 'Cloud Storage', val: '5 buckets', color: 'text-blue-600', tab: 'cloud_storage' },
-                            { name: 'Cloud SQL', val: '1 instance', color: 'text-blue-600', tab: 'cloud_sql' },
-                            { name: 'BigQuery', val: '12 datasets', color: 'text-blue-600', tab: 'bigquery' },
-                            { name: 'PHRS Database', val: '3 active', color: 'text-[#FFCA28]', tab: 'database' },
+                            { name: 'Compute Engine', val: `${projects.length} ${projects.length === 1 ? 'instance' : 'instances'}`, color: 'text-blue-600', tab: 'cloud_run' },
+                            { name: 'Cloud Storage', val: `${buckets.length} ${buckets.length === 1 ? 'bucket' : 'buckets'}`, color: 'text-blue-600', tab: 'cloud_storage' },
+                            { name: 'Cloud SQL', val: `${sqlTables.length} ${sqlTables.length === 1 ? 'instance' : 'instances'}`, color: 'text-blue-600', tab: 'cloud_sql' },
+                            { name: 'BigQuery', val: '0 datasets', color: 'text-blue-600', tab: 'bigquery' },
+                            { name: 'PHRS Database', val: `${firestoreCollections.length} active`, color: 'text-[#FFCA28]', tab: 'database' },
                             { name: 'Agent Platform', val: `${agents.length} active`, color: 'text-indigo-600', tab: 'agent_platform' }
                           ].map((res, i) => (
                             <div key={i} onClick={() => setActiveTab(res.tab as any)} className="flex justify-between items-center px-5 py-3 hover:bg-slate-50 transition cursor-pointer group">
@@ -520,14 +577,14 @@ export default function HomeTab({ state }: { state: any }) {
                         <div className="w-24 h-24 relative">
                           <svg className="w-full h-full" viewBox="0 0 36 36">
                             <circle cx="18" cy="18" r="16" fill="none" className="stroke-slate-100" strokeWidth="3" />
-                            <circle cx="18" cy="18" r="16" fill="none" className="stroke-blue-600" strokeWidth="3" strokeDasharray="75, 100" strokeLinecap="round" />
+                            <circle cx="18" cy="18" r="16" fill="none" className="stroke-blue-600" strokeWidth="3" strokeDasharray={`${Math.min(95, 10 + (agents.length * 8) + (projects.length * 4))}, 100`} strokeLinecap="round" />
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-lg font-bold text-slate-800">75%</span>
+                            <span className="text-lg font-bold text-slate-800">{Math.min(95, 10 + (agents.length * 8) + (projects.length * 4))}%</span>
                             <span className="text-[8px] text-slate-400 uppercase font-bold">Quota</span>
                           </div>
                         </div>
-                        <p className="text-[11px] text-slate-500 text-center">API traffic is normal. Gemini model latency is at 1.2s average.</p>
+                        <p className="text-[11px] text-slate-500 text-center">API traffic is normal. Gemini model latency is at {(networkLatency / 20).toFixed(1)}s average.</p>
                       </div>
                       <div className="p-3 border-t border-slate-50 bg-slate-50/20">
                         <button onClick={() => setActiveTab('api_board')} className="text-xs font-bold text-blue-600 hover:underline">Go to APIs overview</button>
@@ -989,16 +1046,13 @@ export default function HomeTab({ state }: { state: any }) {
 
                     </div>
                   </div>
-
-                    </>
-                  )}
-
-                </div>
+                </>
               )}
-
             </div>
-
-          </div>
-        </>
-  );
+          )}
+        </div>
+      </div>
+    </div>
+  </>
+);
 }

@@ -257,7 +257,11 @@ export default function CloudRunTab({ state }: { state: any }) {
                                 const tunnelData = await tunnelRes.json();
                                 const baseUrl = (tunnelData.status === 'online' && tunnelData.url) ? tunnelData.url : window.location.origin;
                                 
-                                setDeployedUrl(`${baseUrl}/hosted/${appName.replace(/[^a-z0-9.-]/gi, "_").toLowerCase()}/`);
+                                const finalUrl = `https://phrscrowd.online/p/${appName.replace(/[^a-z0-9.-]/gi, "_").toLowerCase()}/`;
+                                setDeployedUrl(finalUrl);
+                                const updatedProjects = projects.map((p: any) => p.id === selectedProjectId ? { ...p, url: finalUrl } : p);
+                                setProjects(updatedProjects);
+                                localStorage.setItem('phrs_projects', JSON.stringify(updatedProjects));
                                 setHomeToast("✓ Deployed successfully to PHRS Crowd Hosting!");
                             } else {
                                 setHomeToast(`⚠️ Deployment failed: ${data.error || 'Unknown error'}`);
@@ -322,24 +326,56 @@ export default function CloudRunTab({ state }: { state: any }) {
             )}
 
             {cloudRunSubTab === 'Services' && (
-              <div className="p-6 rounded-2xl border bg-white border-slate-200">
-                <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase mb-4">Active Services</h3>
-                <div className="space-y-3">
-                  {[
-                    { name: 'phrs-auth-v1', status: 'Healthy', region: 'asia-southeast1', traffic: '100%' },
-                    { name: 'phrs-media-proxy', status: 'Healthy', region: 'asia-southeast1', traffic: '100%' }
-                  ].map((service, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Active Services</h3>
+                  <div className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-mono font-bold border border-emerald-100">
+                    FLEET: {projects.length} SERVICES ONLINE
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {projects.map((project: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-3 h-3 rounded-full ${project.status === 'Running' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} title={project.status}></div>
                         <div>
-                          <p className="font-bold text-slate-900 text-sm">{service.name}</p>
-                          <p className="text-[10px] text-slate-500 uppercase">{service.region} • {service.traffic} traffic</p>
+                          <p className="font-bold text-slate-900 text-sm">{project.name || 'Untitled Service'}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-slate-500 uppercase font-mono bg-slate-100 px-1.5 py-0.5 rounded">asia-southeast1</span>
+                            <span className="text-[10px] text-slate-500 uppercase font-mono bg-slate-100 px-1.5 py-0.5 rounded">100% TRAFFIC</span>
+                            {project.url && (
+                              <a 
+                                href={project.url} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="text-[10px] text-indigo-600 font-bold hover:underline flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                VISIT URL
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <button className="text-xs font-bold text-indigo-600 hover:underline" onClick={() => alert(`✓ ${service.name} is running healthy at region: ${service.region}`)}>Manage</button>
+                      <div className="flex items-center gap-3">
+                        <button 
+                          className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition" 
+                          onClick={() => {
+                            setHomeToast(`✓ Pulling logs for ${project.name}...`);
+                            setTimeout(() => setHomeToast(null), 2000);
+                          }}
+                        >
+                          Manage
+                        </button>
+                      </div>
                     </div>
                   ))}
+                  {projects.length === 0 && (
+                    <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-2xl">
+                      <Globe className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                      <p className="text-xs text-slate-400">No active services deployed yet.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -133,11 +133,24 @@ export default function SmsGatewayTab({ state }: { state: any }) {
       type: 'recharge' as const
     };
 
-    setPhrsSmsHistory((prev: any) => {
-      const updated = [newSmsLog, ...prev];
-      localStorage.setItem('phrs_sms_history', JSON.stringify(updated));
-      return updated;
-    });
+    setPhrsSmsHistory((prev: any) => [newSmsLog, ...prev]);
+
+    // Persist to server
+    fetch('/api/sms/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        stealthDataBalanceMb: stealthDataBalanceMb + mbToAdd,
+        stealthSmsCredits: stealthSmsCredits + smsToAdd,
+        stealthWalletRupees: stealthWalletRupees + amount
+      })
+    }).catch(err => console.error("Wallet sync failed:", err));
+
+    fetch('/api/sms/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSmsLog)
+    }).catch(err => console.error("History sync failed:", err));
 
     setVpsLogStream((prev: any) => [
       ...prev,
@@ -172,11 +185,24 @@ export default function SmsGatewayTab({ state }: { state: any }) {
       type: 'recharge' as const
     };
 
-    setPhrsSmsHistory((prev: any) => {
-      const updated = [newSmsLog, ...prev];
-      localStorage.setItem('phrs_sms_history', JSON.stringify(updated));
-      return updated;
-    });
+    setPhrsSmsHistory((prev: any) => [newSmsLog, ...prev]);
+
+    // Persist to server
+    fetch('/api/sms/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        stealthDataBalanceMb: Math.max(0, stealthDataBalanceMb - customMb),
+        stealthSmsCredits: stealthSmsCredits + expectedSms,
+        stealthWalletRupees: stealthWalletRupees
+      })
+    }).catch(err => console.error("Wallet sync failed:", err));
+
+    fetch('/api/sms/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSmsLog)
+    }).catch(err => console.error("History sync failed:", err));
 
     setVpsLogStream((prev: any) => [
       ...prev,
@@ -206,11 +232,24 @@ export default function SmsGatewayTab({ state }: { state: any }) {
       type: 'recharge' as const
     };
 
-    setPhrsSmsHistory((prev: any) => {
-      const updated = [newSmsLog, ...prev];
-      localStorage.setItem('phrs_sms_history', JSON.stringify(updated));
-      return updated;
-    });
+    setPhrsSmsHistory((prev: any) => [newSmsLog, ...prev]);
+
+    // Persist to server
+    fetch('/api/sms/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        stealthDataBalanceMb: Math.max(0, stealthDataBalanceMb - mbAmount),
+        stealthSmsCredits: stealthSmsCredits + smsCreditsToAdd,
+        stealthWalletRupees: stealthWalletRupees
+      })
+    }).catch(err => console.error("Wallet sync failed:", err));
+
+    fetch('/api/sms/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSmsLog)
+    }).catch(err => console.error("History sync failed:", err));
 
     alert(`✓ Converted ${mbAmount} MB daily data to ${smsCreditsToAdd} SMS credits successfully!`);
   };
@@ -369,11 +408,24 @@ export default function SmsGatewayTab({ state }: { state: any }) {
         type: 'otp' as const
       };
 
-      setPhrsSmsHistory((prev: any) => {
-        const updated = [newSms, ...prev];
-        localStorage.setItem('phrs_sms_history', JSON.stringify(updated));
-        return updated;
-      });
+      setPhrsSmsHistory((prev: any) => [newSms, ...prev]);
+
+      // Persist to server
+      fetch('/api/sms/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          stealthDataBalanceMb: stealthDataBalanceMb,
+          stealthSmsCredits: Math.max(0, stealthSmsCredits - 1),
+          stealthWalletRupees: stealthWalletRupees
+        })
+      }).catch(err => console.error("Wallet sync failed:", err));
+
+      fetch('/api/sms/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSms)
+      }).catch(err => console.error("History sync failed:", err));
 
       setVpsLogStream((prev: any) => [
         ...prev,
@@ -448,7 +500,7 @@ export default function SmsGatewayTab({ state }: { state: any }) {
               </span>
             </div>
             <p className="text-xs text-slate-500 mb-6">
-              Authorized via token <span className="font-mono text-emerald-500 font-bold">6606.0k</span>. BSNL or Jio networks are dynamically intercepted and routing rules will self-adapt on IP changes.
+              Authorized via token <span className="font-mono text-emerald-500 font-bold">6606.ok</span>. BSNL or Jio networks are dynamically intercepted and routing rules will self-adapt on IP changes.
             </p>
 
             <div className="space-y-4 font-mono text-sm mb-6">
