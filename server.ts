@@ -7,7 +7,7 @@ import multer from "multer";
 import AdmZip from "adm-zip";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // --- 1 & 2. HOST CONFIGURATION & SSL/HTTPS AUTO-REDIRECT ---
 app.use((req, res, next) => {
