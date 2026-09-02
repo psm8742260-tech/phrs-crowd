@@ -32,7 +32,12 @@ export default function VpsTab({ state }: { state: any }) {
   });
 
   const [mappedDomain, setMappedDomain] = useState<string>(() => {
-    return localStorage.getItem('phrs_vps_domain') || 'phrscrowd.online';
+    const saved = localStorage.getItem('phrs_vps_domain');
+    if (saved) return saved;
+    if (typeof window !== 'undefined' && window.location.hostname.includes('phrscrowd')) {
+      return window.location.hostname;
+    }
+    return 'phrscrowd.online';
   });
 
   // Carrier WAN public gateway IP
@@ -467,7 +472,7 @@ export default function VpsTab({ state }: { state: any }) {
                   value={tempMappedDomain}
                   onChange={(e) => setTempMappedDomain(e.target.value)}
                   className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-800"
-                  placeholder="e.g. phrscrowd.online"
+                  placeholder="e.g. phrscrowd.com"
                 />
                 <p className="text-[10px] text-slate-400">Domain mapping pointing to public anchor.</p>
               </div>

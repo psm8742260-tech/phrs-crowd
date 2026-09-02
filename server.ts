@@ -14,17 +14,22 @@ app.use((req, res, next) => {
   const proto = req.headers['x-forwarded-proto'] || req.protocol;
   const host = req.headers.host || '';
 
-  // Enforce HTTPS if the incoming domain is phrscrowd.online
-  if (host === 'phrscrowd.online' || host === 'www.phrscrowd.online') {
+  // Enforce HTTPS if the incoming domain is phrscrowd.online or phrscrowd.com
+  if (
+    host === 'phrscrowd.online' || host === 'www.phrscrowd.online' ||
+    host === 'phrscrowd.com' || host === 'www.phrscrowd.com'
+  ) {
     if (proto !== 'https') {
-      return res.redirect(301, `https://phrscrowd.online${req.url}`);
+      return res.redirect(301, `https://${host}${req.url}`);
     }
   }
   
-  // Set global base URL for the app based on host or default to phrscrowd.online
+  // Set global base URL for the app based on host dynamically
   req.app.locals.baseUrl = proto + '://' + host;
   if (host.includes('phrscrowd.online')) {
     req.app.locals.baseUrl = 'https://phrscrowd.online';
+  } else if (host.includes('phrscrowd.com')) {
+    req.app.locals.baseUrl = 'https://phrscrowd.com';
   }
   
   next();
@@ -1187,7 +1192,7 @@ async function startServer() {
     
     // API and specialized routes are handled above. 
     // Fallback for SPA navigation:
-    app.get("*all", (req, res, next) => {
+    app.use((req, res, next) => {
       // If it starts with /api or /hosted, don't serve index.html
       if (req.path.startsWith('/api') || req.path.startsWith('/hosted') || req.path.startsWith('/go')) {
         return next();

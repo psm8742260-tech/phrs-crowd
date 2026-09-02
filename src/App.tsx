@@ -57,7 +57,7 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>(() => {
     const defaultMaster: Project = {
       id: 'phrs-master-cloud',
-      name: 'AI Master Studio',
+      name: 'PHRS Crowd',
       status: 'active',
       created_at: new Date().toISOString(),
       api_hits: 8742,

@@ -58,13 +58,13 @@ export default function HomeTab({ state }: { state: any }) {
                         
                         <button 
                           onClick={() => {
-                            setHomeToast(`Active project: ${projects.find(p => p.id === selectedProjectId)?.name || 'AI Master Studio'}`);
+                            setHomeToast(`Active project: ${projects.find(p => p.id === selectedProjectId)?.name || 'PHRS Crowd'}`);
                             setTimeout(() => setHomeToast(null), 2500);
                           }} 
                           className="text-[#1a73e8] hover:underline font-medium text-[15px] flex items-center gap-1"
                         >
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                          {projects.find(p => p.id === selectedProjectId)?.name || 'AI Master Studio'}
+                          {projects.find(p => p.id === selectedProjectId)?.name || 'PHRS Crowd'}
                         </button>
                       </div>
                     </div>
@@ -84,7 +84,7 @@ export default function HomeTab({ state }: { state: any }) {
                         <div className="p-6 space-y-6">
                           <div className="space-y-1">
                             <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Project name</p>
-                            <p className="text-[15px] text-slate-600">{projects.find(p => p.id === selectedProjectId)?.name || 'AI Master Studio'}</p>
+                            <p className="text-[15px] text-slate-600">{projects.find(p => p.id === selectedProjectId)?.name || 'PHRS Crowd'}</p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Project ID</p>
