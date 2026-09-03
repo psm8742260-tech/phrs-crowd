@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
-    allowedHosts: ['phrscrowd.online', 'www.phrscrowd.online'],
+    allowedHosts: true,
+  },
+  preview: {
+    allowedHosts: true,
   },
 });

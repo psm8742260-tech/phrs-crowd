@@ -23,6 +23,7 @@ import SmsTab from './components/tabs/SmsTab';
 import HomeTab from './components/tabs/HomeTab';
 import VpcNetworkTab from './components/tabs/VpcNetworkTab';
 import VpsTab from './components/tabs/VpsTab';
+import PhrsMapsTab from './components/tabs/PhrsMapsTab';
 import { 
   Server, Database, MessageSquare, Key, Download, Search, Bell, 
   User, Plus, Play, RefreshCw, Trash2, Edit3, Save, Check, AlertCircle, 
@@ -1565,16 +1566,14 @@ export default function App() {
     // Clean, clever tab routing:
     if (sectionId === 'secret_manager') {
       setActiveTab('secret_manager');
-      setHomeToast('Secret Manager opened');
-      setTimeout(() => setHomeToast(null), 2000);
+      setSecretManagerSubTab('secrets');
     } else if (sectionId === 'cloud_build') {
       setActiveTab('cloud_build');
-      setHomeToast('Cloud Build Console launched');
-      setTimeout(() => setHomeToast(null), 2000);
     } else if (sectionId === 'cloud_hub') {
       setCloudHubSubTab(subMenu);
       if (subMenu === 'Deployments') {
         setActiveTab('app_studio'); // VPS hosting & deployments
+        setComputeSubTab('Overview');
       } else {
         setActiveTab('home');
         setHomeSubTab('hub');
@@ -1943,17 +1942,17 @@ export default function App() {
 
                     {/* Collapsible submenus */}
                     {isExpanded && isSidebarOpen && (
-                      <div className="pl-7 pr-2 py-1 space-y-1 border-l border-slate-200 dark:border-slate-850 ml-5">
+                      <div className="pl-6 pr-2 py-1 space-y-1 border-l-2 border-slate-200 dark:border-slate-800 ml-[1.125rem] my-1">
                         {sec.subMenus.map((subMenu) => {
                           const isSubSelected = selectedSubMenu === subMenu;
                           return (
                             <button
                               key={subMenu}
                               onClick={() => handleSubMenuClick(sec.id, subMenu)}
-                              className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] font-sans transition-colors truncate block ${
+                              className={`w-full text-left px-3 py-1.5 rounded-lg text-[12px] font-sans transition-colors truncate block ${
                                 isSubSelected
-                                  ? 'bg-blue-500/10 text-[#1A73E8] font-semibold'
-                                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                                  ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-900/30 dark:text-blue-400'
+                                  : 'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                               }`}
                               title={subMenu}
                             >
@@ -2815,7 +2814,7 @@ export default function App() {
         {/* ==============================================
             TAB 3: NATIVE PHRS-STYLE REALTIME DATABASE CORE
             ============================================== */}
-        {activeTab === 'database' && (
+        {(activeTab === 'database' || activeTab === 'cloud_sql') && (
           <DatabaseTab state={globalState} />
         )}
 
@@ -2953,6 +2952,13 @@ export default function App() {
 
         {activeTab === 'vpc_network' && (
           <VpcNetworkTab state={globalState} />
+        )}
+
+        {/* ==============================================
+            TAB 22: PHRS MAPS PLATFORM
+            ============================================== */}
+        {activeTab === 'phrs_maps' && (
+          <PhrsMapsTab state={globalState} />
         )}
       </main>
     </div>

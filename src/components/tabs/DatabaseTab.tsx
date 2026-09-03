@@ -192,18 +192,18 @@ export default function DatabaseTab({ state }: { state: any }) {
               </div>
             )}
             {selectedSubMenu === 'Firestore' && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">Firestore</h1>
-                <p className="text-slate-600 mb-6">A flexible, scalable NoSQL cloud database to store and sync data for client- and server-side development.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Firestore</h1>
+                <p className="text-slate-600 mb-6 text-sm sm:text-base leading-relaxed">A flexible, scalable NoSQL cloud database to store and sync data for client- and server-side development.</p>
+                <div className="p-6 sm:p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center mx-auto max-w-lg">
+                  <Database className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mb-4" />
                   <button 
                     onClick={() => {
                       setPhrsDbSubTab('Firestore Database');
                       setHomeToast("✓ Switched to Firestore Management");
                       setTimeout(() => setHomeToast(null), 3000);
                     }}
-                    className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+                    className="mt-2 sm:mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition w-full sm:w-auto"
                   >
                     Create Database
                   </button>
@@ -234,33 +234,35 @@ export default function DatabaseTab({ state }: { state: any }) {
               <div className="space-y-6">
                 
             {/* DB Tree Status Preview (Moved from Welcome) */}
-            <div className="p-6 rounded-2xl border transition-colors flex flex-col h-[250px] bg-white border-slate-200 shadow-sm">
-              <div className="flex justify-between items-center mb-4 shrink-0">
-                <h3 className="font-mono font-bold text-sm tracking-wider text-indigo-500 uppercase">REALTIME DATABASE CLUSTER PREVIEW</h3>
-              </div>
-              <div className="flex-1 p-4 rounded-xl font-mono text-sm overflow-auto bg-slate-50 text-slate-800 border border-slate-200">
-                <span className="text-indigo-600">dbRoot</span>: &#123;
-                <div className="pl-4 space-y-1 mt-1 border-l border-slate-200 ml-2">
-                  {Object.keys(dbData).slice(0, 5).map(key => (
-                    <div key={key}>
-                      <span className="text-amber-600">"{key}"</span>: &#123;
-                      <div className="pl-4 text-slate-600">
-                        {typeof dbData[key] === 'object' 
-                          ? Object.keys(dbData[key]).slice(0, 3).map(subKey => (
-                              <div key={subKey}>
-                                <span>"{subKey}"</span>: <span className="text-emerald-600">{JSON.stringify(dbData[key][subKey])}</span>
-                              </div>
-                            ))
-                          : <span className="text-emerald-600">{JSON.stringify(dbData[key])}</span>
-                        }
-                      </div>
-                      &#125;,
-                    </div>
-                  ))}
+            {!isFirebaseSection && (
+              <div className="p-6 rounded-2xl border transition-colors flex flex-col h-[250px] bg-white border-slate-200 shadow-sm">
+                <div className="flex justify-between items-center mb-4 shrink-0">
+                  <h3 className="font-mono font-bold text-sm tracking-wider text-indigo-500 uppercase">REALTIME DATABASE CLUSTER PREVIEW</h3>
                 </div>
-                &#125;
+                <div className="flex-1 p-4 rounded-xl font-mono text-sm overflow-auto bg-slate-50 text-slate-800 border border-slate-200">
+                  <span className="text-indigo-600">dbRoot</span>: &#123;
+                  <div className="pl-4 space-y-1 mt-1 border-l border-slate-200 ml-2">
+                    {Object.keys(dbData).slice(0, 5).map(key => (
+                      <div key={key}>
+                        <span className="text-amber-600">"{key}"</span>: &#123;
+                        <div className="pl-4 text-slate-600">
+                          {typeof dbData[key] === 'object' 
+                            ? Object.keys(dbData[key]).slice(0, 3).map(subKey => (
+                                <div key={subKey}>
+                                  <span>"{subKey}"</span>: <span className="text-emerald-600">{JSON.stringify(dbData[key][subKey])}</span>
+                                </div>
+                              ))
+                            : <span className="text-emerald-600">{JSON.stringify(dbData[key])}</span>
+                          }
+                        </div>
+                        &#125;,
+                      </div>
+                    ))}
+                  </div>
+                  &#125;
+                </div>
               </div>
-            </div>
+            )}
             {/* Main DB Title & Submenu bar */}
             <div className={`p-6 rounded-2xl border transition ${isDarkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'}`}>
               <div className="flex items-center justify-between mb-4">
@@ -390,7 +392,7 @@ export default function DatabaseTab({ state }: { state: any }) {
             </div>
 
             {/* Collapsible "Check out what's new" Fleet insights banner (Screenshot 1) */}
-            {isFleetBannerVisible && (
+            {isFleetBannerVisible && (!isFirebaseSection || phrsDbSubTab === 'Project Overview') && (
               <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden animate-fade-in">
                 {/* Banner Header */}
                 <div className="px-5 py-3.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">

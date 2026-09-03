@@ -13,6 +13,7 @@ RUN npm install
 COPY . .
 
 # Build the app for production
+ENV NODE_ENV=production
 RUN npm run build
 
 # Expose port (Cloud Run sets process.env.PORT, usually 8080)
