@@ -7,9 +7,21 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
-    allowedHosts: true,
+    allowedHosts: [
+      'phrscrowd.online',
+      'www.phrscrowd.online',
+      '.phrscrowd.online',
+      'phrscrowd-401635921059.europe-west1.run.app',
+      '.run.app'
+    ],
   },
   preview: {
-    allowedHosts: true,
+    allowedHosts: [
+      'phrscrowd.online',
+      'www.phrscrowd.online',
+      '.phrscrowd.online',
+      'phrscrowd-401635921059.europe-west1.run.app',
+      '.run.app'
+    ],
   },
 });
