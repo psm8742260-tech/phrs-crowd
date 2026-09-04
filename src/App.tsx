@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { Project, Deployment, SystemMetric } from './types';
 import { vpsServerJs, vpsReadmeMd, vpsPackageJson } from './vpsCodeTemplates';
+import { PWAInstallButton } from './components/PWAInstallButton';
 
 
 
@@ -1840,6 +1841,11 @@ export default function App() {
             <Smartphone className="w-4 h-4" />
             <span>INSTALL APK</span>
           </button>
+
+          {/* PWA Direct Browser Install Button */}
+          <div className="hidden md:block">
+            <PWAInstallButton />
+          </div>
 
           {/* Three vertical dots menu */}
           <button 
