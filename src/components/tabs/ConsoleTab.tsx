@@ -91,10 +91,11 @@ export default function ConsoleTab({ state }: { state: any }) {
                       <pre className="w-full bg-slate-950 text-emerald-400 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
 {`import { initializeApp } from "@phrs/cloud";
 
-// లోకల్ స్టోరేజ్ లేదా పర్మనెంట్ వాల్యూస్
-const permanentIP = localStorage.getItem('phrs_ip') || "104.21.42.180"; // పర్మనెంట్ ఐపీ
-const currentSerial = localStorage.getItem('phrs_serial') || "10BF4C1HQ2000R1"; // సీరియల్
-const secureDomain = "https://phrscrowd.online"; // ప్రైమరీ డొమైన్
+// PHRS Stealth Auto-Decoded Configuration (No Exposed IPs)
+const _c = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
+const secureDomain = localStorage.getItem('phrs_domain') || _c[0];
+const permanentIP = localStorage.getItem('phrs_ip') || _c[1];
+const currentSerial = localStorage.getItem('phrs_serial') || _c[2];
 
 export const phrsConfig = {
   deviceSerial: currentSerial,
@@ -111,10 +112,11 @@ export const app = initializeApp(phrsConfig);`}
                         onClick={() => {
                           const code = `import { initializeApp } from "@phrs/cloud";
 
-// లోకల్ స్టోరేజ్ లేదా పర్మనెంట్ వాల్యూస్
-const permanentIP = localStorage.getItem('phrs_ip') || "104.21.42.180"; // పర్మనెంట్ ఐపీ
-const currentSerial = localStorage.getItem('phrs_serial') || "10BF4C1HQ2000R1"; // సీరియల్
-const secureDomain = "https://phrscrowd.online"; // ప్రైమరీ డొమైన్
+// PHRS Stealth Auto-Decoded Configuration (No Exposed IPs)
+const _c = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
+const secureDomain = localStorage.getItem('phrs_domain') || _c[0];
+const permanentIP = localStorage.getItem('phrs_ip') || _c[1];
+const currentSerial = localStorage.getItem('phrs_serial') || _c[2];
 
 export const phrsConfig = {
   deviceSerial: currentSerial,
@@ -141,9 +143,8 @@ export const app = initializeApp(phrsConfig);`;
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
                           `import { initializeApp } from "@phrs/cloud";
-const permanentIP = localStorage.getItem('phrs_ip') || "104.21.42.180";
-const currentSerial = localStorage.getItem('phrs_serial') || "10BF4C1HQ2000R1";
-export const phrsConfig = { deviceSerial: currentSerial, authDomain: "https://phrscrowd.online", nodeIp: permanentIP, projectId: "phrs-master-cloud", appId: "1:8742260:web:phrs_master_node" };
+const _c = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
+export const phrsConfig = { deviceSerial: _c[2], authDomain: _c[0], nodeIp: _c[1], projectId: "phrs-master-cloud", appId: "1:8742260:web:phrs_master_node" };
 export const app = initializeApp(phrsConfig);`
                         )}`} 
                         alt="MODULE QR" 
@@ -244,16 +245,16 @@ OTP.node(phrsConfig.authDomain);`
                     <div className="relative group">
                       <pre className="w-full bg-slate-950 text-indigo-200 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
 {`window.savePHRSSettings = function(customDeepSeekKey) {
-  const permanentIP = "104.21.42.180";
-  const secureDomain = "https://phrscrowd.online";
-  const defaultSerial = "10BF4C1HQ2000R1";
-
-  localStorage.setItem('phrs_ip', permanentIP);
-  localStorage.setItem('phrs_domain', secureDomain);
-  localStorage.setItem('phrs_serial', defaultSerial);
+  // PHRS Stealth Encoded Tokens (No Open IPs)
+  const _s = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
+  
+  localStorage.setItem('phrs_domain', _s[0]);
+  localStorage.setItem('phrs_ip', _s[1]);
+  localStorage.setItem('phrs_serial', _s[2]);
+  localStorage.setItem('phrs_gateway_endpoint', _s[0] + '/api');
   if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
   
-  alert("PHRS సర్వర్ (phrscrowd.online) సెట్టింగ్స్ అప్‌డేట్ అయ్యాయి! రీస్టార్ట్ అవుతోంది...");
+  alert("PHRS Cloud Stealth Gateway Configured! Restarting...");
   location.reload();
 };`}
                       </pre>
@@ -261,16 +262,16 @@ OTP.node(phrsConfig.authDomain);`
                         className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
                         onClick={() => {
                           const code = `window.savePHRSSettings = function(customDeepSeekKey) {
-  const permanentIP = "104.21.42.180";
-  const secureDomain = "https://phrscrowd.online";
-  const defaultSerial = "10BF4C1HQ2000R1";
-
-  localStorage.setItem('phrs_ip', permanentIP);
-  localStorage.setItem('phrs_domain', secureDomain);
-  localStorage.setItem('phrs_serial', defaultSerial);
+  // PHRS Stealth Encoded Tokens (No Open IPs)
+  const _s = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
+  
+  localStorage.setItem('phrs_domain', _s[0]);
+  localStorage.setItem('phrs_ip', _s[1]);
+  localStorage.setItem('phrs_serial', _s[2]);
+  localStorage.setItem('phrs_gateway_endpoint', _s[0] + '/api');
   if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
   
-  alert("PHRS సర్వర్ (phrscrowd.online) సెట్టింగ్స్ అప్‌డేట్ అయ్యాయి! రీస్టార్ట్ అవుతోంది...");
+  alert("PHRS Cloud Stealth Gateway Configured! Restarting...");
   location.reload();
 };`;
                           navigator.clipboard.writeText(code);
@@ -289,14 +290,12 @@ OTP.node(phrsConfig.authDomain);`
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
                           `window.savePHRSSettings = function(customDeepSeekKey) {
-  const permanentIP = "104.21.42.180";
-  const secureDomain = "https://phrscrowd.online";
-  const defaultSerial = "10BF4C1HQ2000R1";
-  localStorage.setItem('phrs_ip', permanentIP);
-  localStorage.setItem('phrs_domain', secureDomain);
-  localStorage.setItem('phrs_serial', defaultSerial);
+  const _s = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
+  localStorage.setItem('phrs_domain', _s[0]);
+  localStorage.setItem('phrs_ip', _s[1]);
+  localStorage.setItem('phrs_serial', _s[2]);
   if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
-  alert("PHRS సర్వర్ (phrscrowd.online) సెట్టింగ్స్ అప్డేట్ అయ్యాయి! రీస్టార్ట్ అవుతోంది...");
+  alert("PHRS Cloud Stealth Gateway Configured!");
   location.reload();
 };`
                         )}`} 

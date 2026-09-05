@@ -10,12 +10,10 @@ export default function CloudRunTab({ state }: { state: any }) {
   const [isMappingLoading, setIsMappingLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (state.cloudRunSubTab === 'Domain mappings') {
-      fetch('/api/domain-mappings')
-        .then(r => r.json())
-        .then(data => setRealDomainMappings(data))
-        .catch(console.error);
-    }
+    fetch('/api/domain-mappings')
+      .then(r => r.json())
+      .then(data => setRealDomainMappings(data))
+      .catch(console.error);
   }, [state.cloudRunSubTab]);
 
   const { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, shortLinks, setShortLinks, linkSlug, setLinkSlug, linkTarget, setLinkTarget, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleCreateShortLink, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick } = state;
@@ -258,8 +256,24 @@ export default function CloudRunTab({ state }: { state: any }) {
                                 const baseUrl = (tunnelData.status === 'online' && tunnelData.url) ? tunnelData.url : window.location.origin;
                                 
                                 const safeAppName = appName.replace(/[^a-z0-9.-]/gi, "_").toLowerCase();
-                                const mappedDomain = Object.keys(realDomainMappings).find(
-                                  key => realDomainMappings[key] === safeAppName
+                                
+                                // Retrieve the absolute freshest domain mappings to ensure instant mapping resolution
+                                let latestMappings = realDomainMappings || {};
+                                try {
+                                  const domainMappingRes = await fetch('/api/domain-mappings');
+                                  if (domainMappingRes.ok) {
+                                    const loaded = await domainMappingRes.json();
+                                    if (loaded) {
+                                      latestMappings = loaded;
+                                      setRealDomainMappings(loaded);
+                                    }
+                                  }
+                                } catch (e) {
+                                  console.error("Failed to load latest domain mappings:", e);
+                                }
+
+                                const mappedDomain = Object.keys(latestMappings).find(
+                                  key => latestMappings[key] === safeAppName
                                 );
                                 const finalUrl = mappedDomain 
                                   ? `https://${mappedDomain}/`
@@ -269,6 +283,17 @@ export default function CloudRunTab({ state }: { state: any }) {
                                 const updatedProjects = projects.map((p: any) => p.id === selectedProjectId ? { ...p, url: finalUrl } : p);
                                 setProjects(updatedProjects);
                                 localStorage.setItem('phrs_projects', JSON.stringify(updatedProjects));
+                                
+                                // Refresh global active deployments lists
+                                fetch('/api/deployments')
+                                  .then(r => r.json())
+                                  .then(data => {
+                                    if (Array.isArray(data)) {
+                                      setDeployments(data);
+                                    }
+                                  })
+                                  .catch(console.error);
+
                                 setHomeToast("✓ Deployed successfully to PHRS Crowd Hosting!");
                             } else {
                                 setHomeToast(`⚠️ Deployment failed: ${data.error || 'Unknown error'}`);
@@ -647,6 +672,21 @@ export default function CloudRunTab({ state }: { state: any }) {
                         onChange={(e) => setNewDomainService(e.target.value)}
                         className="w-full p-2 border rounded-lg bg-white text-slate-800"
                       />
+                      {deployments && deployments.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-1 items-center">
+                          <span className="text-[9px] text-slate-400 mr-1">Deployed apps:</span>
+                          {deployments.map((dep: any) => (
+                            <button
+                              key={dep.id}
+                              type="button"
+                              onClick={() => setNewDomainService(dep.subdomain)}
+                              className="text-[9px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 transition-colors font-mono"
+                            >
+                              {dep.subdomain}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <button 
                       onClick={async () => {
@@ -729,7 +769,7 @@ export default function CloudRunTab({ state }: { state: any }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {Object.entries(realDomainMappings)
+                      {Object.entries(realDomainMappings || {})
                         .filter(([domain]) => domain.toLowerCase().includes(domainFilterQuery.toLowerCase()))
                         .map(([domain, targetProject], idx) => {
                           const isSelected = selectedDomain === domain;
@@ -793,7 +833,7 @@ export default function CloudRunTab({ state }: { state: any }) {
                             </tr>
                           );
                         })}
-                      {Object.keys(realDomainMappings).length === 0 && (
+                      {Object.keys(realDomainMappings || {}).length === 0 && (
                         <tr>
                           <td colSpan={5} className="py-8 text-center text-slate-400 font-mono text-xs">
                             No custom domains mapped yet. Map a domain to route to your hosted projects!
