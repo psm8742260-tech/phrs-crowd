@@ -103,10 +103,15 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 1A. DISPATCHER MIDDLEWARE: Real Domain Routing
 app.use((req, res, next) => {
-  const host = req.hostname;
+  const host = req.hostname.toLowerCase();
+  let targetProject = currentDomainMappings[host];
   
-  if (currentDomainMappings[host]) {
-    const targetProject = currentDomainMappings[host];
+  if (!targetProject && host.startsWith("www.")) {
+    const baseHost = host.slice(4);
+    targetProject = currentDomainMappings[baseHost];
+  }
+  
+  if (targetProject) {
     const originalUrl = req.url;
     req.url = `/hosted/${targetProject}${originalUrl}`;
     console.log(`[ROUTER] Real Domain Routing: Mapped ${host} -> ${req.url}`);
@@ -121,15 +126,24 @@ app.get("/api/domain-mappings", (req, res) => res.json(currentDomainMappings));
 app.post("/api/domain-mappings", (req, res) => {
   const { domain, project } = req.body;
   if (!domain || !project) return res.status(400).json({ error: "Domain and project are required." });
-  currentDomainMappings[domain] = project;
+  
+  // Normalize domain mapping keys
+  let cleanDomain = domain.trim().toLowerCase();
+  cleanDomain = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, "");
+  cleanDomain = cleanDomain.split("/")[0].split(":")[0];
+  
+  currentDomainMappings[cleanDomain] = project.trim().toLowerCase();
   saveDomainMappings(currentDomainMappings);
   res.json({ success: true, mappings: currentDomainMappings });
 });
 
 app.delete("/api/domain-mappings/:domain", (req, res) => {
-  const domain = req.params.domain;
-  if (currentDomainMappings[domain]) {
-    delete currentDomainMappings[domain];
+  let cleanDomain = req.params.domain.trim().toLowerCase();
+  cleanDomain = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, "");
+  cleanDomain = cleanDomain.split("/")[0].split(":")[0];
+  
+  if (currentDomainMappings[cleanDomain]) {
+    delete currentDomainMappings[cleanDomain];
     saveDomainMappings(currentDomainMappings);
   }
   res.json({ success: true, mappings: currentDomainMappings });
@@ -831,6 +845,21 @@ app.post("/api/host/deploy", (req, res) => {
   }
 });
 
+// Friendly adapter redirect for /p/:projectName* URLs to route to /hosted/:projectName/
+app.get("/p/:projectName*", (req, res) => {
+  const fullPath = req.path;
+  const cleanPath = fullPath.replace(/^\/p\//, "/hosted/");
+  let redirectPath = cleanPath;
+  const parts = cleanPath.split('/');
+  if (parts.length === 3 && parts[2] === "") {
+    // Already has a trailing slash (e.g. /hosted/library/)
+  } else if (parts.length === 3) {
+    // Missing trailing slash (e.g. /hosted/library)
+    redirectPath += '/';
+  }
+  res.redirect(redirectPath);
+});
+
 // Secure Redirection Handler
 app.get("/api/redirect", (req, res) => {
   const target = req.query.q || req.query.url;
@@ -1194,7 +1223,7 @@ async function startServer() {
     // Fallback for SPA navigation:
     app.use((req, res, next) => {
       // If it starts with /api or /hosted, don't serve index.html
-      if (req.path.startsWith('/api') || req.path.startsWith('/hosted') || req.path.startsWith('/go')) {
+      if (req.path.startsWith('/api') || req.path.startsWith('/hosted') || req.path.startsWith('/go') || req.path.startsWith('/p')) {
         return next();
       }
       res.sendFile(path.join(distPath, "index.html"));

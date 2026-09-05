@@ -1101,7 +1101,7 @@ export default function App() {
       created_at: new Date().toISOString().split('T')[0],
       api_hits: 0,
       project_number: Array.from({length: 12}, () => Math.floor(Math.random() * 10)).join(''),
-      url: `https://phrscrowd.online/p/phrs-${newProjName.toLowerCase().replace(/\s+/g, '-')}`
+      url: `${window.location.origin}/hosted/phrs-${newProjName.toLowerCase().replace(/[^a-z0-9.-]/gi, "_").toLowerCase()}/`
     };
     const updated = [...projects, newProj];
     setProjects(updated);

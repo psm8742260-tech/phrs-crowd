@@ -257,7 +257,14 @@ export default function CloudRunTab({ state }: { state: any }) {
                                 const tunnelData = await tunnelRes.json();
                                 const baseUrl = (tunnelData.status === 'online' && tunnelData.url) ? tunnelData.url : window.location.origin;
                                 
-                                const finalUrl = `https://phrscrowd.online/p/${appName.replace(/[^a-z0-9.-]/gi, "_").toLowerCase()}/`;
+                                const safeAppName = appName.replace(/[^a-z0-9.-]/gi, "_").toLowerCase();
+                                const mappedDomain = Object.keys(realDomainMappings).find(
+                                  key => realDomainMappings[key] === safeAppName
+                                );
+                                const finalUrl = mappedDomain 
+                                  ? `https://${mappedDomain}/`
+                                  : `${baseUrl}/hosted/${safeAppName}/`;
+                                
                                 setDeployedUrl(finalUrl);
                                 const updatedProjects = projects.map((p: any) => p.id === selectedProjectId ? { ...p, url: finalUrl } : p);
                                 setProjects(updatedProjects);
@@ -648,11 +655,16 @@ export default function CloudRunTab({ state }: { state: any }) {
                           return;
                         }
                         setIsMappingLoading(true);
+                        // Normalize domain name
+                        let cleanName = newDomainName.trim().toLowerCase();
+                        cleanName = cleanName.replace(/^(https?:\/\/)?(www\.)?/, "");
+                        cleanName = cleanName.split("/")[0].split(":")[0];
+                        
                         try {
                           const res = await fetch('/api/domain-mappings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ domain: newDomainName, project: newDomainService })
+                            body: JSON.stringify({ domain: cleanName, project: newDomainService.trim().toLowerCase() })
                           });
                           const data = await res.json();
                           if (data.success) {
