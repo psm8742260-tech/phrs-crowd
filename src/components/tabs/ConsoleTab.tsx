@@ -67,7 +67,7 @@ export default function ConsoleTab({ state }: { state: any }) {
               {/* Three Beautiful Symmetrical Integration Code Boards Side-by-Side */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Board 1: MODULE (phrs-config.js) */}
+                {/* Board 1: MODULE (phrs-sms-client.js) */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -76,62 +76,65 @@ export default function ConsoleTab({ state }: { state: any }) {
                           <FileCode className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-xs font-black text-indigo-600 tracking-wider">MODULE</div>
-                          <div className="text-[11px] font-bold text-slate-700 font-mono">phrs-config.js</div>
+                          <div className="text-xs font-black text-indigo-600 tracking-wider">SMS MODULE</div>
+                          <div className="text-[11px] font-bold text-slate-700 font-mono">phrs-sms.js</div>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded-md font-bold uppercase font-sans">కాన్ఫిగరేషన్</span>
+                      <span className="px-2 py-0.5 text-[9px] bg-emerald-100 text-emerald-700 rounded-md font-bold uppercase font-sans">లైవ్ SMS</span>
                     </div>
                     
                     <p className="text-[10px] text-slate-500 leading-relaxed font-sans h-8">
-                      మీ రియాక్ట్ (React) లేదా ఆధునిక క్లయింట్-సైడ్ యాప్స్‌ని PHRS సర్వర్‌కి కనెక్ట్ చేయడానికి వాడే ప్రాథమిక కాన్ఫిగరేషన్ ఫైల్.
+                      కస్టమర్ రిలేషన్ బుక్ (CWRB) యాప్ నుండి నేరుగా Fast2SMS ద్వారా రియల్ OTP పంపడానికి వాడే క్లైంట్ ఫంక్షన్.
                     </p>
 
                     <div className="relative group">
                       <pre className="w-full bg-slate-950 text-emerald-400 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
-{`import { initializeApp } from "@phrs/cloud";
+{`// PHRS Direct Fast2SMS Dispatch Client
+const PHRS_GATEWAY = "https://phrscrowd.online";
 
-// PHRS Stealth Auto-Decoded Configuration (No Exposed IPs)
-const _c = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
-const secureDomain = localStorage.getItem('phrs_domain') || _c[0];
-const permanentIP = localStorage.getItem('phrs_ip') || _c[1];
-const currentSerial = localStorage.getItem('phrs_serial') || _c[2];
-
-export const phrsConfig = {
-  deviceSerial: currentSerial,
-  authDomain: secureDomain,
-  nodeIp: permanentIP,
-  projectId: "phrs-master-cloud",
-  appId: "1:8742260:web:phrs_master_node"
-};
-
-export const app = initializeApp(phrsConfig);`}
+export async function sendRealSmsOtp(phone, otp, role = "Customer") {
+  try {
+    const response = await fetch(\`\${PHRS_GATEWAY}/api/sms/send\`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        phone: phone, 
+        otp: otp, 
+        role: role 
+      })
+    });
+    const result = await response.json();
+    console.log("[PHRS SMS DISPATCH]", result);
+    return result;
+  } catch (err) {
+    console.error("[PHRS SMS ERROR]", err);
+    return { success: false, error: err.message };
+  }
+}`}
                       </pre>
                       <button 
                         className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
                         onClick={() => {
-                          const code = `import { initializeApp } from "@phrs/cloud";
+                          const code = `// PHRS Direct Fast2SMS Dispatch Client
+const PHRS_GATEWAY = "https://phrscrowd.online";
 
-// PHRS Stealth Auto-Decoded Configuration (No Exposed IPs)
-const _c = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
-const secureDomain = localStorage.getItem('phrs_domain') || _c[0];
-const permanentIP = localStorage.getItem('phrs_ip') || _c[1];
-const currentSerial = localStorage.getItem('phrs_serial') || _c[2];
-
-export const phrsConfig = {
-  deviceSerial: currentSerial,
-  authDomain: secureDomain,
-  nodeIp: permanentIP,
-  projectId: "phrs-master-cloud",
-  appId: "1:8742260:web:phrs_master_node"
-};
-
-export const app = initializeApp(phrsConfig);`;
+export async function sendRealSmsOtp(phone, otp, role = "Customer") {
+  try {
+    const response = await fetch(\`\${PHRS_GATEWAY}/api/sms/send\`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, otp, role })
+    });
+    return await response.json();
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}`;
                           navigator.clipboard.writeText(code);
-                          setHomeToast('✓ phrs-config.js (MODULE) copied!');
+                          setHomeToast('✓ phrs-sms.js copied!');
                           setTimeout(() => setHomeToast(null), 3000);
                         }}
-                        title="Copy Config"
+                        title="Copy Code"
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
@@ -142,20 +145,17 @@ export const app = initializeApp(phrsConfig);`;
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3 w-32 h-32 flex items-center justify-center overflow-hidden">
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                          `import { initializeApp } from "@phrs/cloud";
-const _c = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
-export const phrsConfig = { deviceSerial: _c[2], authDomain: _c[0], nodeIp: _c[1], projectId: "phrs-master-cloud", appId: "1:8742260:web:phrs_master_node" };
-export const app = initializeApp(phrsConfig);`
+                          `export async function sendRealSmsOtp(phone, otp, role) { const res = await fetch("https://phrscrowd.online/api/sms/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, otp, role }) }); return await res.json(); }`
                         )}`} 
-                        alt="MODULE QR" 
+                        alt="SMS MODULE QR" 
                         className="w-full h-full object-contain mix-blend-multiply"
                       />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">MODULE QR CODE</span>
+                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">SMS MODULE QR</span>
                   </div>
                 </div>
 
-                {/* Board 2: SCRIPT (main.js) */}
+                {/* Board 2: SCRIPT (CWRB Integration) */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -164,37 +164,55 @@ export const app = initializeApp(phrsConfig);`
                           <Cloud className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-xs font-black text-indigo-600 tracking-wider">SCRIPT</div>
-                          <div className="text-[11px] font-bold text-slate-700 font-mono">main.js</div>
+                          <div className="text-xs font-black text-indigo-600 tracking-wider">CWRB USAGE</div>
+                          <div className="text-[11px] font-bold text-slate-700 font-mono">otp-login.js</div>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded-md font-bold uppercase font-sans">యాక్టివేషన్</span>
+                      <span className="px-2 py-0.5 text-[9px] bg-indigo-100 text-indigo-700 rounded-md font-bold uppercase font-sans">లాగిన్ ఇంటిగ్రేషన్</span>
                     </div>
                     
                     <p className="text-[10px] text-slate-500 leading-relaxed font-sans h-8">
-                      PHRS, db, OTP, మరియు డీప్‌సీక్ AI కోర్ సర్వీసులను మీ వెబ్‌సైట్‌లో యాక్టివేట్ చేయడానికి ఉపయోగించే ప్రధాన స్క్రిప్ట్ కోడ్.
+                      కస్టమర్ రిలేషన్ బుక్ (CWRB) లాగిన్ స్క్రీన్‌లో OTP బటన్ క్లిక్ చేసినప్పుడు వాడే డైరెక్ట్ హ్యాండ్లర్ కోడ్.
                     </p>
 
                     <div className="relative group">
                       <pre className="w-full bg-slate-950 text-indigo-300 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
-{`import { PHRS, db, OTP } from "@phrs/cloud";
-import { phrsConfig } from "./phrs-config.js";
+{`import { sendRealSmsOtp } from "./phrs-sms.js";
 
-PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
-db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);`}
+async function handleGenerateAndSendOtp(mobileNumber) {
+  // 1. Generate 4-digit or 6-digit PIN
+  const pin = Math.floor(1000 + Math.random() * 9000).toString();
+  
+  console.log("Dispatching real SMS to:", mobileNumber);
+
+  // 2. Send via PHRS Gateway to Fast2SMS
+  const result = await sendRealSmsOtp(mobileNumber, pin, "Customer");
+
+  if (result.success) {
+    alert("Real OTP " + pin + " sent successfully to " + mobileNumber);
+    return pin;
+  } else {
+    alert("SMS Failed: " + (result.error || "Gateway error"));
+    return null;
+  }
+}`}
                       </pre>
                       <button 
                         className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
                         onClick={() => {
-                          const code = `import { PHRS, db, OTP } from "@phrs/cloud";
-import { phrsConfig } from "./phrs-config.js";
+                          const code = `import { sendRealSmsOtp } from "./phrs-sms.js";
 
-PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
-db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);`;
+async function handleGenerateAndSendOtp(mobileNumber) {
+  const pin = Math.floor(1000 + Math.random() * 9000).toString();
+  const result = await sendRealSmsOtp(mobileNumber, pin, "Customer");
+  if (result.success) {
+    alert("Real OTP sent!");
+    return pin;
+  }
+  return null;
+}`;
                           navigator.clipboard.writeText(code);
-                          setHomeToast('✓ main.js (SCRIPT) copied!');
+                          setHomeToast('✓ otp-login.js copied!');
                           setTimeout(() => setHomeToast(null), 3000);
                         }}
                         title="Copy Script"
@@ -208,21 +226,17 @@ OTP.node(phrsConfig.authDomain);`;
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3 w-32 h-32 flex items-center justify-center overflow-hidden">
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                          `import { PHRS, db, OTP } from "@phrs/cloud";
-import { phrsConfig } from "./phrs-config.js";
-PHRS.init(phrsConfig.authDomain, phrsConfig.deviceSerial);
-db.host = phrsConfig.authDomain;
-OTP.node(phrsConfig.authDomain);`
+                          `async function sendOtp(phone, pin) { const r = await fetch("https://phrscrowd.online/api/sms/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, otp: pin, role: "Customer" }) }); return await r.json(); }`
                         )}`} 
-                        alt="SCRIPT QR" 
+                        alt="CWRB QR" 
                         className="w-full h-full object-contain mix-blend-multiply"
                       />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">SCRIPT QR CODE</span>
+                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">CWRB USAGE QR</span>
                   </div>
                 </div>
 
-                {/* Board 3: OBJECT (settings.js) */}
+                {/* Board 3: OBJECT (gateway-config.js) */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -231,51 +245,41 @@ OTP.node(phrsConfig.authDomain);`
                           <Settings className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-xs font-black text-indigo-600 tracking-wider">OBJECT</div>
-                          <div className="text-[11px] font-bold text-slate-700 font-mono">settings.js</div>
+                          <div className="text-xs font-black text-indigo-600 tracking-wider">GATEWAY OBJECT</div>
+                          <div className="text-[11px] font-bold text-slate-700 font-mono">phrs-config.js</div>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded-md font-bold uppercase font-sans">సెట్టింగ్స్ సేవ్</span>
+                      <span className="px-2 py-0.5 text-[9px] bg-amber-100 text-amber-700 rounded-md font-bold uppercase font-sans">గేట్‌వే కాన్ఫిగ్</span>
                     </div>
                     
                     <p className="text-[10px] text-slate-500 leading-relaxed font-sans h-8">
-                      సర్వర్ IP, సీరియల్ నెంబర్ మరియు డీప్‌సీక్ API కీని బ్రౌజర్ లోకల్ స్టోరేజ్‌లో డైనమిక్‌గా సేవ్ చేసి అప్‌డేట్ చేసే ఫంక్షన్.
+                      ఫాస్ట్‌టూఎస్ఎంఎస్ మరియు క్లౌడ్ గేట్‌వే సెట్టింగ్స్‌ను గ్లోబల్‌గా ఇనిషియలైజ్ చేసే ఆబ్జెక్ట్ ఫైల్.
                     </p>
 
                     <div className="relative group">
                       <pre className="w-full bg-slate-950 text-indigo-200 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">
-{`window.savePHRSSettings = function(customDeepSeekKey) {
-  // PHRS Stealth Encoded Tokens (No Open IPs)
-  const _s = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
-  
-  localStorage.setItem('phrs_domain', _s[0]);
-  localStorage.setItem('phrs_ip', _s[1]);
-  localStorage.setItem('phrs_serial', _s[2]);
-  localStorage.setItem('phrs_gateway_endpoint', _s[0] + '/api');
-  if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
-  
-  alert("PHRS Cloud Stealth Gateway Configured! Restarting...");
-  location.reload();
-};`}
+{`// PHRS Cloud Gateway Initialization
+window.PHRS_GATEWAY_CONFIG = {
+  domain: "https://phrscrowd.online",
+  smsEndpoint: "/api/sms/send",
+  otpEndpoint: "/api/otp/send",
+  status: "ACTIVE_FAST2SMS",
+  adminPhone: "+918466062260"
+};
+
+console.log("[PHRS GATEWAY] Connected to phrscrowd.online Fast2SMS Bridge.");`}
                       </pre>
                       <button 
                         className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
                         onClick={() => {
-                          const code = `window.savePHRSSettings = function(customDeepSeekKey) {
-  // PHRS Stealth Encoded Tokens (No Open IPs)
-  const _s = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
-  
-  localStorage.setItem('phrs_domain', _s[0]);
-  localStorage.setItem('phrs_ip', _s[1]);
-  localStorage.setItem('phrs_serial', _s[2]);
-  localStorage.setItem('phrs_gateway_endpoint', _s[0] + '/api');
-  if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
-  
-  alert("PHRS Cloud Stealth Gateway Configured! Restarting...");
-  location.reload();
+                          const code = `window.PHRS_GATEWAY_CONFIG = {
+  domain: "https://phrscrowd.online",
+  smsEndpoint: "/api/sms/send",
+  otpEndpoint: "/api/otp/send",
+  status: "ACTIVE_FAST2SMS"
 };`;
                           navigator.clipboard.writeText(code);
-                          setHomeToast('✓ settings.js (OBJECT) copied!');
+                          setHomeToast('✓ phrs-config.js copied!');
                           setTimeout(() => setHomeToast(null), 3000);
                         }}
                         title="Copy Settings"
@@ -289,21 +293,13 @@ OTP.node(phrsConfig.authDomain);`
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3 w-32 h-32 flex items-center justify-center overflow-hidden">
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                          `window.savePHRSSettings = function(customDeepSeekKey) {
-  const _s = ['aHR0cHM6Ly9waHJzY3Jvd2Qub25saW5l', 'MTA0LjIxLjQyLjE4MA==', 'MTBCRjRDMUhRMjAwMFIx'].map(atob);
-  localStorage.setItem('phrs_domain', _s[0]);
-  localStorage.setItem('phrs_ip', _s[1]);
-  localStorage.setItem('phrs_serial', _s[2]);
-  if(customDeepSeekKey) localStorage.setItem('phrs_deepseek', customDeepSeekKey);
-  alert("PHRS Cloud Stealth Gateway Configured!");
-  location.reload();
-};`
+                          `window.PHRS_GATEWAY_CONFIG = { domain: "https://phrscrowd.online", smsEndpoint: "/api/sms/send", otpEndpoint: "/api/otp/send", status: "ACTIVE" };`
                         )}`} 
-                        alt="OBJECT QR" 
+                        alt="CONFIG QR" 
                         className="w-full h-full object-contain mix-blend-multiply"
                       />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">OBJECT QR CODE</span>
+                    <span className="text-[10px] font-bold text-slate-500 font-sans tracking-wide">CONFIG QR CODE</span>
                   </div>
                 </div>
 

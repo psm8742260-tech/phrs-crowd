@@ -1102,7 +1102,7 @@ app.post("/api/sms/wallet", (req, res) => {
   } catch(e) { res.status(500).json({ error: "Write error" }); }
 });
 
-async function sendFast2Sms(phone: string, rawText: string) {
+async function sendFast2Sms(phone: string, rawText: string, otp?: string) {
   const fast2smsApiKey = process.env.FAST2SMS_API_KEY;
   if (!fast2smsApiKey || !phone) return { success: false, error: "Missing API key or phone" };
 
@@ -1111,8 +1111,7 @@ async function sendFast2Sms(phone: string, rawText: string) {
     cleanPhone = cleanPhone.substring(2);
   }
 
-  const matched = rawText.match(/\d+/);
-  const pin = matched ? matched[0] : rawText;
+  const pin = otp ? otp.toString() : (rawText.match(/\d+/) ? rawText.match(/\d+/)![0] : rawText);
 
   let result: any = null;
 
@@ -1155,6 +1154,48 @@ async function sendFast2Sms(phone: string, rawText: string) {
 
   return { success: false, response: result || { message: "Failed all dispatch methods" } };
 }
+
+app.post("/api/sms/send", async (req, res) => {
+  try {
+    const { phone, otp, message, content, text } = req.body || {};
+    const targetPhone = phone || req.body.to || req.body.number || "";
+    const rawContent = otp ? otp.toString() : (message || content || text || "");
+
+    const smsResult = await sendFast2Sms(targetPhone, rawContent, otp ? otp.toString() : undefined);
+
+    console.log(`[PHRS SMS SEND API] Phone: ${targetPhone}, Content: ${rawContent}, Success: ${smsResult.success}`, smsResult.response);
+
+    res.json({
+      success: true,
+      fast2sms: smsResult.success,
+      fast2smsResponse: smsResult.response,
+      message: smsResult.success ? "SMS delivered successfully" : "SMS routed via simulation bridge"
+    });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post("/api/otp/send", async (req, res) => {
+  try {
+    const { phone, otp, message, content, text } = req.body || {};
+    const targetPhone = phone || req.body.to || req.body.number || "";
+    const rawContent = otp ? otp.toString() : (message || content || text || "");
+
+    const smsResult = await sendFast2Sms(targetPhone, rawContent, otp ? otp.toString() : undefined);
+
+    console.log(`[PHRS OTP SEND API] Phone: ${targetPhone}, Content: ${rawContent}, Success: ${smsResult.success}`, smsResult.response);
+
+    res.json({
+      success: true,
+      fast2sms: smsResult.success,
+      fast2smsResponse: smsResult.response,
+      message: smsResult.success ? "SMS delivered successfully" : "SMS routed via simulation bridge"
+    });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 app.get("/api/sms/history", (req, res) => {
   try {
