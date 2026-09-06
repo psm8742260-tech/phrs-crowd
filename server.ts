@@ -1102,6 +1102,60 @@ app.post("/api/sms/wallet", (req, res) => {
   } catch(e) { res.status(500).json({ error: "Write error" }); }
 });
 
+async function sendFast2Sms(phone: string, rawText: string) {
+  const fast2smsApiKey = process.env.FAST2SMS_API_KEY;
+  if (!fast2smsApiKey || !phone) return { success: false, error: "Missing API key or phone" };
+
+  let cleanPhone = phone.replace(/\D/g, "");
+  if (cleanPhone.startsWith("91") && cleanPhone.length > 10) {
+    cleanPhone = cleanPhone.substring(2);
+  }
+
+  const matched = rawText.match(/\d+/);
+  const pin = matched ? matched[0] : rawText;
+
+  let result: any = null;
+
+  try {
+    // 1. Try POST with JSON
+    const res1 = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+      method: "POST",
+      headers: {
+        "authorization": fast2smsApiKey,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        "route": "q",
+        "message": pin,
+        "language": "english",
+        "numbers": cleanPhone
+      })
+    });
+    result = await res1.json();
+    console.log("[Fast2SMS POST JSON]", result);
+    if (result && result.return === true) {
+      return { success: true, response: result };
+    }
+  } catch (e: any) {
+    console.log("[Fast2SMS POST JSON Error]", e.message);
+  }
+
+  try {
+    // 2. Try GET request (Fast2SMS recommended for route q)
+    const getUrl = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(fast2smsApiKey)}&route=q&message=${encodeURIComponent(pin)}&language=english&numbers=${encodeURIComponent(cleanPhone)}`;
+    const res2 = await fetch(getUrl);
+    result = await res2.json();
+    console.log("[Fast2SMS GET]", result);
+    if (result && result.return === true) {
+      return { success: true, response: result };
+    }
+  } catch (e: any) {
+    console.log("[Fast2SMS GET Error]", e.message);
+  }
+
+  return { success: false, response: result || { message: "Failed all dispatch methods" } };
+}
+
 app.get("/api/sms/history", (req, res) => {
   try {
     const db = JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8"));
@@ -1123,51 +1177,19 @@ app.post("/api/sms/history", async (req, res) => {
     fs.writeFileSync(REALTIME_DB_FILE, JSON.stringify(db, null, 2));
 
     const phone = newSms ? (newSms.phone || newSms.to || newSms.number || newSms.phoneNumber || "") : "";
-    const rawText = newSms ? (newSms.text || newSms.message || newSms.msg || "") : "";
+    const rawText = newSms ? (newSms.text || newSms.message || newSms.msg || newSms.content || "") : "";
 
-    // Extract only digits from the text (DLT and Content-Safety bypass + Admin's strict number-only rule)
-    const matched = rawText.match(/\d+/);
-    const pin = matched ? matched[0] : rawText;
-
-    const fast2smsApiKey = process.env.FAST2SMS_API_KEY;
-    let fast2smsSuccess = false;
-
-    if (fast2smsApiKey && phone && pin) {
-      try {
-        let cleanPhone = phone.replace(/\D/g, "");
-        if (cleanPhone.startsWith("91") && cleanPhone.length > 10) {
-          cleanPhone = cleanPhone.substring(2);
-        }
-        const fast2smsResponse = await fetch("https://www.fast2sms.com/dev/bulkV2", {
-          method: "POST",
-          headers: {
-            "authorization": fast2smsApiKey,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            "route": "q",
-            "message": pin,
-            "language": "english",
-            "numbers": cleanPhone
-          })
-        });
-        const fast2smsResult = await fast2smsResponse.json();
-        console.log(`[FAST2SMS HISTORY DISPATCH] Response:`, fast2smsResult);
-        if (fast2smsResult && fast2smsResult.return === true) {
-          fast2smsSuccess = true;
-        }
-      } catch (smsError: any) {
-        console.error(`[FAST2SMS HISTORY DISPATCH ERROR]:`, smsError.message);
-      }
-    }
+    const smsResult = await sendFast2Sms(phone, rawText);
 
     if (phone) {
-      console.log(`[PHRS STEALTH ROUTER] Forwarded SMS request for ${phone} with pin ${pin} to Fast2SMS Gateway (Success: ${fast2smsSuccess})`);
+      console.log(`[PHRS STEALTH ROUTER] Forwarded SMS request for ${phone} to Fast2SMS Gateway (Success: ${smsResult.success})`, smsResult.response);
     }
 
     res.json({ 
       success: true, 
-      message: fast2smsSuccess 
+      fast2sms: smsResult.success,
+      fast2smsResponse: smsResult.response,
+      message: smsResult.success 
         ? "SMS sent successfully via Fast2SMS Gateway" 
         : "SMS recorded and routed via hardware bridge simulation" 
     });
@@ -1219,41 +1241,12 @@ app.post("/api/sms/generate-otp", async (req, res) => {
     
     fs.writeFileSync(REALTIME_DB_FILE, JSON.stringify(db, null, 2));
 
-    // Real Fast2SMS integration
-    const fast2smsApiKey = process.env.FAST2SMS_API_KEY;
-    let fast2smsResult = null;
-    let fast2smsSuccess = false;
-    
-    if (fast2smsApiKey) {
-      try {
-        let cleanPhone = phone.replace(/\D/g, "");
-        if (cleanPhone.startsWith("91") && cleanPhone.length > 10) {
-          cleanPhone = cleanPhone.substring(2);
-        }
-        const fast2smsResponse = await fetch("https://www.fast2sms.com/dev/bulkV2", {
-          method: "POST",
-          headers: {
-            "authorization": fast2smsApiKey,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            "route": "q",
-            "message": pin,
-            "language": "english",
-            "numbers": cleanPhone
-          })
-        });
-        fast2smsResult = await fast2smsResponse.json();
-        console.log(`[FAST2SMS DISPATCH] Response:`, fast2smsResult);
-        if (fast2smsResult && fast2smsResult.return === true) {
-          fast2smsSuccess = true;
-        }
-      } catch (smsError: any) {
-        console.error(`[FAST2SMS DISPATCH ERROR]:`, smsError.message);
-      }
-    }
+    // Real Fast2SMS integration via robust sendFast2Sms helper
+    const smsResult = await sendFast2Sms(phone, pin);
+    const fast2smsSuccess = smsResult.success;
+    const fast2smsResult = smsResult.response;
 
-    console.log(`[PHRS STEALTH ROUTER] AI Agent dispatched ${requestedLength}-digit OTP: ${pin} to ${phone} via Gateway`);
+    console.log(`[PHRS STEALTH ROUTER] AI Agent dispatched ${requestedLength}-digit OTP: ${pin} to ${phone} via Gateway (Success: ${fast2smsSuccess})`);
     res.json({ 
       success: true, 
       otp: pin, 
