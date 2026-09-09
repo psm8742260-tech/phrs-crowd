@@ -8,11 +8,17 @@ export default function CloudRunTab({ state }: { state: any }) {
   
   const [realDomainMappings, setRealDomainMappings] = React.useState<Record<string, string>>({});
   const [isMappingLoading, setIsMappingLoading] = React.useState(false);
+  const [orchestratorNodes, setOrchestratorNodes] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     fetch('/api/domain-mappings')
       .then(r => r.json())
       .then(data => setRealDomainMappings(data))
+      .catch(console.error);
+      
+    fetch('/api/orchestrator/nodes')
+      .then(r => r.json())
+      .then(data => setOrchestratorNodes(data || []))
       .catch(console.error);
   }, [state.cloudRunSubTab]);
 
@@ -52,61 +58,195 @@ export default function CloudRunTab({ state }: { state: any }) {
             </div>
 
             {cloudRunSubTab === 'Overview' && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-5 p-5 rounded-2xl border border-slate-200 bg-white">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">CONTAINER SETTINGS</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">IMAGE SOURCE URL</label>
-                      <input 
-                        type="text" 
-                        value={cloudRunImage} 
-                        onChange={(e) => setCloudRunImage(e.target.value)}
-                        className="w-full p-2.5 text-xs rounded-lg border font-mono bg-slate-100 border-slate-300 text-slate-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-500 mb-1">ENVIRONMENT VARIABLES</label>
-                      <textarea 
-                        rows={3}
-                        value={cloudRunEnvVars} 
-                        onChange={(e) => setCloudRunEnvVars(e.target.value)}
-                        className="w-full p-2.5 text-xs rounded-lg border font-mono bg-slate-100 border-slate-300 text-slate-900"
-                      />
-                    </div>
-
-                    <button 
-                      onClick={() => {
-                        setHomeToast("✓ Deployed container image to active Cloud Run service revision!");
-                        setTimeout(() => setHomeToast(null), 3000);
-                      }}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
-                    >
-                      DEPLOY ACTIVE REVISION
-                    </button>
-                  </div>
+              <div className="space-y-6 animate-fade-in -mt-6">
+                {/* Header mimicking Google Cloud Run */}
+                <div className="flex justify-between items-center bg-white p-4 border-b border-slate-200">
+                  <h2 className="text-[18px] text-slate-800 font-normal">Overview</h2>
+                  <button 
+                    onClick={() => {
+                      setHomeToast('Refreshing data...');
+                      setTimeout(() => setHomeToast(null), 2000);
+                    }}
+                    className="flex items-center gap-2 text-sm text-[#1a73e8] font-medium hover:bg-blue-50 px-3 py-1.5 rounded transition"
+                  >
+                    <LucideIcons.RefreshCw className="w-4 h-4" />
+                    Refresh
+                  </button>
                 </div>
 
-                <div className="md:col-span-7 p-5 rounded-2xl border border-slate-200 bg-white">
-                  <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4 font-semibold">TRAFFIC SPLITTING</h3>
-                  <p className="text-xs text-slate-500 mb-4">Control what percentage of inbound traffic is routed to the new container image revision (Revision 2).</p>
-                  
-                  <div className="space-y-4 font-mono text-xs">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">TRAFFIC SPLIT (Revision 1 vs Revision 2)</label>
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max="100" 
-                        value={revisionTraffic} 
-                        onChange={(e) => setRevisionTraffic(Number(e.target.value))}
-                        className="w-full cursor-pointer"
-                      />
-                      <div className="flex justify-between text-[8px] text-slate-300 mt-0.5">
-                        <span>Revision 1 (Stable): {100 - revisionTraffic}%</span>
-                        <span>Revision 2 (Candidate): {revisionTraffic}%</span>
+                <div className="px-6 space-y-6">
+                  {/* Most used resources */}
+                  <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-slate-200 flex items-center gap-2">
+                      <h3 className="text-[15px] font-normal text-slate-900">Most used resources</h3>
+                      <LucideIcons.HelpCircle className="w-4 h-4 text-slate-400" />
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200 text-slate-600 font-medium">
+                            <th className="py-2.5 px-4 font-medium w-8"></th>
+                            <th className="py-2.5 px-4 font-medium">Name</th>
+                            <th className="py-2.5 px-4 font-medium">Region</th>
+                            <th className="py-2.5 px-4 font-medium">Type</th>
+                            <th className="py-2.5 px-4 font-medium">Last updated</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-slate-800">
+                          {(() => {
+                            const combined = [...orchestratorNodes, ...projects];
+                            const displayNodes = combined.length > 0 ? combined.slice(0, 5) : [
+                              { name: 'all-in-one-library', region: 'europe-west1', type: 'Service', time: '18 hours ago' },
+                              { name: 'reverseapk-studio', region: 'asia-southeast1', type: 'Service', time: '4 days ago' },
+                              { name: 'hybridnext-v-0', region: 'asia-southeast1', type: 'Service', time: '3 days ago' },
+                              { name: 'phrscrowd', region: 'europe-west1', type: 'Service', time: '3 days ago' },
+                              { name: 'hybridnext', region: 'asia-southeast1', type: 'Service', time: 'Aug 3, 2026' }
+                            ];
+                            
+                            return displayNodes.map((node: any, idx: number) => (
+                              <tr 
+                                key={idx} 
+                                className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
+                                onClick={() => {
+                                  if (node.url) {
+                                    window.open(node.url, '_blank');
+                                  } else {
+                                    setCloudRunSubTab('Services');
+                                  }
+                                }}
+                              >
+                                <td className="py-2.5 px-4">
+                                  <LucideIcons.CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-100" />
+                                </td>
+                                <td className="py-2.5 px-4 text-[#1a73e8] font-medium hover:underline">
+                                  {node.name}
+                                </td>
+                                <td className="py-2.5 px-4">{node.region || 'asia-southeast1'}</td>
+                                <td className="py-2.5 px-4">{node.type || 'Service'}</td>
+                                <td className="py-2.5 px-4">{node.time || (node.lastSeen ? 'Just now' : '3 days ago')}</td>
+                              </tr>
+                            ));
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="p-4 border-t border-slate-200">
+                      <div className="flex justify-between items-center mb-6">
+                        <div className="flex gap-6 text-sm">
+                          <button className="text-[#1a73e8] border-b-2 border-[#1a73e8] pb-2 font-medium">Scaling</button>
+                          <button className="text-slate-500 pb-2 hover:text-slate-700">Errors</button>
+                          <button className="text-slate-500 pb-2 hover:text-slate-700">Billing</button>
+                        </div>
+                        <select className="text-sm border-none bg-transparent text-slate-700 outline-none cursor-pointer">
+                          <option>7 days</option>
+                          <option>14 days</option>
+                          <option>30 days</option>
+                        </select>
                       </div>
+                      
+                      {/* Fake Graph */}
+                      <div className="h-40 w-full flex items-end gap-1 relative pt-4 pb-6 border-b border-l border-slate-300 px-2">
+                        <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-[10px] text-slate-400 -ml-4 py-6">
+                          <span>4</span>
+                          <span>2</span>
+                          <span>0</span>
+                        </div>
+                        {Array.from({length: 40}).map((_, i) => (
+                          <div key={i} className="flex-1 flex items-end h-full gap-0.5">
+                            <div className="w-full bg-[#1a73e8]/80" style={{ height: `${Math.random() * (Math.random() > 0.8 ? 80 : 20)}%` }}></div>
+                            <div className="w-full bg-emerald-500/80" style={{ height: `${Math.random() * 15}%` }}></div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-1 pl-2">
+                        <span>UTC+5:30</span>
+                        <span>Sep 4</span>
+                        <span>Sep 5</span>
+                        <span>Sep 6</span>
+                        <span>Sep 7</span>
+                        <span>Sep 8</span>
+                        <span>Sep 9</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 mt-6 text-sm text-slate-700 px-2 pb-2">
+                        <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#1a73e8]"></span> all-in-one-library: 0.7</div>
+                        <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> hybridnext: -</div>
+                        <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-purple-500"></span> hybridnext-v-0: 1</div>
+                        <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-cyan-500"></span> phrscrowd: 0.86</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Deploy a web service */}
+                  <div>
+                    <h3 className="text-[15px] font-normal text-slate-900 mb-1">Deploy a web service</h3>
+                    <p className="text-sm text-slate-500 mb-4 flex items-center gap-1">
+                      Deploy a website or API. <a href="#" className="text-[#1a73e8] hover:underline flex items-center gap-1">Learn more <LucideIcons.ExternalLink className="w-3 h-3" /></a>
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <button 
+                        onClick={() => { setCloudRunSubTab('Crowd Hosting'); setShowNewProjModal(true); }}
+                        className="flex flex-col items-center justify-center gap-3 p-6 border border-slate-200 rounded-lg bg-white hover:border-[#1a73e8] hover:shadow-sm transition group"
+                      >
+                        <LucideIcons.GitBranch className="w-8 h-8 text-slate-700 group-hover:text-[#1a73e8]" />
+                        <span className="text-sm font-medium text-slate-700 group-hover:text-[#1a73e8]">Connect<br/>repository</span>
+                      </button>
+                      <button 
+                        onClick={() => { setCloudRunSubTab('Crowd Hosting'); setShowNewProjModal(true); }}
+                        className="flex flex-col items-center justify-center gap-3 p-6 border border-slate-200 rounded-lg bg-white hover:border-[#1a73e8] hover:shadow-sm transition group"
+                      >
+                        <LucideIcons.Box className="w-8 h-8 text-slate-700 group-hover:text-[#1a73e8]" />
+                        <span className="text-sm font-medium text-slate-700 group-hover:text-[#1a73e8]">Deploy<br/>container</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Create a batch job */}
+                  <div>
+                    <h3 className="text-[15px] font-normal text-slate-900 mb-1">Create a batch job or a background worker pool</h3>
+                    <p className="text-sm text-slate-500 mb-4 flex items-center gap-1">
+                      Run scripts, cron jobs, or parallelized data processing workloads. <a href="#" className="text-[#1a73e8] hover:underline flex items-center gap-1">Learn more <LucideIcons.ExternalLink className="w-3 h-3" /></a>
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <button 
+                        onClick={() => { setCloudRunSubTab('Jobs'); setIsCreatingJob(true); }}
+                        className="flex flex-col items-center justify-center gap-3 p-6 border border-slate-200 rounded-lg bg-white hover:border-[#1a73e8] hover:shadow-sm transition group"
+                      >
+                        <LucideIcons.List className="w-8 h-8 text-slate-700 group-hover:text-[#1a73e8]" />
+                        <span className="text-sm font-medium text-slate-700 group-hover:text-[#1a73e8]">Create job</span>
+                      </button>
+                      <button 
+                        onClick={() => { setCloudRunSubTab('Worker pools'); setIsCreatingPool(true); }}
+                        className="flex flex-col items-center justify-center gap-3 p-6 border border-slate-200 rounded-lg bg-white hover:border-[#1a73e8] hover:shadow-sm transition group"
+                      >
+                        <LucideIcons.Settings className="w-8 h-8 text-slate-700 group-hover:text-[#1a73e8]" />
+                        <span className="text-sm font-medium text-slate-700 group-hover:text-[#1a73e8]">Create<br/>worker pool</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Write a function */}
+                  <div className="pb-8">
+                    <h3 className="text-[15px] font-normal text-slate-900 mb-1">Write a function</h3>
+                    <p className="text-sm text-slate-500 mb-4 flex items-center gap-1">
+                      Write and deploy functions or source code using your favorite language. <a href="#" className="text-[#1a73e8] hover:underline flex items-center gap-1">Learn more <LucideIcons.ExternalLink className="w-3 h-3" /></a>
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      {['Node.js', 'Python', 'Go', 'Java', 'PHP', '.NET', 'Ruby'].map(lang => (
+                        <button 
+                          key={lang} 
+                          onClick={() => {
+                            setActiveTab('Agent');
+                            setAgentChatInput(`Create a highly robust serverless function using ${lang} that handles requests securely.`);
+                          }}
+                          className="flex flex-col items-center justify-center gap-3 p-6 border border-slate-200 rounded-lg bg-white hover:border-[#1a73e8] hover:shadow-sm transition group"
+                        >
+                          <LucideIcons.Code2 className="w-8 h-8 text-slate-700 group-hover:text-[#1a73e8]" />
+                          <span className="text-sm font-medium text-slate-700 group-hover:text-[#1a73e8]">{lang}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -251,11 +391,19 @@ export default function CloudRunTab({ state }: { state: any }) {
                                     await new Promise(r => setTimeout(r, 500));
                                 }
 
-                                const tunnelRes = await fetch('/api/tunnel-status');
-                                const tunnelData = await tunnelRes.json();
-                                const baseUrl = (tunnelData.status === 'online' && tunnelData.url) ? tunnelData.url : window.location.origin;
-                                
+                                // The subdomain URL is the official standard link
                                 const safeAppName = appName.replace(/[^a-z0-9.-]/gi, "_").toLowerCase();
+                                
+                                // Call Sync DNS API to ensure the domain is correctly mapped immediately
+                                try {
+                                  await fetch('/api/domain-mappings', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ domain: `${safeAppName}.phrscrowd.online`, project: safeAppName })
+                                  });
+                                } catch (e) {
+                                  console.error("DNS Sync Failed:", e);
+                                }
                                 
                                 // Retrieve the absolute freshest domain mappings to ensure instant mapping resolution
                                 let latestMappings = realDomainMappings || {};
@@ -277,7 +425,7 @@ export default function CloudRunTab({ state }: { state: any }) {
                                 );
                                 const finalUrl = mappedDomain 
                                   ? `https://${mappedDomain}/`
-                                  : `${baseUrl}/hosted/${safeAppName}/`;
+                                  : `https://${safeAppName}.phrscrowd.online/`;
                                 
                                 setDeployedUrl(finalUrl);
                                 const updatedProjects = projects.map((p: any) => p.id === selectedProjectId ? { ...p, url: finalUrl } : p);
@@ -361,30 +509,51 @@ export default function CloudRunTab({ state }: { state: any }) {
               <div className="p-6 rounded-2xl border bg-white border-slate-200 shadow-sm animate-fade-in">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Active Services</h3>
-                  <div className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-mono font-bold border border-emerald-100">
-                    FLEET: {projects.length} SERVICES ONLINE
+                  <div className="flex gap-2">
+                    <div className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-mono font-bold border border-indigo-100 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                      RADAR NODES: {orchestratorNodes.length}
+                    </div>
+                    <div className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-mono font-bold border border-emerald-100">
+                      FLEET: {projects.length + orchestratorNodes.length} SERVICES ONLINE
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-4">
-                  {projects.map((project: any, idx: number) => (
+                  {[...orchestratorNodes, ...projects].map((project: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className={`w-3 h-3 rounded-full ${project.status === 'Running' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} title={project.status}></div>
+                        <div className={`w-3 h-3 rounded-full ${project.status === 'Running' || project.status === 'ONLINE' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} title={project.status}></div>
                         <div>
-                          <p className="font-bold text-slate-900 text-sm">{project.name || 'Untitled Service'}</p>
+                          <p className="font-bold text-slate-900 text-sm">{project.name || 'Untitled Service'} {project.pwaVersion ? <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 ml-2">v{project.pwaVersion}</span> : null}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-[10px] text-slate-500 uppercase font-mono bg-slate-100 px-1.5 py-0.5 rounded">asia-southeast1</span>
                             <span className="text-[10px] text-slate-500 uppercase font-mono bg-slate-100 px-1.5 py-0.5 rounded">100% TRAFFIC</span>
                             {project.url && (
-                              <a 
-                                href={project.url} 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                className="text-[10px] text-indigo-600 font-bold hover:underline flex items-center gap-1"
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                                VISIT URL
-                              </a>
+                              <div className="flex items-center gap-3">
+                                <a 
+                                  href={project.url} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="text-[10px] text-slate-500 font-bold hover:text-indigo-600 hover:underline flex items-center gap-1"
+                                  title="Domain Link"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  DOMAIN URL
+                                </a>
+                                {!project.pwaVersion && (
+                                  <a 
+                                    href={`/hosted/${project.url.replace('https://', '').replace('.phrscrowd.online/', '').replace(/\/$/, '')}/`}
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="text-[10px] text-emerald-600 font-bold hover:text-emerald-700 hover:underline flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shadow-sm"
+                                    title="Direct Path Link (Works instantly without DNS)"
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                    DIRECT NODE LINK
+                                  </a>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -402,7 +571,7 @@ export default function CloudRunTab({ state }: { state: any }) {
                       </div>
                     </div>
                   ))}
-                  {projects.length === 0 && (
+                  {(projects.length + orchestratorNodes.length) === 0 && (
                     <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-2xl">
                       <Globe className="w-8 h-8 text-slate-200 mx-auto mb-2" />
                       <p className="text-xs text-slate-400">No active services deployed yet.</p>

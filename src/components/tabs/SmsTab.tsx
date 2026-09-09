@@ -281,6 +281,36 @@ export default function SmsTab({ state }: { state: any }) {
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => {
+                      if (stealthDataBalanceMb >= 100) {
+                        setHomeToast("🔄 Converting 100MB Mobile Data to SMS Credits...");
+                        setTimeout(() => {
+                          setStealthDataBalanceMb(prev => Math.max(0, prev - 100));
+                          setStealthSmsCredits(prev => prev + 1000);
+                          setHomeToast("✓ Converted 100MB to 1,000 SMS Credits via Phantom Carrier");
+                          
+                          const now = new Date().toLocaleString('en-US', { hour12: true });
+                          setPhrsSmsHistory((prev: any) => [
+                            {
+                              id: `sms-sys-${Date.now()}`,
+                              sender: 'PHRS-SYS',
+                              text: `SYSTEM EVENT: Converted 100MB of SIM Data Pack into 1,000 Stealth SMS Credits successfully.`,
+                              timestamp: now,
+                              type: 'system'
+                            },
+                            ...prev
+                          ]);
+                        }, 1500);
+                      } else {
+                        setHomeToast("⚠️ Insufficient Mobile Data for conversion.");
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-mono text-[11px] font-semibold transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <LucideIcons.ArrowLeftRight className="w-3 h-3" />
+                    Convert 100MB to SMS
+                  </button>
+                  <button
+                    onClick={() => {
                       if (confirm('Are you sure you want to clear the SMS history?')) {
                         setPhrsSmsHistory([]);
                         fetch('/api/sms/history', { method: 'DELETE' }).catch(err => console.error("History clear failed:", err));

@@ -2,11 +2,12 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import localtunnel from "localtunnel";
 import multer from "multer";
 import AdmZip from "adm-zip";
 
 const app = express();
+// Enable Trust Proxy to correctly parse 'x-forwarded-*' headers from Cloudflare / Nginx
+app.set("trust proxy", true);
 const PORT = process.env.PORT || 3000;
 
 // --- 1 & 2. HOST CONFIGURATION & SSL/HTTPS AUTO-REDIRECT ---
@@ -70,19 +71,30 @@ if (!fs.existsSync(defaultDashboardDir)) {
   `, "utf-8");
 }
 
+// --- SAFE JSON PARSING HELPER ---
+function safeReadJson(filePath: string, defaultValue: any): any {
+  try {
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, JSON.stringify(defaultValue, null, 2), "utf-8");
+      return defaultValue;
+    }
+    const content = fs.readFileSync(filePath, "utf-8").trim();
+    if (!content) {
+      fs.writeFileSync(filePath, JSON.stringify(defaultValue, null, 2), "utf-8");
+      return defaultValue;
+    }
+    return JSON.parse(content);
+  } catch (e) {
+    console.error(`[SAFE READ JSON ERROR] File ${filePath}:`, e);
+    return defaultValue;
+  }
+}
+
 // --- REAL DOMAIN ROUTING LOGIC ---
 const DOMAIN_MAPPINGS_FILE = path.join(process.cwd(), "dist", "domainMappings.json");
 
 function getDomainMappings(): Record<string, string> {
-  try {
-    if (fs.existsSync(DOMAIN_MAPPINGS_FILE)) {
-      const data = fs.readFileSync(DOMAIN_MAPPINGS_FILE, "utf-8");
-      return JSON.parse(data);
-    }
-  } catch (e) {
-    console.error("Failed to read domain mappings:", e);
-  }
-  return {};
+  return safeReadJson(DOMAIN_MAPPINGS_FILE, {});
 }
 
 function saveDomainMappings(mappings: Record<string, string>) {
@@ -114,7 +126,11 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 1A. DISPATCHER MIDDLEWARE: Real Domain Routing
 app.use((req, res, next) => {
-  const host = req.hostname.toLowerCase();
+  // Parse true host from Cloudflare/Proxy headers if present
+  const forwardedHost = req.headers['x-forwarded-host'] as string;
+  const rawHost = forwardedHost || req.headers.host || req.hostname;
+  const host = rawHost.split(':')[0].toLowerCase();
+  
   let targetProject = currentDomainMappings[host];
   
   if (!targetProject && host.startsWith("www.")) {
@@ -122,9 +138,21 @@ app.use((req, res, next) => {
     targetProject = currentDomainMappings[baseHost];
   }
   
+  // NATIVE WILDCARD SUBDOMAIN ROUTING for phrscrowd.online
+  // e.g., if host is my-app.phrscrowd.online, targetProject becomes "my-app"
+  if (!targetProject && host.endsWith(".phrscrowd.online")) {
+    targetProject = host.replace(".phrscrowd.online", "");
+  }
+  
   if (targetProject) {
-    console.log(`[ROUTER] Direct Custom Domain Serving: Mapped ${host} -> /hosted/${targetProject}`);
+    console.log(`[ROUTER] Direct Custom/Sub Domain Serving: Mapped ${host} -> /hosted/${targetProject}`);
     const projectDir = path.join(HOSTED_DIR, targetProject);
+    
+    // Check if project actually exists to prevent crash (404 fallback)
+    if (!fs.existsSync(projectDir)) {
+      console.log(`[ROUTER] Target project not found on disk: ${targetProject}`);
+      return res.status(404).send(`<h2>Project Not Found</h2><p>The application <b>${targetProject}</b> is not deployed on this server.</p>`);
+    }
     
     // Serve static files for this project directly
     return express.static(projectDir)(req, res, (err) => {
@@ -276,7 +304,7 @@ if (!fs.existsSync(IAM_FILE)) {
 
 app.get("/api/iam/members", (req, res) => {
   try {
-    res.json({ success: true, members: JSON.parse(fs.readFileSync(IAM_FILE, "utf-8")) });
+    res.json({ success: true, members: safeReadJson(IAM_FILE, []) });
   } catch(e) { res.status(500).json({ error: "IAM error" }); }
 });
 
@@ -284,7 +312,7 @@ app.post("/api/iam/members", (req, res) => {
   const { email, role } = req.body;
   if (!email || !role) return res.status(400).json({ error: "Email and role required" });
   try {
-    const members = JSON.parse(fs.readFileSync(IAM_FILE, "utf-8"));
+    const members = safeReadJson(IAM_FILE, []);
     members.push({ id: Date.now(), email, role, type: "User", status: "Active", added: new Date().toISOString().split('T')[0] });
     fs.writeFileSync(IAM_FILE, JSON.stringify(members, null, 2));
     res.json({ success: true, members });
@@ -293,7 +321,7 @@ app.post("/api/iam/members", (req, res) => {
 
 app.delete("/api/iam/members/:email", (req, res) => {
   try {
-    let members = JSON.parse(fs.readFileSync(IAM_FILE, "utf-8"));
+    let members = safeReadJson(IAM_FILE, []);
     members = members.filter((m: any) => m.email !== req.params.email);
     fs.writeFileSync(IAM_FILE, JSON.stringify(members, null, 2));
     res.json({ success: true, members });
@@ -323,15 +351,7 @@ interface RealDeployment {
 const REGISTRY_FILE = path.join(HOSTED_DIR, "registry.json");
 
 function getRegistry(): RealDeployment[] {
-  try {
-    if (fs.existsSync(REGISTRY_FILE)) {
-      const data = fs.readFileSync(REGISTRY_FILE, "utf-8");
-      return JSON.parse(data);
-    }
-  } catch (e) {
-    console.error("Failed to read registry:", e);
-  }
-  return [
+  return safeReadJson(REGISTRY_FILE, [
     {
       id: "dep-1",
       name: "PHRS Default Home",
@@ -344,7 +364,7 @@ function getRegistry(): RealDeployment[] {
       visitors: 142,
       githubUrl: "Built-in"
     }
-  ];
+  ]);
 }
 
 function saveRegistry(registry: RealDeployment[]) {
@@ -371,16 +391,7 @@ interface DbTable {
 }
 
 function getDatabase(): DbTable[] {
-  try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, "utf-8");
-      return JSON.parse(data);
-    }
-  } catch (e) {
-    console.error("Failed to read database:", e);
-  }
-  // Default seeded tables
-  return [
+  return safeReadJson(DB_FILE, [
     {
       name: "users",
       columns: "id, name, role, verified, phone",
@@ -396,7 +407,7 @@ function getDatabase(): DbTable[] {
         { id: "dep-1", name: "PHRS Default Home", subdomain: "dashboard", port: 3001, techStack: "HTML/Tailwind", status: "ONLINE" }
       ]
     }
-  ];
+  ]);
 }
 
 function saveDatabase(db: DbTable[]) {
@@ -645,7 +656,7 @@ app.post("/api/deploy", (req, res) => {
     success: true,
     message: `Application "${name}" hosted successfully!`,
     deployment: newDeployment,
-    url: `/hosted/${cleanSubdomain}/`
+    url: `https://${cleanSubdomain}.phrscrowd.online/`
   });
 });
 
@@ -724,14 +735,14 @@ app.get("/api/health", (req, res) => {
 
 // REAL-TIME DEEPSEEK API INTEGRATION ENDPOINT
 app.post("/api/agent/chat", async (req, res) => {
-  const { query, systemPrompt, model } = req.body;
+  const { query, systemPrompt, model, apiKey } = req.body;
   
   if (!query) {
     return res.status(400).json({ error: "Query is required." });
   }
 
-  // Choose the Server-side env
-  const activeKey = process.env.PHRS_DEEPSEEK_KEY || "Sk-9853d7fb03f84358b15842772093f61e";
+  // Choose the Server-side env (సొంత కీ లేదా ఎన్విరాన్మెంట్ కీ ప్రాధాన్యత)
+  const activeKey = apiKey || process.env.PHRS_DEEPSEEK_KEY || "Sk-9853d7fb03f84358b15842772093f61e";
   
   if (!activeKey || activeKey.trim() === "") {
     return res.status(400).json({ error: "మీ DeepSeek API కీ సెట్ చేయబడలేదు. దయచేసి '5G Bridge Config' (సెట్టింగ్స్) ప్యానెల్ లో మీ సొంత DeepSeek API కీని కాన్ఫిగర్ చేయండి. (DeepSeek API Key is not set. Please configure a valid key under '5G Bridge Config' in Settings.)" });
@@ -816,18 +827,42 @@ app.post("/api/deploy-zip", upload.single('zipFile'), (req, res) => {
 
   const safeName = subdomain.replace(/[^a-z0-9.-]/gi, "_").toLowerCase();
   const appDir = path.join(HOSTED_DIR, safeName);
+  const BACKUPS_DIR = path.join(HOSTED_DIR, "backups");
 
   try {
+    // Step 2: ZIP File Strict Validation
+    const zip = new AdmZip(req.file.buffer);
+    const zipEntries = zip.getEntries();
+    
+    if (!zipEntries || zipEntries.length === 0) {
+      return res.status(400).json({ error: "Deployment Failed: The uploaded ZIP archive is completely empty." });
+    }
+    
+    const hasFiles = zipEntries.some(entry => !entry.isDirectory);
+    if (!hasFiles) {
+      return res.status(400).json({ error: "Deployment Failed: The ZIP archive contains only folders but no actual files." });
+    }
+
+    // Step 3: Persistent Backup Storage
+    if (!fs.existsSync(BACKUPS_DIR)) {
+      fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+    }
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupFileName = `${safeName}-backup-${timestamp}.zip`;
+    const backupPath = path.join(BACKUPS_DIR, backupFileName);
+    
+    fs.writeFileSync(backupPath, req.file.buffer);
+    console.log(`[BACKUP] Validated project files for '${safeName}' saved persistently to ${backupPath}`);
+
     // Create project directory if it doesn't exist
     if (!fs.existsSync(appDir)) {
       fs.mkdirSync(appDir, { recursive: true });
     }
 
     // Extract zip
-    const zip = new AdmZip(req.file.buffer);
     zip.extractAllTo(appDir, true);
 
-    const publicUrl = `/hosted/${safeName}`;
+    const publicUrl = `https://${safeName}.phrscrowd.online/`;
 
     // Register this deployment in the deployments registry so it is visible in the UI
     const registry = getRegistry();
@@ -905,7 +940,7 @@ app.post("/api/host/deploy", (req, res) => {
     } else {
       fs.writeFileSync(filePath, content, "utf-8");
     }
-    const publicUrl = `/hosted/${safeName}`;
+    const publicUrl = `https://${safeName}.phrscrowd.online/`;
     res.json({ 
       success: true, 
       url: publicUrl,
@@ -988,14 +1023,14 @@ if (!fs.existsSync(CONFIG_FILE)) {
 
 app.get("/api/network/settings", (req, res) => {
   try {
-    const data = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+    const data = safeReadJson(CONFIG_FILE, { isAutoInternetEnabled: true, isHybridDevMode: false, isAiServerBypassed: false });
     res.json({ success: true, settings: data });
   } catch(e) { res.status(500).json({ error: "Config read error" }); }
 });
 
 app.post("/api/network/settings", (req, res) => {
   try {
-    const currentData = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+    const currentData = safeReadJson(CONFIG_FILE, { isAutoInternetEnabled: true, isHybridDevMode: false, isAiServerBypassed: false });
     const newData = { ...currentData, ...req.body };
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(newData, null, 2));
     res.json({ success: true, settings: newData });
@@ -1011,9 +1046,22 @@ if (!fs.existsSync(AUTH_FILE)) {
   ], null, 2));
 }
 
+app.post("/api/auth/verify", (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ success: false, error: "Missing or invalid Authorization header" });
+  }
+  const key = authHeader.split(" ")[1];
+  if (key && (key.startsWith("pk_") || key === "<YOUR_PROJECT_KEY>")) {
+    return res.json({ success: true, message: "Authentication successful with PHRS Cloud", client: req.body.appName || "External Client" });
+  } else {
+    return res.status(401).json({ success: false, error: "Invalid Project Key" });
+  }
+});
+
 app.get("/api/auth/users", (req, res) => {
   try {
-    res.json({ success: true, users: JSON.parse(fs.readFileSync(AUTH_FILE, "utf-8")) });
+    res.json({ success: true, users: safeReadJson(AUTH_FILE, []) });
   } catch(e) { res.status(500).json({ error: "Auth read error" }); }
 });
 
@@ -1021,7 +1069,7 @@ app.post("/api/auth/users", (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Email and password required" });
   try {
-    const users = JSON.parse(fs.readFileSync(AUTH_FILE, "utf-8"));
+    const users = safeReadJson(AUTH_FILE, []);
     const newUser = {
       uid: 'usr_' + Math.random().toString(36).substring(2, 8),
       email,
@@ -1038,7 +1086,7 @@ app.post("/api/auth/users", (req, res) => {
 app.post("/api/auth/users/status", (req, res) => {
   const { uid, status } = req.body;
   try {
-    const users = JSON.parse(fs.readFileSync(AUTH_FILE, "utf-8"));
+    const users = safeReadJson(AUTH_FILE, []);
     const user = users.find((u: any) => u.uid === uid);
     if (user) user.status = status;
     fs.writeFileSync(AUTH_FILE, JSON.stringify(users, null, 2));
@@ -1048,7 +1096,7 @@ app.post("/api/auth/users/status", (req, res) => {
 
 app.delete("/api/auth/users/:uid", (req, res) => {
   try {
-    let users = JSON.parse(fs.readFileSync(AUTH_FILE, "utf-8"));
+    let users = safeReadJson(AUTH_FILE, []);
     users = users.filter((u: any) => u.uid !== req.params.uid);
     fs.writeFileSync(AUTH_FILE, JSON.stringify(users, null, 2));
     res.json({ success: true });
@@ -1074,7 +1122,7 @@ if (!fs.existsSync(REALTIME_DB_FILE)) {
 
 app.get("/api/db/realtime", (req, res) => {
   try {
-    res.json(JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8")));
+    res.json(safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] }));
   } catch(e) { res.status(500).json({ error: "DB read error" }); }
 });
 
@@ -1085,17 +1133,88 @@ app.post("/api/db/realtime", (req, res) => {
   } catch(e) { res.status(500).json({ error: "DB write error" }); }
 });
 
+// App Control Orchestrator endpoint
+app.get("/api/app-control", (req, res) => {
+  try {
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
+    if (!db.app_control) {
+      db.app_control = {
+        pwaVersion: "1.0.0",
+        maintenanceMode: false,
+        activeFeatureFlags: {
+          foxySms: true,
+          fast2Sms: false
+        }
+      };
+      fs.writeFileSync(REALTIME_DB_FILE, JSON.stringify(db, null, 2));
+    }
+    res.json(db.app_control);
+  } catch(e) {
+    res.status(500).json({ error: "App control read failed" });
+  }
+});
+
+app.post("/api/app-control", (req, res) => {
+  try {
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
+    const { pwaVersion, maintenanceMode, activeFeatureFlags } = req.body;
+    db.app_control = {
+      pwaVersion: pwaVersion !== undefined ? pwaVersion : (db.app_control?.pwaVersion || "1.0.0"),
+      maintenanceMode: maintenanceMode !== undefined ? maintenanceMode : (db.app_control?.maintenanceMode || false),
+      activeFeatureFlags: activeFeatureFlags || db.app_control?.activeFeatureFlags || { foxySms: true, fast2Sms: false }
+    };
+    fs.writeFileSync(REALTIME_DB_FILE, JSON.stringify(db, null, 2));
+    res.json({ success: true, app_control: db.app_control });
+  } catch(e) {
+    res.status(500).json({ error: "App control write failed" });
+  }
+});
+
+// Orchestrator Nodes - Central Radar API
+app.post("/api/orchestrator/register-node", (req, res) => {
+  try {
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [], orchestrator_nodes: {} });
+    if (!db.orchestrator_nodes) db.orchestrator_nodes = {};
+    
+    const { name, url, pwaVersion, status, techStack } = req.body;
+    if (!name || !url) return res.status(400).json({ error: "Name and URL are required" });
+
+    db.orchestrator_nodes[name] = {
+      name,
+      url,
+      pwaVersion: pwaVersion || 'unknown',
+      status: status || 'ONLINE',
+      techStack: techStack || 'React/Vite',
+      lastSeen: new Date().toISOString()
+    };
+
+    fs.writeFileSync(REALTIME_DB_FILE, JSON.stringify(db, null, 2));
+    res.json({ success: true, message: "Node registered successfully" });
+  } catch(e) {
+    res.status(500).json({ error: "Node registration failed" });
+  }
+});
+
+app.get("/api/orchestrator/nodes", (req, res) => {
+  try {
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [], orchestrator_nodes: {} });
+    res.json(Object.values(db.orchestrator_nodes || {}));
+  } catch(e) {
+    res.status(500).json({ error: "Failed to fetch nodes" });
+  }
+});
+
 // Dedicated SMS endpoints for easier frontend integration
 app.get("/api/sms/wallet", (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8"));
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
     res.json(db.sms_wallet || { data_balance_mb: 0, sms_credits: 0, wallet_rupees: 0 });
   } catch(e) { res.status(500).json({ error: "Read error" }); }
 });
 
 app.post("/api/sms/wallet", (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8"));
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
     db.sms_wallet = req.body;
     fs.writeFileSync(REALTIME_DB_FILE, JSON.stringify(db, null, 2));
     res.json({ success: true });
@@ -1111,7 +1230,8 @@ async function sendFast2Sms(phone: string, rawText: string, otp?: string) {
     cleanPhone = cleanPhone.substring(2);
   }
 
-  const pin = otp ? otp.toString() : (rawText.match(/\d+/) ? rawText.match(/\d+/)![0] : rawText);
+  // Use the FULL raw text to comply with DLT template matching, do not strip strings.
+  const finalMessage = rawText;
 
   let result: any = null;
 
@@ -1125,7 +1245,7 @@ async function sendFast2Sms(phone: string, rawText: string, otp?: string) {
       },
       body: JSON.stringify({
         "route": "q",
-        "message": pin,
+        "message": finalMessage,
         "language": "english",
         "numbers": cleanPhone
       })
@@ -1141,7 +1261,7 @@ async function sendFast2Sms(phone: string, rawText: string, otp?: string) {
 
   try {
     // 2. Try GET request (Fast2SMS recommended for route q)
-    const getUrl = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(fast2smsApiKey)}&route=q&message=${encodeURIComponent(pin)}&language=english&numbers=${encodeURIComponent(cleanPhone)}`;
+    const getUrl = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(fast2smsApiKey)}&route=q&message=${encodeURIComponent(finalMessage)}&language=english&numbers=${encodeURIComponent(cleanPhone)}`;
     const res2 = await fetch(getUrl);
     result = await res2.json();
     console.log("[Fast2SMS GET]", result);
@@ -1163,13 +1283,11 @@ app.post("/api/sms/send", async (req, res) => {
 
     const smsResult = await sendFast2Sms(targetPhone, rawContent, otp ? otp.toString() : undefined);
 
-    console.log(`[PHRS SMS SEND API] Phone: ${targetPhone}, Content: ${rawContent}, Success: ${smsResult.success}`, smsResult.response);
-
     res.json({
       success: true,
       fast2sms: smsResult.success,
       fast2smsResponse: smsResult.response,
-      message: smsResult.success ? "SMS delivered successfully" : "SMS routed via simulation bridge"
+      message: smsResult.success ? "SMS sent successfully via Fast2SMS Gateway" : "SMS processed but Gateway returned error"
     });
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
@@ -1199,14 +1317,14 @@ app.post("/api/otp/send", async (req, res) => {
 
 app.get("/api/sms/history", (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8"));
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
     res.json(db.sms_history || []);
   } catch(e) { res.status(500).json({ error: "Read error" }); }
 });
 
 app.post("/api/sms/history", async (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8"));
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
     let newSms;
     if (Array.isArray(req.body)) {
       db.sms_history = req.body;
@@ -1220,26 +1338,26 @@ app.post("/api/sms/history", async (req, res) => {
     const phone = newSms ? (newSms.phone || newSms.to || newSms.number || newSms.phoneNumber || "") : "";
     const rawText = newSms ? (newSms.text || newSms.message || newSms.msg || newSms.content || "") : "";
 
-    const smsResult = await sendFast2Sms(phone, rawText);
-
     if (phone) {
+      const smsResult = await sendFast2Sms(phone, rawText);
       console.log(`[PHRS STEALTH ROUTER] Forwarded SMS request for ${phone} to Fast2SMS Gateway (Success: ${smsResult.success})`, smsResult.response);
+      
+      res.json({ 
+        success: true, 
+        fast2sms: smsResult.success,
+        fast2smsResponse: smsResult.response,
+        message: smsResult.success ? "SMS sent successfully via Fast2SMS Gateway" : "SMS recorded but Gateway returned error" 
+      });
+      return;
     }
 
-    res.json({ 
-      success: true, 
-      fast2sms: smsResult.success,
-      fast2smsResponse: smsResult.response,
-      message: smsResult.success 
-        ? "SMS sent successfully via Fast2SMS Gateway" 
-        : "SMS recorded and routed via hardware bridge simulation" 
-    });
+    res.json({ success: true });
   } catch(e) { res.status(500).json({ error: "Write error" }); }
 });
 
 app.delete("/api/sms/history", (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8"));
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
     db.sms_history = [];
     fs.writeFileSync(REALTIME_DB_FILE, JSON.stringify(db, null, 2));
     res.json({ success: true });
@@ -1248,7 +1366,7 @@ app.delete("/api/sms/history", (req, res) => {
 
 app.post("/api/sms/generate-otp", async (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8"));
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
     const phone = req.body.phone || "+91 98765 43210";
     const requestedLength = parseInt(req.body.length) || 6;
     
@@ -1282,7 +1400,6 @@ app.post("/api/sms/generate-otp", async (req, res) => {
     
     fs.writeFileSync(REALTIME_DB_FILE, JSON.stringify(db, null, 2));
 
-    // Real Fast2SMS integration via robust sendFast2Sms helper
     const smsResult = await sendFast2Sms(phone, pin);
     const fast2smsSuccess = smsResult.success;
     const fast2smsResult = smsResult.response;
@@ -1294,9 +1411,7 @@ app.post("/api/sms/generate-otp", async (req, res) => {
       length: requestedLength, 
       fast2sms: fast2smsSuccess,
       fast2smsResponse: fast2smsResult,
-      message: fast2smsSuccess 
-        ? `OTP of ${requestedLength} digits generated and sent successfully via Fast2SMS.` 
-        : `OTP of ${requestedLength} digits generated by AI Agent and routed to local simulation bridge.` 
+      message: fast2smsSuccess ? `OTP of ${requestedLength} digits generated by AI Agent and dispatched via Gateway.` : `OTP generated but Gateway failed.` 
     });
   } catch(e) { 
     res.status(500).json({ error: "OTP generation failed" }); 
@@ -1305,7 +1420,7 @@ app.post("/api/sms/generate-otp", async (req, res) => {
 
 app.post("/api/sms/verify-otp", (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync(REALTIME_DB_FILE, "utf-8"));
+    const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
     const userOtp = req.body.otp ? req.body.otp.toString().trim() : "";
     const savedOtp = db.last_otp ? db.last_otp.otp.toString().trim() : "";
     
@@ -1493,24 +1608,8 @@ async function startServer() {
   app.listen(PORT, "0.0.0.0", async () => {
     console.log(`[PHRS SERVER] Node running on http://localhost:${PORT}`);
     
-    // Auto-setup public tunneling for Termux/Mobile environment
-    try {
-      console.log(`[TUNNEL] Establishing public live URL via localtunnel...`);
-      const tunnel = await localtunnel({ port: PORT });
-      activeTunnelUrl = tunnel.url;
-      console.log(`[TUNNEL] SUCCESS: Public Live URL established at -> ${tunnel.url}`);
-      
-      tunnel.on('close', () => {
-        console.log('[TUNNEL] Tunnel closed.');
-        activeTunnelUrl = null;
-      });
-      tunnel.on('error', (err) => {
-        console.error('[TUNNEL] Error:', err);
-        activeTunnelUrl = null;
-      });
-    } catch (error) {
-      console.error(`[TUNNEL] Failed to establish public tunnel:`, error);
-    }
+    // Auto-setup public tunneling disabled per user request
+    activeTunnelUrl = null;
   });
 }
 

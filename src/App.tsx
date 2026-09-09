@@ -1102,7 +1102,7 @@ export default function App() {
       created_at: new Date().toISOString().split('T')[0],
       api_hits: 0,
       project_number: Array.from({length: 12}, () => Math.floor(Math.random() * 10)).join(''),
-      url: `${window.location.origin}/hosted/phrs-${newProjName.toLowerCase().replace(/[^a-z0-9.-]/gi, "_").toLowerCase()}/`
+      url: `https://phrs-${newProjName.toLowerCase().replace(/[^a-z0-9.-]/gi, "_").toLowerCase()}.phrscrowd.online/`
     };
     const updated = [...projects, newProj];
     setProjects(updated);
@@ -1232,7 +1232,7 @@ export default function App() {
       { prg: 55, log: `Writing dynamic routing table entries for subdomain: ${cleanSubdomain}...` },
       { prg: 75, log: '✓ Express dynamic server router synchronized.' },
       { prg: 90, log: 'Configuring network ingress rules. Launching real live HTTP endpoint...' },
-      { prg: 100, log: `✓ REAL DEPLOYMENT SUCCESSFUL! Live path: /hosted/${cleanSubdomain}/` }
+      { prg: 100, log: `✓ REAL DEPLOYMENT SUCCESSFUL! Live path: https://${cleanSubdomain}.phrscrowd.online/` }
     ];
 
     let currentStep = 0;
@@ -1266,7 +1266,7 @@ export default function App() {
             });
             setVpsLogStream(prev => [
               ...prev, 
-              `[PHRS-REAL] Real Live Deployment active: "${appName}" -> /hosted/${cleanSubdomain}/`
+              `[PHRS-REAL] Real Live Deployment active: "${appName}" -> https://${cleanSubdomain}.phrscrowd.online/`
             ]);
             setAppName('');
             setGithubUrl('');

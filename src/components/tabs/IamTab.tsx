@@ -15,6 +15,27 @@ export default function IamTab({ state }: { state: any }) {
     return localStorage.getItem('pwa_system_version') || '1.0.0';
   });
 
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [featureFlags, setFeatureFlags] = useState({ foxySms: true, fast2Sms: false });
+  const [isSavingAppControl, setIsSavingAppControl] = useState(false);
+
+  useEffect(() => {
+    if (showAdminPanel) {
+      fetch('/api/app-control')
+        .then(r => r.json())
+        .then(data => {
+          if (data) {
+            setPwaVersion(data.pwaVersion || '1.0.0');
+            setMaintenanceMode(!!data.maintenanceMode);
+            if (data.activeFeatureFlags) {
+              setFeatureFlags(data.activeFeatureFlags);
+            }
+          }
+        })
+        .catch(console.error);
+    }
+  }, [showAdminPanel]);
+
   // 100-Second Deep Scan State for PWA Autonomous Board
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -241,157 +262,14 @@ export default function IamTab({ state }: { state: any }) {
             )}
 
             {iamSubTab === 'Identity & Access' && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300/60 p-6 rounded-2xl shadow-sm">
-                  <div className="bg-gradient-to-r from-amber-500 to-yellow-500 px-5 py-3.5 rounded-xl border border-amber-600/10 flex items-center justify-between mb-6 shadow-sm">
-                    <div className="flex items-center gap-2.5">
-                      <Shield className="w-5 h-5 text-slate-950 animate-pulse" />
-                      <div>
-                        <h3 className="text-slate-950 font-mono font-black tracking-wider text-sm">
-                          పి డబ్బులేయ్యి (PWA) స్వయంప్రతిపత్తి బోర్డు & క్రెడెన్షియల్స్ లాక్
-                        </h3>
-                        <p className="text-[10px] text-slate-800 font-mono mt-0.5">
-                          PWA AUTONOMOUS CONTROL HUB & CRYPTOGRAPHIC SECURITY HARMONIZATION
-                        </p>
-                      </div>
-                    </div>
-                    <span className="px-2.5 py-1 text-[10px] bg-slate-950 text-amber-400 font-bold font-mono rounded-md border border-amber-400/20 shadow-sm uppercase animate-pulse">
-                      System Shield Active
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left: PWA Control Center */}
-                    <div className="p-5 rounded-xl border border-amber-200/80 bg-white shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center gap-2.5 mb-3 border-b border-amber-100 pb-2.5">
-                          <Cpu className="w-5 h-5 text-amber-600" />
-                          <h4 className="font-mono font-black text-xs text-slate-900 uppercase tracking-wider">
-                            పి డబ్బులేయ్యి (PWA) సిస్టమ్ નિયంత్రణ
-                          </h4>
-                        </div>
-                        
-                        <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                          ఆఫ్‌లైన్ వర్కింగ్ ఎబిలిటీ మరియు అసెట్ ప్యాకేజ్ కాషింగ్ సిస్టమ్ స్వయంప్రతిపత్తిగా పనిచేస్తుంది. ఏదైనా మార్పులు ఉంటే లోకల్ స్టోరేజ్ అప్‌డేట్ చేసి హార్డ్ రిఫ్రెష్ చేస్తుంది.
-                        </p>
-
-                        <div className="space-y-2 mb-6 text-xs font-mono">
-                          <div className="flex justify-between items-center p-2 rounded-lg bg-amber-50/40 border border-amber-100/60">
-                            <span className="text-slate-500 font-bold">PWA VERSION</span>
-                            <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">
-                              {pwaVersion}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center p-2 rounded-lg bg-amber-50/40 border border-amber-100/60">
-                            <span className="text-slate-500 font-bold">SERVICE WORKER</span>
-                            <span className="text-emerald-600 font-bold flex items-center gap-1 text-[10px]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                              ACTIVE (INTELLIGENT CACHE)
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center p-2 rounded-lg bg-amber-50/40 border border-amber-100/60">
-                            <span className="text-slate-500 font-bold">DEEP SCAN INTERVAL</span>
-                            <span className="text-slate-700 font-bold text-[10px]">100s SCHEDULED</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        {isScanning && (
-                          <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-lg animate-fade-in">
-                            <div className="flex justify-between text-[10px] font-mono font-bold text-amber-800 mb-1">
-                              <span>ATOMIC SCANNING PROGRESS</span>
-                              <span>{scanProgress}% ({scanTimeRemaining}s left)</span>
-                            </div>
-                            <div className="w-full h-2 bg-amber-100/80 rounded-full overflow-hidden border border-amber-200">
-                              <div 
-                                className="h-full bg-gradient-to-r from-amber-500 to-yellow-500 transition-all duration-300"
-                                style={{ width: `${scanProgress}%` }}
-                              />
-                            </div>
-                            
-                            <div className="mt-2.5">
-                              <span className="text-[9px] font-mono font-bold text-slate-400 block mb-1">SYSTEM LOG STREAM:</span>
-                              <div className="bg-slate-900 border border-amber-200/30 p-2.5 rounded h-28 overflow-y-auto font-mono text-[9px] text-amber-400 space-y-1 shadow-inner">
-                                {scanLogs.map((log, idx) => (
-                                  <div key={idx} className="leading-normal">{log}</div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        <button 
-                          onClick={handleStartPwaScan}
-                          disabled={isScanning}
-                          className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 active:scale-[0.98] disabled:opacity-75 disabled:scale-100 disabled:pointer-events-none text-slate-950 font-mono text-xs font-black py-3.5 px-5 rounded-xl flex items-center justify-center gap-2.5 shadow-md shadow-amber-500/20 border border-amber-600/20 transition-all duration-300 animate-[pulse_1.5s_infinite] disabled:animate-none"
-                        >
-                          <RefreshCw className={`w-4 h-4 text-slate-950 ${isScanning ? 'animate-spin' : 'animate-spin'}`} style={{ animationDuration: isScanning ? '1s' : '4s' }} />
-                          {isScanning ? 'ATOMIC SCAN RUNNING...' : 'FORCE PWA UPDATE & ATOMIC SCAN'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Right: Permanently Locked Credentials */}
-                    <div className="p-5 rounded-xl border border-amber-200/80 bg-white shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center gap-2.5 mb-3 border-b border-amber-100 pb-2.5">
-                          <Fingerprint className="w-5 h-5 text-amber-600 animate-pulse" />
-                          <h4 className="font-mono font-black text-xs text-slate-900 uppercase tracking-wider">
-                            శాశ్వత లాక్ చేయబడిన క్రెడెన్షియల్స్
-                          </h4>
-                        </div>
-
-                        <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                          ఈ కింది ప్రాజెక్ట్ పరామితులు శాశ్వతంగా సిస్టమ్ కోడ్ లో లాక్ చేయబడ్డాయి. వీటిని ఏ రకమైన యూజర్ లేదా రూట్ అడ్మిన్ కూడా మార్చలేరు.
-                        </p>
-
-                        <div className="space-y-4">
-                          <div>
-                            <div className="flex justify-between items-center mb-1">
-                              <label className="text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider">
-                                Project Package Name (ప్యాకేజీ నేమ్)
-                              </label>
-                              <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 uppercase">
-                                <Lock className="w-2.5 h-2.5" /> Permanently Locked
-                              </span>
-                            </div>
-                            <input 
-                              type="text" 
-                              readOnly 
-                              value={pkgName || 'com.phrs.crowd'} 
-                              className="w-full p-2.5 text-xs font-mono rounded-lg border bg-amber-50/30 border-amber-200 text-slate-800 focus:outline-none cursor-not-allowed font-semibold shadow-inner"
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex justify-between items-center mb-1">
-                              <label className="text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider">
-                                SHA-256 Fingerprint (ఫింగర్ ప్రింట్ సంతకం)
-                              </label>
-                              <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 uppercase">
-                                <Lock className="w-2.5 h-2.5" /> SECURE ROOT
-                              </span>
-                            </div>
-                            <textarea 
-                              readOnly 
-                              value={shaFingerprint || '03:5E:59:45:3B:C0:77:9B:27:16:D5:E5:C3:54:1C:A7:EC:94:9E:BE:72:F7:F9:09:94:00:6A:B9:00:01:4A:E3'} 
-                              rows={3}
-                              className="w-full p-2.5 text-xs font-mono rounded-lg border bg-amber-50/30 border-amber-200 text-slate-800 focus:outline-none cursor-not-allowed resize-none font-semibold leading-normal shadow-inner"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 p-3 rounded-lg border border-amber-200/50 bg-amber-50/30 flex gap-2.5 items-start">
-                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 animate-bounce" />
-                        <p className="text-[10px] text-amber-900 leading-relaxed font-sans">
-                          <strong>భద్రతా హెచ్చరిక:</strong> ఈ వివరాలు మీ ఆండ్రాయిడ్ యాప్ బిల్డ్ సిగ్నేచర్స్ కు అనుసంధానించబడి ఉన్నాయి. భద్రతా కారణాల దృష్ట్యా, వీటిని కోడ్ నిర్మాణంలోనే లాక్ చేయడం జరిగింది. మార్చడానికి వీలు లేదు.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="p-12 border border-slate-200 bg-white rounded-2xl flex flex-col items-center justify-center text-slate-500 shadow-sm animate-fade-in max-w-2xl mx-auto">
+                <Lock className="w-10 h-10 text-indigo-600 mb-3.5 animate-pulse" />
+                <h3 className="font-mono font-black text-sm text-slate-900 tracking-wider uppercase mb-1">
+                  SECURE ZONE / ఆథరైజ్డ్ జోన్
+                </h3>
+                <p className="text-xs text-slate-500 text-center leading-relaxed max-w-md font-sans">
+                  భద్రతా కారణాల దృష్ట్యా, పి డబ్బులేయ్యి (PWA) మరియు అన్ని లైవ్ సిస్టమ్ నియంత్రణలు ఇక్కడ నేరుగా ప్రదర్శించబడవు. వాటిని మార్చడానికి క్రింది సెట్టింగ్స్ బటన్ ద్వారా లాగిన్ అవ్వండి.
+                </p>
               </div>
             )}
 
@@ -492,8 +370,8 @@ export default function IamTab({ state }: { state: any }) {
             {/* Admin PWA Update Panel Modal */}
             {showAdminPanel && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in border border-slate-200">
-                  <div className="bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-4 flex items-center justify-between border-b border-amber-600/10">
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col animate-fade-in border border-slate-200">
+                  <div className="bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-4 flex items-center justify-between border-b border-amber-600/10 flex-shrink-0">
                     <h3 className="text-slate-950 font-mono font-black tracking-wider text-sm flex items-center gap-2">
                       <Shield className="w-4 h-4 text-slate-950 animate-pulse" />
                       SECURE ADMIN CONSOLE
@@ -502,35 +380,306 @@ export default function IamTab({ state }: { state: any }) {
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-                  <div className="p-6 bg-amber-50/10">
-                    <p className="text-xs text-slate-600 mb-6 font-sans">
+                  <div className="p-6 bg-amber-50/10 space-y-5 overflow-y-auto flex-1">
+                    <p className="text-xs text-slate-600 font-sans">
                       Authenticated as: <strong className="text-amber-700">psm8742260@gmail.com</strong>
                     </p>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-mono text-amber-700 font-bold mb-1">PWA SYSTEM VERSION</label>
-                        <input 
-                          type="text" 
-                          value={pwaVersion} 
-                          onChange={(e) => setPwaVersion(e.target.value)}
-                          className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono bg-white border-amber-300 text-slate-900 shadow-inner"
-                        />
+
+                    {/* PWA Orchestrator Controls */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Left Side: Live Controls */}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-mono text-amber-700 font-bold mb-1">PWA SYSTEM VERSION (యాప్ వెర్షన్)</label>
+                          <input 
+                            type="text" 
+                            value={pwaVersion} 
+                            onChange={(e) => setPwaVersion(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono bg-white border-amber-300 text-slate-900 shadow-inner"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono text-amber-700 font-bold mb-1.5">MAINTENANCE MODE (యాప్ ఆన్/ఆఫ్ స్టేటస్)</label>
+                          <div className="flex items-center justify-between p-2.5 rounded-lg border border-amber-200 bg-white shadow-sm">
+                            <span className="text-xs font-semibold text-slate-700">
+                              {maintenanceMode ? '🔴 Maintenance Active (OFF)' : '🟢 Server Online (ON)'}
+                            </span>
+                            <button
+                              onClick={() => setMaintenanceMode(!maintenanceMode)}
+                              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
+                                maintenanceMode ? 'bg-rose-500' : 'bg-emerald-500'
+                              }`}
+                            >
+                              <div
+                                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                                  maintenanceMode ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono text-amber-700 font-bold mb-1.5">FEATURE FLAGS (ఫీチャーల నియంత్రణ)</label>
+                          <div className="space-y-2 p-2.5 rounded-lg border border-amber-200 bg-white shadow-sm">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input 
+                                type="checkbox"
+                                checked={featureFlags.foxySms}
+                                onChange={(e) => setFeatureFlags({ ...featureFlags, foxySms: e.target.checked })}
+                                className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-slate-300 rounded"
+                              />
+                              <span className="text-xs text-slate-700 font-medium">Foxy SMS Gateway (Active)</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input 
+                                type="checkbox"
+                                checked={featureFlags.fast2Sms}
+                                onChange={(e) => setFeatureFlags({ ...featureFlags, fast2Sms: e.target.checked })}
+                                className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-slate-300 rounded"
+                              />
+                              <span className="text-xs text-slate-700 font-medium">Fast2SMS Backup API</span>
+                            </label>
+                          </div>
+                        </div>
                       </div>
-                      <button 
-                        onClick={() => {
-                          localStorage.setItem('pwa_system_version', pwaVersion);
-                          setHomeToast('🔄 పి డబ్బులేయ్యి (PWA) 100-Second Deep Scan Started...');
-                          setTimeout(() => {
-                            setHomeToast('✓ పి డబ్బులేయ్యి (PWA) System Version Updated to ' + pwaVersion);
-                            setShowAdminPanel(false);
-                          }, 2500);
-                        }}
-                        className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-mono text-xs py-3 rounded-lg font-black flex items-center justify-center gap-2 transition animate-pulse shadow-md shadow-amber-500/25"
-                      >
-                        <RefreshCw className="w-4 h-4 text-slate-950 animate-spin" />
-                        FORCE PWA UPDATE
-                      </button>
+
+                      {/* Right Side: The Black Board (కోడింగ్ ముక్కలు మాత్రమే) */}
+                      <div className="flex flex-col">
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="block text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider">CENTRAL ORCHESTRATOR CODE (నల్లటి బోర్డు)</label>
+                          <button 
+                            onClick={() => {
+                              const code = `window.savePHRSSettings = function(customDeepSeekKey) {
+  // PHRS Stealth Encoded Tokens (No Open IPs)
+  const _s = [
+    'aHR0cHM6Ly9waHJzY3JvdWQ2b2xrbnU=',
+    'MTA0LjIxLjQyLjE4MA==',
+    'MTBCRjRDMUhrMjAwMFIx'
+  ].map(atob);
+
+  localStorage.setItem('phrs_domain', _s[0]);
+  localStorage.setItem('phrs_ip', _s[1]);
+  localStorage.setItem('phrs_serial', _s[2]);
+  localStorage.setItem('phrs_deepseek', customDeepSeekKey);
+  alert("PHRS Stealth Connection Established!");
+  location.reload();
+};
+
+// PWA System Association (మన యాప్ మన సర్వర్ చెప్పినట్టు ఉండేలా కొంచెం యాడ్ చేసిన కోడ్)
+(async function() {
+  const CURRENT_LOCAL_VERSION = localStorage.getItem('pwa_system_version') || '1.0.0';
+  const ENDPOINT = '/api/app-control';
+
+  try {
+    const response = await fetch(ENDPOINT);
+    const config = await response.json();
+    
+    if (config.pwaVersion !== CURRENT_LOCAL_VERSION) {
+      localStorage.setItem('pwa_system_version', config.pwaVersion);
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let reg of registrations) { await reg.update(); }
+      }
+      window.location.reload();
+    }
+
+    if (config.maintenanceMode) {
+      document.body.innerHTML = \`<div style="background:#0f172a;color:#fff;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:20px;">
+        <h1 style="color:#f59e0b;font-size:24px;margin-bottom:10px;">⚠️ SYSTEM UNDER MAINTENANCE</h1>
+        <p style="color:#94a3b8;font-size:14px;max-width:400px;line-height:1.6;">మన PHRS క్రౌడ్ సర్వర్ ప్రస్తుతం మెయింటెనెన్స్‌లో ఉంది. దయచేసి కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి.</p>
+      </div>\`;
+      return;
+    }
+
+    window.PHRS_FEATURE_FLAGS = config.activeFeatureFlags || {};
+    console.log('[PWA-ORCHESTRATOR] Flags Initialized:', window.PHRS_FEATURE_FLAGS);
+  } catch (err) {
+    console.error('[PWA-ORCHESTRATOR] Fallback mode active.', err);
+  }
+})();`;
+                              navigator.clipboard.writeText(code);
+                              setHomeToast('📋 Code Copied to Clipboard!');
+                              setTimeout(() => setHomeToast(null), 2500);
+                            }}
+                            className="text-[9px] font-mono font-bold text-amber-600 hover:text-amber-500 px-1.5 py-0.5 border border-amber-300 rounded bg-amber-50 cursor-pointer"
+                          >
+                            COPY CODE
+                          </button>
+                        </div>
+                        <div className="flex-1 bg-slate-950 rounded-lg p-3 border border-slate-800 font-mono text-[9px] text-emerald-400 overflow-y-auto max-h-[220px] shadow-inner flex flex-col justify-between">
+                           <div className="space-y-1">
+                            <span className="text-slate-500 block border-b border-slate-800 pb-1 mb-1.5 uppercase">// PHRS Master Stealth + PWA Orchestrator Script</span>
+                            <pre className="text-slate-300 whitespace-pre-wrap leading-normal">
+{`window.savePHRSSettings = function(customDeepSeekKey) {
+  // PHRS Stealth Encoded Tokens (No Open IPs)
+  const _s = [
+    'aHR0cHM6Ly9waHJzY3JvdWQ2b2xrbnU=',
+    'MTA0LjIxLjQyLjE4MA==',
+    'MTBCRjRDMUhrMjAwMFIx'
+  ].map(atob);
+
+  localStorage.setItem('phrs_domain', _s[0]);
+  localStorage.setItem('phrs_ip', _s[1]);
+  localStorage.setItem('phrs_serial', _s[2]);
+  localStorage.setItem('phrs_deepseek', customDeepSeekKey);
+  alert("PHRS Stealth Connection Established!");
+  location.reload();
+};
+
+// PWA System Association & Global Radar Registration (మన యాప్ మన సర్వర్ చెప్పినట్టు ఉండేలా)
+(async function() {
+  const CURRENT_LOCAL_VERSION = localStorage.getItem('pwa_system_version') || '1.0.0';
+  const MASTER_URL = '${typeof window !== "undefined" ? window.location.origin : "https://phrscrowd.online"}';
+  const ENDPOINT = MASTER_URL + '/api/app-control';
+  const REGISTER_ENDPOINT = MASTER_URL + '/api/orchestrator/register-node';
+
+  try {
+    // A. Ping the Global Radar (Register this node)
+    fetch(REGISTER_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.title || window.location.hostname,
+        url: window.location.href,
+        pwaVersion: CURRENT_LOCAL_VERSION,
+        status: 'ONLINE',
+        techStack: 'Remote App'
+      })
+    }).catch(e => console.warn('[RADAR] Ping failed', e));
+
+    // B. Fetch Global Config
+    const response = await fetch(ENDPOINT);
+    const config = await response.json();
+    
+    // 1. Version Control Update
+    if (config.pwaVersion !== CURRENT_LOCAL_VERSION) {
+      localStorage.setItem('pwa_system_version', config.pwaVersion);
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let reg of registrations) { await reg.update(); }
+      }
+      window.location.reload();
+    }
+
+    // 2. Maintenance Lockdown Mode
+    if (config.maintenanceMode) {
+      document.body.innerHTML = \`<div style="background:#0f172a;color:#fff;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:20px;">
+        <h1 style="color:#f59e0b;font-size:24px;margin-bottom:10px;">⚠️ SYSTEM UNDER MAINTENANCE</h1>
+        <p style="color:#94a3b8;font-size:14px;max-width:400px;line-height:1.6;">మన PHRS క్రౌడ్ సర్వర్ ప్రస్తుతం మెయింటెనెన్స్‌లో ఉంది. దయచేసి కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి.</p>
+      </div>\`;
+      return;
+    }
+
+    // 3. Dynamic Feature Flags Gate
+    window.PHRS_FEATURE_FLAGS = config.activeFeatureFlags || {};
+    console.log('[PWA-ORCHESTRATOR] Flags Loaded:', window.PHRS_FEATURE_FLAGS);
+  } catch (err) {
+    console.error('[PWA-ORCHESTRATOR] Running offline fallback.', err);
+  }
+})();`}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={async () => {
+                        setIsSavingAppControl(true);
+                        localStorage.setItem('pwa_system_version', pwaVersion);
+                        try {
+                          const res = await fetch('/api/app-control', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              pwaVersion,
+                              maintenanceMode,
+                              activeFeatureFlags: featureFlags
+                            })
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            setHomeToast('🔄 పి డబ్బులేయ్యి (PWA) 100-Second Deep Scan Started...');
+                            setTimeout(() => {
+                              setHomeToast(`✓ PWA System & Orchestrator Synced to v${pwaVersion}!`);
+                              setShowAdminPanel(false);
+                            }, 2000);
+                          }
+                        } catch(e) {
+                          console.error(e);
+                          setHomeToast('❌ Sync with Orchestrator failed!');
+                        } finally {
+                          setIsSavingAppControl(false);
+                        }
+                      }}
+                      disabled={isSavingAppControl}
+                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-mono text-xs py-3 rounded-lg font-black flex items-center justify-center gap-2 transition animate-pulse shadow-md shadow-amber-500/25"
+                    >
+                      <RefreshCw className={`w-4 h-4 text-slate-950 ${isSavingAppControl ? 'animate-spin' : ''}`} />
+                      {isSavingAppControl ? 'SYNCING...' : 'FORCE PWA UPDATE & SYNC ORCHESTRATOR'}
+                    </button>
+
+                    <div className="border-t border-amber-200/60 my-6" />
+
+                    {/* Permanently Locked Credentials */}
+                    <div className="p-5 rounded-xl border border-amber-200/80 bg-white shadow-sm flex flex-col justify-between space-y-4">
+                      <div>
+                        <div className="flex items-center gap-2.5 mb-3 border-b border-amber-100 pb-2.5">
+                          <Fingerprint className="w-5 h-5 text-amber-600 animate-pulse" />
+                          <h4 className="font-mono font-black text-xs text-slate-900 uppercase tracking-wider">
+                            શાશ્વత లాక్ చేయబడిన క్రెడెన్షియల్స్
+                          </h4>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed mb-4 font-sans">
+                          ఈ కింది ప్రాజెక్ట్ పరామితులు శాశ్వతంగా సిస్టమ్ కోడ్ లో లాక్ చేయబడ్డాయి. వీటిని ఏ రకమైన యూజర్ లేదా రూట్ అڈమిన్ కూడా మార్చలేరు.
+                        </p>
+
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider">
+                                Project Package Name (ప్యాకేజీ నేమ్)
+                              </label>
+                              <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 uppercase">
+                                <Lock className="w-2.5 h-2.5" /> Permanently Locked
+                              </span>
+                            </div>
+                            <input 
+                              type="text" 
+                              readOnly 
+                              value={pkgName || 'com.phrs.crowd'} 
+                              className="w-full p-2.5 text-xs font-mono rounded-lg border bg-amber-50/30 border-amber-200 text-slate-800 focus:outline-none cursor-not-allowed font-semibold shadow-inner"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider">
+                                SHA-256 Fingerprint (ఫింగర్ ప్రింట్ సంతకం)
+                              </label>
+                              <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 uppercase">
+                                <Lock className="w-2.5 h-2.5" /> SECURE ROOT
+                              </span>
+                            </div>
+                            <textarea 
+                              readOnly 
+                              value={shaFingerprint || '03:5E:59:45:3B:C0:77:9B:27:16:D5:E5:C3:54:1C:A7:EC:94:9E:BE:72:F7:F9:09:94:00:6A:B9:00:01:4A:E3'} 
+                              rows={3}
+                              className="w-full p-2.5 text-xs font-mono rounded-lg border bg-amber-50/30 border-amber-200 text-slate-800 focus:outline-none cursor-not-allowed resize-none font-semibold leading-normal shadow-inner text-center"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 p-3 rounded-lg border border-amber-200/50 bg-amber-50/30 flex gap-2.5 items-start">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 animate-bounce" />
+                        <p className="text-[10px] text-amber-900 leading-relaxed font-sans">
+                          <strong>భద్రతా హెచ్చరిక:</strong> ఈ వివరాలు మీ ఆండ్రాయిడ్ యాప్ బిల్డ్ సిగ్నేచర్స్ కు అనుసంధానించబడి ఉన్నాయి. భద్రతా కారణాల దృష్ట్యా, వీటిని కోడ్ నిర్మాణంలోనే లాక్ చేయడం జరిగింది. మార్చడానికి వీలు లేదు.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
