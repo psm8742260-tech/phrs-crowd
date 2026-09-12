@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 
 export default function AgentPlatformTab({ state }: { state: any }) {
   const { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, shortLinks, setShortLinks, linkSlug, setLinkSlug, linkTarget, setLinkTarget, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleCreateShortLink, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick, startAtomicDeepScan } = state;
-  const { CheckCircle2, FileCode, Lock, Plus, Send, Sparkles, TerminalIcon, Trash2 } = LucideIcons;
+  const { CheckCircle2, FileCode, Lock, Plus, Send, Sparkles, Terminal, Trash2 } = LucideIcons;
   const ADMIN_PASSWORD = '6606.ok';
   return (
         <>
@@ -13,8 +13,8 @@ export default function AgentPlatformTab({ state }: { state: any }) {
               <div className="p-4 sm:p-6 sm:pb-2 pb-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 sm:gap-0">
                   <div className="flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 text-blue-600 shrink-0" />
-                    <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 leading-tight">Agent Platform <br className="sm:hidden" />(డైనమిక్ కోర్)</h2>
+                    <Sparkles className="w-5 h-5 text-indigo-600 shrink-0 animate-pulse" />
+                    <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 leading-tight">AI Master Studio <br className="sm:hidden" />(ఏఐ మాస్టర్ స్టూడియో)</h2>
                   </div>
                   <button 
                     onClick={() => {
@@ -150,7 +150,7 @@ export default function AgentPlatformTab({ state }: { state: any }) {
                   <div className="absolute inset-0 z-[60] bg-slate-900 flex flex-col items-center justify-center p-8 rounded-b-2xl animate-fade-in">
                     <div className="max-w-2xl w-full space-y-6">
                       <div className="flex items-center gap-3 text-blue-400 mb-4">
-                        <TerminalIcon className="w-6 h-6" />
+                        <Terminal className="w-6 h-6" />
                         <h3 className="text-xl font-mono font-bold uppercase tracking-widest">Reading Agent Protocol Rules...</h3>
                       </div>
                       <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl font-mono text-xs text-blue-300 space-y-4 shadow-2xl overflow-y-auto max-h-[60vh]">
@@ -210,7 +210,7 @@ export default function AgentPlatformTab({ state }: { state: any }) {
                     </div>
                   </div>
                 )}
-                {/* OVERVIEW SUB-TAB */}
+                 {/* OVERVIEW SUB-TAB */}
                 {agentPlatformSubTab === 'overview' && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50">
@@ -222,18 +222,40 @@ export default function AgentPlatformTab({ state }: { state: any }) {
                       <div className="text-3xl font-bold text-slate-800">14.2k</div>
                     </div>
                     <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Health Status</h3>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">AI Master Connection</h3>
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                        <span className="text-xl font-bold text-slate-800">Operational</span>
+                        <div className="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+                        <span className="text-sm font-bold text-emerald-600 font-mono">CONNECTED TO PHRS CROWD</span>
                       </div>
                     </div>
-                    <div className="md:col-span-3 p-5 rounded-xl border border-blue-100 bg-blue-50/30">
-                      <h3 className="font-bold text-sm text-blue-800 mb-2">Welcome to the Dynamic Agent Core</h3>
-                      <p className="text-xs text-blue-600/80 leading-relaxed">
-                        The PHRS Agent Platform allows you to deploy autonomous system agents that can monitor SQLite clusters, 
-                        manage Gemini model load balancing, and automate routing tasks without manual intervention.
-                      </p>
+
+                    <div className="md:col-span-3 p-6 rounded-xl border border-indigo-100 bg-indigo-50/30 space-y-4">
+                      <div>
+                        <h3 className="font-bold text-sm text-indigo-900 mb-1">Welcome to AI Master Studio (ఏఐ మాస్టర్ స్టూడియో)</h3>
+                        <p className="text-xs text-indigo-700/80 leading-relaxed">
+                          గూగుల్ క్లౌడ్‌కు "Google AI Studio" ఎలాగో, మన **PHRS Crowd Server** కు ఈ **AI Master Studio** అలా అనుసంధానమై ఉంది! ఇక్కడి నుండి మీరు నేరుగా మీ స్వంత అటానమస్ ఏఐ ఏజెంట్లను డిప్లాయ్ చేయవచ్చు, డీప్ సీక్ ఏపీఐతో చాట్ చేయవచ్చు మరియు పూర్తి సర్వర్ లోడ్‌ను ఆటోమేటిక్‌గా పర్యవేక్షించవచ్చు.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-indigo-100/50">
+                        <div className="bg-white p-3 rounded-lg border border-indigo-50/80 flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">PHRS Host Engine</p>
+                            <p className="text-xs font-mono font-bold text-slate-700">phrscrowd.online</p>
+                          </div>
+                          <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded-full border border-emerald-100">ONLINE</span>
+                        </div>
+
+                        <div className="bg-white p-3 rounded-lg border border-indigo-50/80 flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">DeepSeek Bridge Connection</p>
+                            <p className="text-xs font-mono font-bold text-slate-700">
+                              {deepseekApiKey ? `${deepseekApiKey.substring(0, 10)}... (Active)` : "PHRS Global Key Used"}
+                            </p>
+                          </div>
+                          <span className="text-[10px] bg-indigo-50 text-indigo-600 font-bold px-2 py-0.5 rounded-full border border-indigo-100">ACTIVE</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

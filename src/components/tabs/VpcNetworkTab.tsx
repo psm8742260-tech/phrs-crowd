@@ -8,9 +8,21 @@ export default function VpcNetworkTab({ state }: { state: any }) {
 
   useEffect(() => {
     fetch('/api/network/settings')
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+          throw new Error("Response is not JSON");
+        }
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {
+          throw new Error("Invalid JSON: " + (e as Error).message);
+        }
+      })
       .then(data => {
-        if (data.success) {
+        if (data && data.success) {
           setIsAutoInternetEnabled(data.settings.isAutoInternetEnabled);
           setIsHybridDevMode(data.settings.isHybridDevMode);
           setIsAiServerBypassed(data.settings.isAiServerBypassed);
@@ -19,7 +31,7 @@ export default function VpcNetworkTab({ state }: { state: any }) {
           }
         }
       })
-      .catch(console.error);
+      .catch(err => console.warn("Network settings sync skipped:", err));
   }, []);
 
   const updateSetting = async (key: string, value: boolean) => {

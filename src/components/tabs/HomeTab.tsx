@@ -285,6 +285,82 @@ export default function HomeTab({ state }: { state: any }) {
                                     {msg.type === 'code' && msg.codeContent && (
                                       <div className="mt-3 rounded-lg overflow-hidden border border-slate-800 bg-slate-950 p-3 font-mono text-[10px] text-emerald-400">
                                         <pre className="overflow-x-auto whitespace-pre">{msg.codeContent}</pre>
+                                        
+                                        {/* Deployment Trigger - Connecting AI Master Studio to PHRS Crowd Run */}
+                                        <div className="mt-2.5 pt-2.5 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                          <span className="text-[9px] text-slate-500 uppercase font-black tracking-wider">PHRS Cloud Node Deployment</span>
+                                          <button
+                                            onClick={async () => {
+                                              const customSubdomain = prompt("ఈ ప్రాజెక్ట్ కోసం సబ్‌డొమైన్‌ను నమోదు చేయండి (Enter subdomain for phrscrowd.online):", `ai-app-${Math.floor(1000 + Math.random() * 9000)}`);
+                                              if (!customSubdomain) return;
+                                              
+                                              setHomeToast("⚡ Connecting to PHRS Crowd Server...");
+                                              setVpsLogStream(prev => [...prev, `[PROXY] Deploying generated code to phrscrowd.online server: "${customSubdomain}"`]);
+                                              
+                                              let htmlToSend = msg.codeContent;
+                                              if (!htmlToSend.trim().toLowerCase().startsWith('<!doctype') && !htmlToSend.trim().toLowerCase().startsWith('<html')) {
+                                                htmlToSend = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${customSubdomain} - Live AI Sandbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col justify-between">
+  <main class="flex-grow p-6">
+    <div id="root" class="max-w-4xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8 animate-fade-in">
+      <h2 class="text-xl font-bold mb-4 text-slate-800">AI Master App Sandbox</h2>
+      <div id="output-sandbox"></div>
+    </div>
+    <script>
+      try {
+        ${msg.codeContent}
+      } catch(err) {
+        document.getElementById('output-sandbox').innerHTML = '<div class="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg"><strong>Execution Error:</strong> ' + err.message + '</div>';
+      }
+    </script>
+  </main>
+  <footer class="p-4 bg-white border-t border-slate-100 text-center text-xs text-slate-400">
+    Powered by <strong>PHRS AI Master Studio</strong> & <strong>PHRS Crowd Console</strong>
+  </footer>
+</body>
+</html>`;
+                                              }
+
+                                              try {
+                                                const { phrsCloud } = await import('../../utils/phrsCloud');
+                                                const data = await phrsCloud.publishApp({
+                                                  name: customSubdomain,
+                                                  subdomain: customSubdomain,
+                                                  html: htmlToSend,
+                                                  techStack: "AI Master HTML5"
+                                                });
+                                                
+                                                if (data.success) {
+                                                  setDeployments(prev => [...prev.filter(d => d.subdomain !== customSubdomain), data.deployment]);
+                                                  setVpsLogStream(prev => [...prev, `[DEPLOYMENT] ✓ Live app hosted on: ${data.url}`]);
+                                                  setHomeToast(`🚀 App published successfully to ${customSubdomain}.phrscrowd.online`);
+                                                  setDashboardAgentChatHistory(prev => [...prev, {
+                                                    sender: 'agent',
+                                                    text: `🚀 **మీ యాప్ విజయవంతంగా పబ్లిష్ చేయబడింది! (App Published Successfully!)**\n\nలైవ్ యుఆర్‌ఎల్: [https://${customSubdomain}.phrscrowd.online](https://${customSubdomain}.phrscrowd.online)\n\nఇది మన PHRS క్రౌడ్ సర్వర్ (Crowd Run) లో హోస్ట్ చేయబడింది మరియు కంట్రోల్ ప్యానెల్ లో చేర్చబడింది.`,
+                                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                  }]);
+                                                } else {
+                                                  alert("Deployment failed: " + data.error);
+                                                }
+                                              } catch (e: any) {
+                                                alert("Network Error: " + e.message);
+                                              }
+                                            }}
+                                            className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-sans font-black text-[10px] rounded-md transition-all shadow-sm flex items-center gap-1 leading-none cursor-pointer"
+                                          >
+                                            <span>⚡ PUBLISH TO PHRS CROWD RUN</span>
+                                          </button>
+                                        </div>
                                       </div>
                                     )}
                                   </div>

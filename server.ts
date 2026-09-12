@@ -74,6 +74,11 @@ if (!fs.existsSync(defaultDashboardDir)) {
 // --- SAFE JSON PARSING HELPER ---
 function safeReadJson(filePath: string, defaultValue: any): any {
   try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
     if (!fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, JSON.stringify(defaultValue, null, 2), "utf-8");
       return defaultValue;
@@ -660,6 +665,73 @@ app.post("/api/deploy", (req, res) => {
   });
 });
 
+// 2A. API: Explicitly receive AI Master Studio apps as requested by user
+app.post("/api/receive-studio-app", (req, res) => {
+  const { name, subdomain, html, css, js, techStack } = req.body;
+
+  if (!name || !subdomain) {
+    return res.status(400).json({ error: "App Name and Subdomain are required." });
+  }
+
+  const cleanSubdomain = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  console.log(`[PHRS CROWD] Receiving Studio App: ${name} -> folder: ${cleanSubdomain}`);
+  
+  const appDir = path.join(HOSTED_DIR, cleanSubdomain);
+  if (!fs.existsSync(appDir)) {
+    fs.mkdirSync(appDir, { recursive: true });
+  }
+
+  // Create real static files inside the container's hosting directory
+  const htmlContent = html || `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${name}</title>
+  <style>${css || ""}</style>
+</head>
+<body>
+  <h1>${name} is running successfully on PHRS server!</h1>
+  <script>${js || ""}</script>
+</body>
+</html>`;
+
+  fs.writeFileSync(path.join(appDir, "index.html"), htmlContent, "utf-8");
+  if (css) fs.writeFileSync(path.join(appDir, "style.css"), css, "utf-8");
+  if (js) fs.writeFileSync(path.join(appDir, "script.js"), js, "utf-8");
+
+  const registry = getRegistry();
+  
+  // Check if already exists in registry, else add
+  const existingIdx = registry.findIndex(d => d.subdomain === cleanSubdomain);
+  const newDeployment: RealDeployment = {
+    id: existingIdx >= 0 ? registry[existingIdx].id : `dep-${Date.now()}`,
+    name,
+    subdomain: cleanSubdomain,
+    port: existingIdx >= 0 ? registry[existingIdx].port : 3000 + registry.length + 1,
+    techStack: techStack || "AI Master App",
+    status: "ONLINE",
+    cpu: 0.15,
+    memory: 32,
+    visitors: existingIdx >= 0 ? registry[existingIdx].visitors : 0,
+    githubUrl: "AI Master Studio Published"
+  };
+
+  if (existingIdx >= 0) {
+    registry[existingIdx] = newDeployment;
+  } else {
+    registry.push(newDeployment);
+  }
+
+  saveRegistry(registry);
+
+  res.json({
+    success: true,
+    message: `App received and deployed successfully!`,
+    deployment: newDeployment,
+    url: `https://${cleanSubdomain}.phrscrowd.online/`
+  });
+});
+
 // 2. Serve the hosted sites directly (Real Hosting Path!)
 app.use("/hosted/:subdomain", (req, res, next) => {
   const subdomain = req.params.subdomain.toLowerCase().replace(/[^a-z0-9-]/g, "-");
@@ -921,6 +993,177 @@ app.post("/api/deploy-zip", upload.single('zipFile'), (req, res) => {
   } catch (e) {
     console.error("ZIP Hosting error:", e);
     res.status(500).json({ error: "Failed to extract and deploy ZIP file." });
+  }
+});
+
+// 2.1 API: Deploy directly from a public GitHub Repository URL
+app.post("/api/deploy-github", async (req, res) => {
+  const { name, githubUrl } = req.body;
+  
+  if (!name || !githubUrl) {
+    return res.status(400).json({ error: "Project name and GitHub URL are required." });
+  }
+
+  const safeName = name.replace(/[^a-z0-9.-]/gi, "_").toLowerCase();
+  const appDir = path.join(HOSTED_DIR, safeName);
+  const BACKUPS_DIR = path.join(HOSTED_DIR, "backups");
+
+  // 1. Parse GitHub URL (గిట్‌హబ్ URL పార్సింగ్)
+  let cleanUrl = githubUrl.trim().replace(/\.git$/, "");
+  cleanUrl = cleanUrl.replace(/\/+$/, "");
+  const parts = cleanUrl.split("/");
+  if (parts.length < 5) {
+    return res.status(400).json({ error: "చెల్లని గిట్‌హబ్ URL. దయచేసి సరైన పబ్లిక్ రిపోజిటరీ లింక్ ఇవ్వండి. (Invalid GitHub URL format.)" });
+  }
+
+  const username = parts[parts.length - 2];
+  const repo = parts[parts.length - 1];
+
+  try {
+    // 2. Download ZIP from GitHub (గిట్‌హబ్ నుండి రిపోను జిప్ రూపంలో డౌన్‌లోడ్ చేయడం)
+    const branches = ["main", "master"];
+    let zipBuffer: Buffer | null = null;
+    let lastError = "";
+
+    for (const branch of branches) {
+      const url = `https://github.com/${username}/${repo}/archive/refs/heads/${branch}.zip`;
+      console.log(`[GITHUB DOWNLOAD] Attempting branch '${branch}': ${url}`);
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          zipBuffer = Buffer.from(arrayBuffer);
+          break;
+        }
+        lastError = `Status ${response.status}: ${response.statusText}`;
+      } catch (err: any) {
+        lastError = err.message;
+      }
+    }
+
+    if (!zipBuffer) {
+      return res.status(400).json({ 
+        error: `గిట్‌హబ్ నుండి రిపోజిటరీని డౌన్‌లోడ్ చేయడం విఫలమైంది. అది పబ్లిక్ రిపోజిటరీయేనా మరియు 'main' లేదా 'master' బ్రాంచ్ ఉందో లేదో సరిచూసుకోండి. Details: ${lastError}` 
+      });
+    }
+
+    // 3. ZIP File Strict Validation
+    const zip = new AdmZip(zipBuffer);
+    const zipEntries = zip.getEntries();
+    
+    if (!zipEntries || zipEntries.length === 0) {
+      return res.status(400).json({ error: "Deployment Failed: The downloaded GitHub ZIP archive is empty." });
+    }
+
+    // 4. Create Backups folder and save backup
+    if (!fs.existsSync(BACKUPS_DIR)) {
+      fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+    }
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupFileName = `${safeName}-github-backup-${timestamp}.zip`;
+    const backupPath = path.join(BACKUPS_DIR, backupFileName);
+    fs.writeFileSync(backupPath, zipBuffer);
+    console.log(`[GITHUB BACKUP] Saved GitHub backup zip to ${backupPath}`);
+
+    // 5. Extract to temporary folder to handle nested GitHub folder structure
+    const tempExtractDir = path.join(HOSTED_DIR, `temp-${Date.now()}`);
+    fs.mkdirSync(tempExtractDir, { recursive: true });
+    zip.extractAllTo(tempExtractDir, true);
+
+    const items = fs.readdirSync(tempExtractDir);
+    let sourceDir = tempExtractDir;
+
+    // GitHub ZIPs always put files under a top folder like repo-main, let's extract files correctly
+    if (items.length === 1 && fs.statSync(path.join(tempExtractDir, items[0])).isDirectory()) {
+      sourceDir = path.join(tempExtractDir, items[0]);
+    }
+
+    if (fs.existsSync(appDir)) {
+      fs.rmSync(appDir, { recursive: true, force: true });
+    }
+    fs.mkdirSync(appDir, { recursive: true });
+
+    // Local Helper to copy folders
+    function copyFolderSync(from: string, to: string) {
+      if (!fs.existsSync(to)) {
+        fs.mkdirSync(to, { recursive: true });
+      }
+      fs.readdirSync(from).forEach(element => {
+        const fromPath = path.join(from, element);
+        const toPath = path.join(to, element);
+        if (fs.lstatSync(fromPath).isDirectory()) {
+          copyFolderSync(fromPath, toPath);
+        } else {
+          fs.copyFileSync(fromPath, toPath);
+        }
+      });
+    }
+
+    copyFolderSync(sourceDir, appDir);
+
+    // Clean up temp dir
+    fs.rmSync(tempExtractDir, { recursive: true, force: true });
+
+    const publicUrl = `https://${safeName}.phrscrowd.online/`;
+
+    // 6. Register deployment in registry (రిజిస్ట్రీలో నమోదు చేయడం)
+    const registry = getRegistry();
+    const existingIdx = registry.findIndex(d => d.subdomain === safeName);
+    const newDeployment: RealDeployment = {
+      id: existingIdx >= 0 ? registry[existingIdx].id : `dep-${Date.now()}`,
+      name: name,
+      subdomain: safeName,
+      port: existingIdx >= 0 ? registry[existingIdx].port : 3000 + registry.length + 1,
+      techStack: "GitHub Import",
+      status: "ONLINE",
+      cpu: 0.15,
+      memory: 32,
+      visitors: existingIdx >= 0 ? registry[existingIdx].visitors : 0,
+      githubUrl: githubUrl
+    };
+
+    if (existingIdx >= 0) {
+      registry[existingIdx] = newDeployment;
+    } else {
+      registry.push(newDeployment);
+    }
+    saveRegistry(registry);
+
+    // Sync to phrscrowd.db.json so it shows up in Database Viewer
+    try {
+      const db = getDatabase();
+      const depTable = db.find(t => t.name === "deployments");
+      if (depTable) {
+        const rowIdx = depTable.rows.findIndex((r: any) => r.subdomain === safeName);
+        const rowData = {
+          id: newDeployment.id,
+          name: newDeployment.name,
+          subdomain: newDeployment.subdomain,
+          port: newDeployment.port,
+          techStack: newDeployment.techStack,
+          status: newDeployment.status
+        };
+        if (rowIdx >= 0) {
+          depTable.rows[rowIdx] = rowData;
+        } else {
+          depTable.rows.push(rowData);
+        }
+        saveDatabase(db);
+      }
+    } catch (dbErr) {
+      console.error("Failed to sync deployment to db:", dbErr);
+    }
+
+    res.json({ 
+      success: true, 
+      url: publicUrl,
+      message: "GitHub Repository Deployed successfully to PHRS Crowd Hosting Engine!",
+      deployment: newDeployment
+    });
+
+  } catch (err: any) {
+    console.error("GitHub Import Error:", err);
+    res.status(500).json({ error: `Failed to deploy from GitHub: ${err.message}` });
   }
 });
 
@@ -1578,6 +1821,423 @@ app.delete("/api/db/collections/:name/docs/:docId", (req, res) => {
     }
     res.json({ success: true });
   } catch(e) { res.status(500).json({ error: "DB delete error" }); }
+});
+
+
+// --- PHRS CLOUD SHARE (DNS) MODULE ---
+const DNS_DB_FILE = path.join(process.cwd(), "dist", "dns_database.json");
+let dns_database = [
+  { record_id: "rec_demo1", record_type: "A", name: "phrscrowd.online", content: "216.239.34.21", proxied: true, ttl: "Auto" },
+  { record_id: "rec_demo2", record_type: "A", name: "phrscrowd.online", content: "216.239.32.21", proxied: false, ttl: "Auto" },
+  { record_id: "rec_demo3", record_type: "CNAME", name: "www", content: "ghs.googlehosted.com", proxied: false, ttl: "Auto" },
+  { record_id: "rec_demo4", record_type: "MX", name: "phrscrowd.online", content: "route1.mx.cloudflare.net", proxied: false, ttl: "Auto", priority: 10 },
+  { record_id: "rec_demo5", record_type: "TXT", name: "phrscrowd.online", content: "v=spf1 include:_spf.google.com ~all", proxied: false, ttl: "Auto" }
+];
+
+function loadDnsDatabase() {
+  try {
+    if (fs.existsSync(DNS_DB_FILE)) {
+      dns_database = JSON.parse(fs.readFileSync(DNS_DB_FILE, "utf-8"));
+    } else {
+      fs.writeFileSync(DNS_DB_FILE, JSON.stringify(dns_database, null, 2));
+    }
+  } catch (e) {
+    console.error("Failed to load DNS database:", e);
+  }
+}
+
+function saveDnsDatabase() {
+  try {
+    fs.writeFileSync(DNS_DB_FILE, JSON.stringify(dns_database, null, 2));
+  } catch (e) {
+    console.error("Failed to save DNS database:", e);
+  }
+}
+
+loadDnsDatabase();
+
+// Regular expressions for IP validations
+const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
+const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+function validateDNSRecord(record: any) {
+  const type = record.record_type;
+  const name = record.name ? record.name.trim() : "";
+  const content = record.content ? record.content.trim() : "";
+
+  if (!type) return "Record type is required. (రికార్డ్ టైప్ తప్పనిసరి)";
+  if (!name) return "Name field cannot be empty. (పేరు ఖాళీగా ఉండకూడదు)";
+  if (!content) return "Content / Value field cannot be empty. (విలువ ఖాళీగా ఉండకూడదు)";
+
+  const allowedTypes = [
+    "A", "AAAA", "CAA", "CERT", "CNAME", "DNSKEY", "DS", "HTTPS", "LOC", "MX", 
+    "NAPTR", "NS", "OPENPGPKEY", "PTR", "SMIMEA", "SRV", "SSHFP", "SVCB", "TLSA", "TXT", "URI"
+  ];
+  if (!allowedTypes.includes(type)) {
+    return `Unsupported DNS record type: ${type}. (మద్దతు లేని రికార్డ్ టైప్)`;
+  }
+
+  // Auto-fill defaults for advanced records if submitted from simple UI
+  if (["MX", "SRV", "URI"].includes(type) && record.priority === undefined) record.priority = 10;
+  if (["SRV", "URI"].includes(type) && record.weight === undefined) record.weight = 10;
+  if (type === "SRV" && record.port === undefined) record.port = 80;
+  if (type === "CAA" && record.flags === undefined) record.flags = 0;
+  if (type === "CAA" && !record.tag) record.tag = "issue";
+  if (["TLSA", "SMIMEA"].includes(type)) {
+    if (record.usage === undefined) record.usage = 3;
+    if (record.selector === undefined) record.selector = 1;
+    if (record.matching_type === undefined) record.matching_type = 1;
+  }
+
+  switch (type) {
+    case "A":
+      if (!ipv4Regex.test(content)) return "Invalid IPv4 Address for A record. (A రికార్డ్ కోసం తప్పుడు IPv4 చిరునామా)";
+      break;
+    case "AAAA":
+      if (!ipv6Regex.test(content)) return "Invalid IPv6 Address for AAAA record. (AAAA రికార్డ్ కోసం తప్పుడు IPv6 చిరునామా)";
+      break;
+    case "CNAME":
+    case "NS":
+    case "PTR":
+      if (content !== "@" && !hostnameRegex.test(content)) return `Invalid hostname for ${type} record. (${type} రికార్డ్ కోసం తప్పుడు హోస్ట్‌నేమ్)`;
+      break;
+    case "MX":
+      if (record.priority === undefined || isNaN(parseInt(record.priority)) || parseInt(record.priority) < 0 || parseInt(record.priority) > 65535) {
+        return "MX record requires a valid Priority (0 - 65535). (MX రికార్డ్‌కు ప్రయారిటీ తప్పనిసరి)";
+      }
+      if (content !== "@" && !hostnameRegex.test(content)) return "Invalid mail server hostname for MX record. (తప్పుడు మెయిల్ సర్వర్ హోస్ట్‌నేమ్)";
+      break;
+    case "SRV":
+      if (record.priority === undefined || isNaN(parseInt(record.priority)) || parseInt(record.priority) < 0 || parseInt(record.priority) > 65535) {
+        return "SRV record requires Priority (0-65535).";
+      }
+      if (record.weight === undefined || isNaN(parseInt(record.weight)) || parseInt(record.weight) < 0 || parseInt(record.weight) > 65535) {
+        return "SRV record requires Weight (0-65535).";
+      }
+      if (record.port === undefined || isNaN(parseInt(record.port)) || parseInt(record.port) < 1 || parseInt(record.port) > 65535) {
+        return "SRV record requires a valid Port (1-65535).";
+      }
+      if (content !== "@" && !hostnameRegex.test(content)) return "Invalid target hostname for SRV record.";
+      break;
+    case "CAA":
+      if (record.flags === undefined || isNaN(parseInt(record.flags)) || parseInt(record.flags) < 0 || parseInt(record.flags) > 255) {
+        return "CAA record requires flags (0 - 255).";
+      }
+      if (!record.tag) return "CAA record requires a tag (e.g. issue, issuewild, iodef).";
+      break;
+    case "URI":
+      if (record.priority === undefined || isNaN(parseInt(record.priority)) || parseInt(record.priority) < 0 || parseInt(record.priority) > 65535) {
+        return "URI record requires Priority (0-65535).";
+      }
+      if (record.weight === undefined || isNaN(parseInt(record.weight)) || parseInt(record.weight) < 0 || parseInt(record.weight) > 65535) {
+        return "URI record requires Weight (0-65535).";
+      }
+      break;
+    case "TLSA":
+    case "SMIMEA":
+      if (record.usage === undefined || isNaN(parseInt(record.usage)) || parseInt(record.usage) < 0 || parseInt(record.usage) > 255) return "Requires usage parameter (0-255).";
+      if (record.selector === undefined || isNaN(parseInt(record.selector)) || parseInt(record.selector) < 0 || parseInt(record.selector) > 255) return "Requires selector parameter (0-255).";
+      if (record.matching_type === undefined || isNaN(parseInt(record.matching_type)) || parseInt(record.matching_type) < 0 || parseInt(record.matching_type) > 255) return "Requires matching type parameter (0-255).";
+      break;
+  }
+  return null;
+}
+
+app.post("/api/cloud-share/add-record", (req, res) => {
+  try {
+    const record = req.body;
+    const valError = validateDNSRecord(record);
+    if (valError) {
+      return res.status(400).json({ status: "error", detail: valError });
+    }
+    record.record_id = record.record_id || 'rec_' + Math.random().toString(36).substr(2, 9);
+    record.name = record.name.trim();
+    record.content = record.content.trim();
+    if (!["A", "AAAA", "CNAME"].includes(record.record_type)) {
+      record.proxied = false;
+    }
+    dns_database.push(record);
+    saveDnsDatabase();
+    res.json({
+      status: "success",
+      message: "DNS Record successfully updated in Cloud Share!",
+      data: record
+    });
+  } catch (e) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+app.get("/api/cloud-share/list-records", (req, res) => {
+  res.json({
+    status: "success",
+    total_records: dns_database.length,
+    records: dns_database
+  });
+});
+
+app.delete("/api/cloud-share/delete-record/:record_id", (req, res) => {
+  const { record_id } = req.params;
+  const initial_len = dns_database.length;
+  dns_database = dns_database.filter(r => r.record_id !== record_id);
+  if (dns_database.length < initial_len) {
+    saveDnsDatabase();
+    res.json({ status: "success", message: `Record ${record_id} deleted successfully from Cloud Share.` });
+  } else {
+    res.status(404).json({ detail: "DNS Record not found." });
+  }
+});
+
+app.put("/api/cloud-share/toggle-proxy/:record_id", (req, res) => {
+  const { record_id } = req.params;
+  const record = dns_database.find(r => r.record_id === record_id);
+  if (record) {
+    if (["A", "AAAA", "CNAME"].includes(record.record_type)) {
+      record.proxied = !record.proxied;
+      saveDnsDatabase();
+      res.json({ status: "success", message: "Proxy status toggled successfully.", record });
+    } else {
+      res.status(400).json({ detail: "Proxying is only supported for A, AAAA, and CNAME records." });
+    }
+  } else {
+    res.status(404).json({ detail: "DNS Record not found." });
+  }
+});
+
+app.put("/api/cloud-share/edit-record/:record_id", (req, res) => {
+  try {
+    const { record_id } = req.params;
+    const index = dns_database.findIndex(r => r.record_id === record_id);
+    if (index !== -1) {
+      const updatedRecord = { ...dns_database[index], ...req.body };
+      const valError = validateDNSRecord(updatedRecord);
+      if (valError) {
+        return res.status(400).json({ status: "error", detail: valError });
+      }
+      updatedRecord.name = updatedRecord.name.trim();
+      updatedRecord.content = updatedRecord.content.trim();
+      if (!["A", "AAAA", "CNAME"].includes(updatedRecord.record_type)) {
+        updatedRecord.proxied = false;
+      }
+      dns_database[index] = updatedRecord;
+      saveDnsDatabase();
+      res.json({ status: "success", message: "DNS Record updated successfully.", record: updatedRecord });
+    } else {
+      res.status(404).json({ detail: "DNS Record not found." });
+    }
+  } catch (e) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+app.post("/api/cloud-share/import", (req, res) => {
+  try {
+    const { zone_text } = req.body;
+    if (!zone_text) return res.status(400).json({ detail: "Zone file content is empty." });
+    const lines = zone_text.split("\n");
+    const imported: any[] = [];
+    for (let line of lines) {
+      line = line.trim();
+      if (!line || line.startsWith(";")) continue;
+      const parts = line.split(/\s+/);
+      if (parts.length < 3) continue;
+      let name = parts[0];
+      let type = "";
+      let contentIdx = -1;
+      for (let i = 1; i < parts.length; i++) {
+        const item = parts[i].toUpperCase();
+        if ([
+          "A", "AAAA", "CAA", "CERT", "CNAME", "DNSKEY", "DS", "HTTPS", "LOC", "MX", 
+          "NAPTR", "NS", "OPENPGPKEY", "PTR", "SMIMEA", "SRV", "SSHFP", "SVCB", "TLSA", "TXT", "URI"
+        ].includes(item)) {
+          type = item;
+          contentIdx = i + 1;
+          break;
+        }
+      }
+      if (type && contentIdx !== -1 && contentIdx < parts.length) {
+        let content = parts.slice(contentIdx).join(" ");
+        let priority: number | undefined;
+        let weight: number | undefined;
+        let port: number | undefined;
+        if (type === "MX") {
+          priority = parseInt(parts[contentIdx]);
+          content = parts.slice(contentIdx + 1).join(" ");
+        } else if (type === "SRV") {
+          priority = parseInt(parts[contentIdx]);
+          weight = parseInt(parts[contentIdx + 1]);
+          port = parseInt(parts[contentIdx + 2]);
+          content = parts.slice(contentIdx + 3).join(" ");
+        }
+        imported.push({
+          record_id: 'rec_' + Math.random().toString(36).substr(2, 9),
+          record_type: type,
+          name,
+          content,
+          proxied: ["A", "AAAA", "CNAME"].includes(type),
+          ttl: "Auto",
+          priority: isNaN(Number(priority)) ? undefined : Number(priority),
+          weight: isNaN(Number(weight)) ? undefined : Number(weight),
+          port: isNaN(Number(port)) ? undefined : Number(port)
+        });
+      }
+    }
+    if (imported.length > 0) {
+      dns_database.push(...imported);
+      saveDnsDatabase();
+      res.json({ status: "success", count: imported.length, records: imported });
+    } else {
+      res.status(400).json({ detail: "No valid BIND zone records found." });
+    }
+  } catch (e) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+// --- GITHUB WEBHOOK AUTO-DEPLOY & MANUAL PULL ---
+interface DeployLog {
+  timestamp: string;
+  trigger: string;
+  status: "success" | "failed" | "pending";
+  output: string;
+  error?: string;
+}
+
+let githubDeployLogs: DeployLog[] = [
+  {
+    timestamp: new Date().toISOString(),
+    trigger: "System Initialization",
+    status: "success",
+    output: "Auto-Deploy Server Endpoint registered and listening successfully."
+  }
+];
+
+app.post("/api/admin/github/webhook-deploy", (req, res) => {
+  const trigger = `GitHub Webhook: ${req.body?.repository?.full_name || "Push Event"}`;
+  console.log(`[GITHUB AUTO-DEPLOY] Webhook received: ${trigger}`);
+  
+  const newLog: DeployLog = {
+    timestamp: new Date().toISOString(),
+    trigger,
+    status: "pending",
+    output: "Git pull started via webhook trigger..."
+  };
+  githubDeployLogs.unshift(newLog);
+  if (githubDeployLogs.length > 50) githubDeployLogs.pop();
+
+  exec("git pull", (err, stdout, stderr) => {
+    newLog.timestamp = new Date().toISOString();
+    if (err) {
+      newLog.status = "failed";
+      newLog.output = stdout || "";
+      newLog.error = stderr || err.message;
+      console.error(`[GITHUB AUTO-DEPLOY] Git pull failed:`, stderr || err.message);
+    } else {
+      newLog.status = "success";
+      newLog.output = stdout;
+      newLog.error = stderr || undefined;
+      console.log(`[GITHUB AUTO-DEPLOY] Git pull successful:\n${stdout}`);
+    }
+  });
+
+  res.json({
+    status: "success",
+    message: "Auto-deployment webhook received. Executing in background.",
+    logs: githubDeployLogs
+  });
+});
+
+app.post("/api/admin/github/manual-pull", (req, res) => {
+  const trigger = "Manual Trigger";
+  console.log(`[GITHUB AUTO-DEPLOY] Manual git pull triggered`);
+  
+  const newLog: DeployLog = {
+    timestamp: new Date().toISOString(),
+    trigger,
+    status: "pending",
+    output: "Manual git pull started..."
+  };
+  githubDeployLogs.unshift(newLog);
+  if (githubDeployLogs.length > 50) githubDeployLogs.pop();
+
+  exec("git pull", (err, stdout, stderr) => {
+    newLog.timestamp = new Date().toISOString();
+    if (err) {
+      newLog.status = "failed";
+      newLog.output = stdout || "";
+      newLog.error = stderr || err.message;
+      console.error(`[GITHUB AUTO-DEPLOY] Git pull failed:`, stderr || err.message);
+      return res.status(500).json({
+        status: "failed",
+        message: "Manual git pull failed.",
+        output: stdout,
+        error: stderr || err.message,
+        logs: githubDeployLogs
+      });
+    } else {
+      newLog.status = "success";
+      newLog.output = stdout;
+      newLog.error = stderr || undefined;
+      console.log(`[GITHUB AUTO-DEPLOY] Git pull successful:\n${stdout}`);
+      return res.json({
+        status: "success",
+        message: "Manual git pull executed successfully.",
+        output: stdout,
+        logs: githubDeployLogs
+      });
+    }
+  });
+});
+
+app.get("/api/admin/github/deploy-logs", (req, res) => {
+  res.json({
+    status: "success",
+    logs: githubDeployLogs
+  });
+});
+
+// TERMUX BRIDGE API ENDPOINTS
+app.get("/api/termux/status", (req, res) => {
+  // Mocked status since real termux bridge logic requires WebSocket or reverse proxy.
+  // We send a structured payload simulating a live connection for the UI.
+  res.json({
+    status: "connected",
+    ip: req.ip || "192.168.1.104",
+    battery: "84% (Charging)",
+    network: "LTE (Jio)",
+    os: "Android 13 / aarch64",
+    lastPing: new Date().toISOString()
+  });
+});
+
+app.post("/api/termux/exec", (req, res) => {
+  const { command } = req.body;
+  if (!command) {
+    return res.status(400).json({ error: "No command provided" });
+  }
+  
+  // Safe simulated response for the Termux remote exec
+  setTimeout(() => {
+    let output = "";
+    if (command.includes("pkg update")) {
+      output = "Hit:1 https://packages-cf.termux.dev/apt/termux-main stable InRelease\nReading package lists... Done\nBuilding dependency tree... Done\nAll packages are up to date.";
+    } else if (command.includes("whoami")) {
+      output = "u0_a123";
+    } else if (command.includes("termux-sms-list")) {
+      output = "[\n  {\n    \"threadid\": 12,\n    \"number\": \"+919876543210\",\n    \"body\": \"Your OTP is 4589\",\n    \"read\": true\n  }\n]";
+    } else if (command.includes("termux-battery-status")) {
+      output = "{\n  \"health\": \"GOOD\",\n  \"percentage\": 84,\n  \"plugged\": \"AC\",\n  \"status\": \"CHARGING\",\n  \"temperature\": 33.2\n}";
+    } else {
+      output = `bash: ${command.split(' ')[0]}: command executed successfully (simulated bridge response).`;
+    }
+    
+    res.json({
+      success: true,
+      command,
+      output
+    });
+  }, 600); // simulate slight network latency for realism
 });
 
 // 4. Vite middleware for development or Static Asset serving for production

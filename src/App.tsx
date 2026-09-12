@@ -24,6 +24,7 @@ import HomeTab from './components/tabs/HomeTab';
 import VpcNetworkTab from './components/tabs/VpcNetworkTab';
 import VpsTab from './components/tabs/VpsTab';
 import PhrsMapsTab from './components/tabs/PhrsMapsTab';
+import { CloudShareTab } from './components/tabs/CloudShareTab';
 import { 
   Server, Database, MessageSquare, Key, Download, Search, Bell, 
   User, Plus, Play, RefreshCw, Trash2, Edit3, Save, Check, AlertCircle, 
@@ -54,7 +55,7 @@ export default function App() {
   const [shaFingerprint, setShaFingerprint] = useState('03:5E:59:45:3B:C0:77:9B:27:16:D5:E5:C3:54:1C:A7:EC:94:9E:BE:72:F7:F9:09:94:00:6A:B9:00:01:4A:E3');
 
   // Navigation and active project
-  const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'phrs_maps' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console' | 'vps_engine'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'phrs_maps' | 'cloud_share' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console' | 'vps_engine'>('home');
   const [snippetFormat, setSnippetFormat] = useState('Module');
   const [projects, setProjects] = useState<Project[]>(() => {
     const defaultMaster: Project = {
@@ -107,7 +108,7 @@ export default function App() {
   ]);
 
   // Built-in Mini Server & Integrated Terminal states (No Termux app needed!)
-  const [isMiniServerRunning, setIsMiniServerRunning] = useState<boolean>(true);
+  const [isMiniServerRunning, setIsMiniServerRunning] = useState<boolean>(false);
   const [miniServerPort, setMiniServerPort] = useState<number>(3000);
   const [miniServerIp, setMiniServerIp] = useState<string>('192.168.1.15');
   const [terminalHistory, setTerminalHistory] = useState<Array<{type: 'cmd' | 'out' | 'err'; text: string}>>([]);
@@ -159,7 +160,7 @@ export default function App() {
   const [stealthWalletRupees, setStealthWalletRupees] = useState<number>(25); // ₹25
 
   // Standalone server download banner visibility state
-  const [showStandaloneBanner, setShowStandaloneBanner] = useState<boolean>(true);
+  const [showStandaloneBanner, setShowStandaloneBanner] = useState<boolean>(false);
   const [localServerIpInput, setLocalServerIpInput] = useState<string>('192.168.1.10');
 
   // Realtime Database State (nested JSON)
@@ -509,8 +510,21 @@ export default function App() {
   const detectIp = async () => {
     try {
       const response = await fetch('https://api.ipify.org?format=json');
+      if (!response.ok) throw new Error("HTTP error " + response.status);
+      const ct = response.headers.get("content-type");
+      if (!ct || !ct.includes("application/json")) {
+        // Fallback to reading response as plain text or setting default if it returns HTML
+        const text = await response.text();
+        if (text && !text.trim().startsWith('<') && text.length < 45) {
+          const cleanIp = text.trim();
+          setMobileIp(cleanIp);
+        } else {
+          setMobileIp(prev => prev === 'Detecting...' ? '106.213.85.112' : prev);
+        }
+        return;
+      }
       const data = await response.json();
-      if (data.ip) {
+      if (data && data.ip) {
         setMobileIp(prevIp => {
           if (prevIp !== 'Detecting...' && prevIp !== data.ip) {
             // Dynamic IP change detected - auto sync without manual reconnect
@@ -582,7 +596,7 @@ export default function App() {
   const [mapsActiveTrackingId, setMapsActiveTrackingId] = useState('map-id-9812');
 
   // Sidebar toggle state
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // Expanded section state (for 20 console sections)
   const [expandedSection, setExpandedSection] = useState<string | null>('cloud_hub');
@@ -639,8 +653,8 @@ export default function App() {
   const [newDomainType, setNewDomainType] = useState('Custom URL');
 
   // Database Center Overview & Fleet Insights states
-  const [isFleetBannerVisible, setIsFleetBannerVisible] = useState<boolean>(true);
-  const [isFleetBannerExpanded, setIsFleetBannerExpanded] = useState<boolean>(true);
+  const [isFleetBannerVisible, setIsFleetBannerVisible] = useState<boolean>(false);
+  const [isFleetBannerExpanded, setIsFleetBannerExpanded] = useState<boolean>(false);
   const [dbProductFilter, setDbProductFilter] = useState<string>('None');
   const [dbLocationFilter, setDbLocationFilter] = useState<string>('None');
   const [isProductFilterOpen, setIsProductFilterOpen] = useState<boolean>(false);
@@ -737,7 +751,7 @@ export default function App() {
 
   // Home tab sub-navigation & interactive feedback toast
   const [homeSubTab, setHomeSubTab] = useState<'dashboard' | 'hub'>('dashboard');
-  const [isWelcomeBoardOpen, setIsWelcomeBoardOpen] = useState<boolean>(true);
+  const [isWelcomeBoardOpen, setIsWelcomeBoardOpen] = useState<boolean>(false);
   const [homeToast, setHomeToast] = useState<string | null>(null);
 
   // Global backend action override for real-time interactions across all 24 tabs
@@ -975,7 +989,19 @@ export default function App() {
 
   useEffect(() => {
     fetch('/api/deployments')
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+          throw new Error("Response is not JSON");
+        }
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {
+          throw new Error("Invalid JSON: " + (e as Error).message);
+        }
+      })
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           setDeployments(data);
@@ -986,7 +1012,19 @@ export default function App() {
 
   useEffect(() => {
     fetch('/api/sms/wallet')
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+          throw new Error("Response is not JSON");
+        }
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {
+          throw new Error("Invalid JSON: " + (e as Error).message);
+        }
+      })
       .then(data => {
         if (data.data_balance_mb !== undefined) setStealthDataBalanceMb(data.data_balance_mb);
         if (data.sms_credits !== undefined) setStealthSmsCredits(data.sms_credits);
@@ -995,7 +1033,19 @@ export default function App() {
       .catch(err => console.error("Error loading SMS wallet:", err));
 
     fetch('/api/sms/history')
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+          throw new Error("Response is not JSON");
+        }
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {
+          throw new Error("Invalid JSON: " + (e as Error).message);
+        }
+      })
       .then(data => {
         if (Array.isArray(data)) setPhrsSmsHistory(data);
       })
@@ -1004,7 +1054,19 @@ export default function App() {
 
   useEffect(() => {
     fetch('/api/db/tables')
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+          throw new Error("Response is not JSON");
+        }
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {
+          throw new Error("Invalid JSON: " + (e as Error).message);
+        }
+      })
       .then(data => {
         if (Array.isArray(data)) {
           setSqlTables(data);
@@ -1494,7 +1556,7 @@ export default function App() {
     },
     {
       id: 'agent_platform',
-      label: 'Agent Platform (డైనమిక్ కోర్)',
+      label: 'AI Master Studio (ఏఐ మాస్టర్ స్టూడియో)',
       icon: Sparkles,
       subMenus: ['Overview', 'Studio', 'Models', 'Agents', 'Notebooks']
     },
@@ -1587,6 +1649,12 @@ export default function App() {
       label: 'PHRS Maps Platform',
       icon: MapPin,
       subMenus: ['Overview', 'APIs & Services', 'Metrics', 'Quotas', 'Keys & Credentials', 'Support', 'Solution Library', 'Map Management', 'Map Styles', 'Datasets']
+    },
+    {
+      id: 'cloud_share',
+      label: 'Cloud Share',
+      icon: Globe,
+      subMenus: ['DNS Management']
     }
   ];
 
@@ -1682,6 +1750,8 @@ export default function App() {
     } else if (sectionId === 'phrs_maps') {
       setActiveTab('phrs_maps');
       setPhrsMapsSubTab(subMenu);
+    } else if (sectionId === 'cloud_share') {
+      setActiveTab('cloud_share');
     }
     
     setHomeToast(`Navigated to ${subMenu}`);
@@ -1784,7 +1854,7 @@ export default function App() {
           <div className={`w-full flex items-center justify-between gap-3 px-4 py-1.5 rounded-full border transition-all ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
             <div className="flex items-center gap-2">
               <svg className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 4310 0-10v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2zm-6-2a3 3 0 016 0v2H4V7z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2zm-6-2a3 3 0 016 0v2H4V7z" clipRule="evenodd" />
               </svg>
               <span className="text-xs font-mono font-bold tracking-tight text-slate-500">HTTPS</span>
               <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 select-all">console.phrscrowd.online</span>
@@ -2999,9 +3069,116 @@ export default function App() {
         {activeTab === 'phrs_maps' && (
           <PhrsMapsTab state={globalState} />
         )}
+
+        {/* ==============================================
+            TAB 23: CLOUD SHARE (DNS)
+            ============================================== */}
+        {activeTab === 'cloud_share' && (
+          <CloudShareTab 
+            isDarkMode={isDarkMode}
+            setIsAtomicScanning={setIsAtomicScanning}
+            setAtomicLogs={setAtomicLogs}
+            setDeepScanTimer={setDeepScanTimer}
+            isAtomicScanning={isAtomicScanning}
+            setHomeToast={setHomeToast}
+          />
+        )}
       </main>
     </div>
+
+    {/* ==============================================
+        LIVE PREVIEW MODAL (IFRAME)
+        ============================================== */}
+    {activeVirtualApp && (
+      <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6" onClick={() => setActiveVirtualApp(null)}>
+        <div className={`w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col ${isDarkMode ? 'bg-slate-900 border border-slate-700' : 'bg-white border border-slate-200'}`} onClick={(e) => e.stopPropagation()}>
+          <div className={`p-4 border-b flex items-center justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+              </div>
+              <div className={`px-3 py-1 rounded-md text-xs font-mono border ${isDarkMode ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}>
+                <span className="opacity-50">https://</span>{activeVirtualApp.subdomain}.phrscrowd.online
+              </div>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                LIVE
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => window.open(`/hosted/${activeVirtualApp.subdomain}`, '_blank')} className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition" title="Open in new tab">
+                <ExternalLink className="w-4 h-4 text-slate-500" />
+              </button>
+              <button onClick={() => setActiveVirtualApp(null)} className="p-1.5 rounded hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 transition" title="Close Preview">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 w-full bg-white relative">
+            <iframe
+              src={`/hosted/${activeVirtualApp.subdomain}`}
+              className="w-full h-full border-none"
+              title="App Live Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            />
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ==============================================
+        FLOATING AI MASTER AGENT PANEL
+        ============================================== */}
+    {isAgentPanelOpen && (
+      <div className={`fixed bottom-4 right-4 w-96 rounded-2xl shadow-2xl border flex flex-col z-[100] overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`} style={{ height: '500px' }}>
+        <div className={`p-4 border-b flex items-center justify-between ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-blue-600 border-blue-700 text-white'}`}>
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-blue-200" />
+            <h3 className="font-bold text-sm">AI Master Agent</h3>
+          </div>
+          <button onClick={() => setIsAgentPanelOpen(false)} className="hover:bg-black/20 p-1 rounded transition">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {agentChatHistory.map((msg, idx) => (
+            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[85%] rounded-2xl p-3 text-sm whitespace-pre-wrap ${
+                msg.role === 'user' 
+                  ? 'bg-blue-600 text-white rounded-br-none' 
+                  : isDarkMode ? 'bg-slate-800 text-slate-200 rounded-bl-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {isAgentThinking && (
+             <div className="flex justify-start">
+                <div className={`rounded-2xl rounded-bl-none p-3 text-sm ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-800'}`}>
+                  <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+                </div>
+             </div>
+          )}
+        </div>
+        <div className={`p-3 border-t ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+          <form onSubmit={(e) => { e.preventDefault(); handleAgentSubmit(agentChatInput); }} className="flex gap-2">
+            <input
+              type="text"
+              value={agentChatInput}
+              onChange={(e) => setAgentChatInput(e.target.value)}
+              placeholder="Ask AI Master..."
+              className={`flex-1 px-3 py-2 rounded-xl border text-sm outline-none focus:border-blue-500 transition ${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}
+            />
+            <button type="submit" disabled={isAgentThinking || !agentChatInput.trim()} className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-50">
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      </div>
+    )}
+
   </div>
 </div>
-);
+  );
 }

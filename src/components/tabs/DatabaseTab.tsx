@@ -12,41 +12,65 @@ export default function DatabaseTab({ state }: { state: any }) {
   const fetchCollections = async () => {
     try {
       const res = await fetch('/api/db/collections');
-      const data = await res.json();
+      if (!res.ok) throw new Error("HTTP error " + res.status);
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        throw new Error("Response is not JSON");
+      }
+      const data = JSON.parse(trimmed);
       if (data.success) {
         setRealCollections(data.collections);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.warn("Collections sync skipped:", e); }
   };
 
   const fetchUsers = async () => {
     try {
       const res = await fetch('/api/auth/users');
-      const data = await res.json();
+      if (!res.ok) throw new Error("HTTP error " + res.status);
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        throw new Error("Response is not JSON");
+      }
+      const data = JSON.parse(trimmed);
       if (data.success) {
         setPhrsUsers(data.users);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.warn("Users sync skipped:", e); }
   };
 
   const fetchRealtimeDb = async () => {
     try {
       const res = await fetch('/api/db/realtime');
-      const data = await res.json();
+      if (!res.ok) throw new Error("HTTP error " + res.status);
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        throw new Error("Response is not JSON");
+      }
+      const data = JSON.parse(trimmed);
       if (data && !data.error) {
         setDbData(data);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.warn("Realtime DB sync skipped:", e); }
   };
 
   const fetchDocs = async (collectionName: string) => {
     try {
       const res = await fetch(`/api/db/collections/${collectionName}/docs`);
-      const data = await res.json();
+      if (!res.ok) throw new Error("HTTP error " + res.status);
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        throw new Error("Response is not JSON");
+      }
+      const data = JSON.parse(trimmed);
       if (data.success) {
         setRealDocsData(data.data);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.warn("Docs sync skipped:", e); }
   };
 
   const fetchStorageFiles = async () => {
@@ -58,11 +82,17 @@ export default function DatabaseTab({ state }: { state: any }) {
         body: JSON.stringify({ name: 'phrs_default_storage' })
       });
       const res = await fetch('/api/storage/buckets/phrs_default_storage/files');
-      const data = await res.json();
+      if (!res.ok) throw new Error("HTTP error " + res.status);
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        throw new Error("Response is not JSON");
+      }
+      const data = JSON.parse(trimmed);
       if (data.success) {
         setPhrsStorageFiles(data.files);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.warn("Storage files sync skipped:", e); }
   };
 
   const uploadStorageFile = async (file: File) => {
@@ -74,7 +104,13 @@ export default function DatabaseTab({ state }: { state: any }) {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
+      if (!res.ok) throw new Error("HTTP error " + res.status);
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        throw new Error("Response is not JSON");
+      }
+      const data = JSON.parse(trimmed);
       if (data.success) {
         fetchStorageFiles();
         setVpsLogStream(prev => [...prev, `[STORAGE] Uploaded file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`]);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as LucideIcons from 'lucide-react';
 
 export default function CloudRunTab({ state }: { state: any }) {
-  const [uploadMode, setUploadMode] = React.useState<'code' | 'zip'>('code');
+  const [uploadMode, setUploadMode] = React.useState<'code' | 'zip' | 'github'>('code');
   const [localZipFile, setLocalZipFile] = React.useState<File | null>(null);
   const [deployStatus, setDeployStatus] = React.useState('');
   
@@ -12,12 +12,22 @@ export default function CloudRunTab({ state }: { state: any }) {
 
   React.useEffect(() => {
     fetch('/api/domain-mappings')
-      .then(r => r.json())
-      .then(data => setRealDomainMappings(data))
+      .then(res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const ct = res.headers.get("content-type");
+        if (!ct || !ct.includes("application/json")) throw new Error("Not JSON");
+        return res.json();
+      })
+      .then(data => setRealDomainMappings(data || {}))
       .catch(console.error);
       
     fetch('/api/orchestrator/nodes')
-      .then(r => r.json())
+      .then(res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const ct = res.headers.get("content-type");
+        if (!ct || !ct.includes("application/json")) throw new Error("Not JSON");
+        return res.json();
+      })
       .then(data => setOrchestratorNodes(data || []))
       .catch(console.error);
   }, [state.cloudRunSubTab]);
@@ -281,6 +291,12 @@ export default function CloudRunTab({ state }: { state: any }) {
                         >
                           Upload ZIP
                         </button>
+                        <button 
+                          onClick={() => setUploadMode('github')} 
+                          className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${uploadMode === 'github' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          GitHub Import
+                        </button>
                       </div>
 
                       <div>
@@ -317,7 +333,7 @@ export default function CloudRunTab({ state }: { state: any }) {
                             />
                           </div>
                         </>
-                      ) : (
+                      ) : uploadMode === 'zip' ? (
                         <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center bg-slate-50 relative hover:bg-slate-100 transition-colors">
                           <input 
                             type="file" 
@@ -331,6 +347,23 @@ export default function CloudRunTab({ state }: { state: any }) {
                           </p>
                           <p className="text-[10px] text-slate-500 mt-1">Or click to browse files</p>
                           {localZipFile && <p className="text-[10px] text-emerald-600 font-bold mt-2">Ready to deploy!</p>}
+                        </div>
+                      ) : (
+                        <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                          <div className="flex items-center gap-2 text-indigo-600 mb-1">
+                            <LucideIcons.GitBranch className="w-4 h-4" />
+                            <span className="text-xs font-bold font-mono">IMPORT PUBLIC GITHUB REPO</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 leading-normal">
+                            సార్వజనిక గిట్‌హబ్ రిపోజిటరీ (Public GitHub Repo) లింక్ ఇవ్వండి. మా సర్వర్ దాన్ని ఆటోమేటిక్‌గా డౌన్‌లోడ్ చేసి ఈ సబ్‌డొమైన్‌లో హోస్ట్ చేస్తుంది.
+                          </p>
+                          <input
+                            type="text"
+                            value={githubUrl}
+                            onChange={(e) => setGithubUrl(e.target.value)}
+                            placeholder="https://github.com/phrscrowd/analytics"
+                            className="w-full p-2.5 text-xs rounded-lg border font-mono bg-white border-slate-200 text-slate-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                          />
                         </div>
                       )}
 
@@ -354,8 +387,14 @@ export default function CloudRunTab({ state }: { state: any }) {
                             return;
                           }
 
+                          if (uploadMode === 'github' && !githubUrl) {
+                            setHomeToast("⚠️ GitHub URL is required.");
+                            setTimeout(() => setHomeToast(null), 3000);
+                            return;
+                          }
+
                           setIsDeploying(true);
-                          setDeployStatus('Extracting project files...');
+                          setDeployStatus(uploadMode === 'github' ? 'Connecting to GitHub...' : 'Extracting project files...');
                           try {
                             let res;
                             if (uploadMode === 'zip') {
@@ -366,6 +405,15 @@ export default function CloudRunTab({ state }: { state: any }) {
                               res = await fetch('/api/deploy-zip', {
                                 method: 'POST',
                                 body: formData
+                              });
+                            } else if (uploadMode === 'github') {
+                              res = await fetch('/api/deploy-github', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  name: appName,
+                                  githubUrl: githubUrl
+                                })
                               });
                             } else {
                               res = await fetch('/api/host/deploy', {
@@ -382,7 +430,9 @@ export default function CloudRunTab({ state }: { state: any }) {
                             const data = await res.json();
                             if (data.success) {
                                 // Simulate dependency installation
-                                if (uploadMode === 'zip') {
+                                if (uploadMode === 'zip' || uploadMode === 'github') {
+                                    setDeployStatus(uploadMode === 'github' ? 'Pulling code from GitHub and downloading archive...' : 'Extracting project files...');
+                                    await new Promise(r => setTimeout(r, 1500));
                                     setDeployStatus('Resolving dependencies (npm install)...');
                                     await new Promise(r => setTimeout(r, 1500));
                                     setDeployStatus('Starting background worker (npm start)...');
@@ -559,6 +609,16 @@ export default function CloudRunTab({ state }: { state: any }) {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
+                        <button 
+                          className="text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition" 
+                          onClick={() => {
+                            setCloudRunSubTab('Domain mappings');
+                            setIsCreatingDomain(true);
+                            setNewDomainService(project.name || 'Untitled Service');
+                          }}
+                        >
+                          Map Domain
+                        </button>
                         <button 
                           className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition" 
                           onClick={() => {
