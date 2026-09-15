@@ -211,19 +211,50 @@ export default function App() {
 
   // Deployments / App Studio
   const [deployments, setDeployments] = useState<Deployment[]>(() => {
+    const defaults: Deployment[] = [
+      { id: 'dep-1', name: 'All-in-One Library (AIOL)', subdomain: 'aiol', port: 3001, techStack: 'React & Node', status: 'ONLINE', cpu: 1.2, memory: 34, visitors: 142, githubUrl: 'https://github.com/phrscrowd/aiol' },
+      { id: 'dep-2', name: 'Civil Worker Book (CWRB)', subdomain: 'cwrb', port: 3002, techStack: 'Next.js & PostgreSQL', status: 'ONLINE', cpu: 0.4, memory: 18, visitors: 89, githubUrl: 'https://github.com/phrscrowd/cwrb' },
+      { id: 'dep-3', name: 'AI Master Studio', subdomain: 'aims', port: 3003, techStack: 'React & Gemini AI', status: 'ONLINE', cpu: 0.8, memory: 24, visitors: 57, githubUrl: 'https://github.com/phrscrowd/aims' }
+    ];
+
     try {
       const saved = localStorage.getItem('phrs_deployments');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Merge defaults to ensure all 3 apps exist
+          const merged = [...parsed];
+          defaults.forEach(def => {
+            if (!merged.some(item => item.id === def.id || item.subdomain === def.subdomain)) {
+              merged.push(def);
+            }
+          });
+          // Force update to the 3 custom apps requested by the user
+          merged.forEach(item => {
+            if (item.id === 'dep-1') {
+              item.name = 'All-in-One Library (AIOL)';
+              item.subdomain = 'aiol';
+              item.techStack = 'React & Node';
+              item.githubUrl = 'https://github.com/phrscrowd/aiol';
+            } else if (item.id === 'dep-2') {
+              item.name = 'Civil Worker Book (CWRB)';
+              item.subdomain = 'cwrb';
+              item.techStack = 'Next.js & PostgreSQL';
+              item.githubUrl = 'https://github.com/phrscrowd/cwrb';
+            } else if (item.id === 'dep-3') {
+              item.name = 'AI Master Studio';
+              item.subdomain = 'aims';
+              item.techStack = 'React & Gemini AI';
+              item.githubUrl = 'https://github.com/phrscrowd/aims';
+            }
+          });
+          return merged;
+        }
       }
     } catch (e) {
       console.error("Deployment sync interrupted. Using internal registry.");
     }
-    return [
-      { id: 'dep-1', name: 'PHRS Web Dashboard', subdomain: 'dashboard', port: 3001, techStack: 'React Vite', status: 'ONLINE', cpu: 1.2, memory: 34, visitors: 142, githubUrl: 'https://github.com/phrscrowd/web-dash' },
-      { id: 'dep-2', name: 'Public Analytics Site', subdomain: 'analytics', port: 3002, techStack: 'HTML/CSS/JS', status: 'ONLINE', cpu: 0.4, memory: 18, visitors: 89, githubUrl: 'https://github.com/phrscrowd/analytics' }
-    ];
+    return defaults;
   });
   const [githubUrl, setGithubUrl] = useState('');
   const [appName, setAppName] = useState('');
@@ -1673,6 +1704,9 @@ export default function App() {
   };
 
   const handleSubMenuClick = (sectionId: string, subMenu: string) => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
     setSelectedSubMenu(subMenu);
     
     // Clean, clever tab routing:

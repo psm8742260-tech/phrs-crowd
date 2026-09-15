@@ -608,7 +608,7 @@ export default function HomeTab({ state }: { state: any }) {
                         </div>
                       </div>
                       <div className="p-3 border-t border-slate-50 bg-slate-50/20">
-                        <button className="text-xs font-bold text-blue-600 hover:underline">Go to project settings</button>
+                        <button onClick={() => setCloudHubSubTab('App Topology')} className="text-xs font-bold text-blue-600 hover:underline">Go to project settings</button>
                       </div>
                     </div>
 
@@ -627,7 +627,7 @@ export default function HomeTab({ state }: { state: any }) {
                             { name: 'Cloud Storage', val: `${buckets.length} ${buckets.length === 1 ? 'bucket' : 'buckets'}`, color: 'text-blue-600', tab: 'cloud_storage' },
                             { name: 'Cloud SQL', val: `${sqlTables.length} ${sqlTables.length === 1 ? 'instance' : 'instances'}`, color: 'text-blue-600', tab: 'cloud_sql' },
                             { name: 'BigQuery', val: '0 datasets', color: 'text-blue-600', tab: 'bigquery' },
-                            { name: 'PHRS Database', val: `${firestoreCollections.length} active`, color: 'text-[#FFCA28]', tab: 'database' },
+                            { name: 'PHRS Database', val: `${Object.keys(firestoreCollections || {}).length} active`, color: 'text-[#FFCA28]', tab: 'database' },
                             { name: 'Agent Platform', val: `${agents.length} active`, color: 'text-indigo-600', tab: 'agent_platform' }
                           ].map((res, i) => (
                             <div key={i} onClick={() => setActiveTab(res.tab as any)} className="flex justify-between items-center px-5 py-3 hover:bg-slate-50 transition cursor-pointer group">
@@ -638,7 +638,7 @@ export default function HomeTab({ state }: { state: any }) {
                         </div>
                       </div>
                       <div className="p-3 border-t border-slate-50 bg-slate-50/20 text-center">
-                        <button className="text-xs font-bold text-blue-600 hover:underline">View all resources</button>
+                        <button onClick={() => setCloudHubSubTab('App Topology')} className="text-xs font-bold text-blue-600 hover:underline">View all resources</button>
                       </div>
                     </div>
 
@@ -719,7 +719,7 @@ export default function HomeTab({ state }: { state: any }) {
                     {/* Quick Access Section */}
                     <div className="md:col-span-2 xl:col-span-12 space-y-4">
                       <h3 className="text-lg font-medium text-slate-850">Quick access</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {[
                           { tab: 'agent_platform', icon: <Sparkles className="w-5 h-5 text-indigo-600" />, name: 'AI Studio', desc: 'Manage AI Agents' },
                           { tab: 'database', icon: <Shield className="w-5 h-5 text-indigo-600" />, name: 'IAM & Admin', desc: 'Configure databases' },
@@ -1017,7 +1017,7 @@ export default function HomeTab({ state }: { state: any }) {
                   {cloudHubSubTab === 'Home' && (
                     <>
                       {/* Micro-telemetry grid */}
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className={`p-4 rounded-xl border flex items-center justify-between transition bg-white border-slate-200`}>
                       <div>
                         <span className="text-[10px] font-mono text-slate-500">CPU LOAD</span>

@@ -562,20 +562,82 @@ interface RealDeployment {
 const REGISTRY_FILE = path.join(HOSTED_DIR, "registry.json");
 
 function getRegistry(): RealDeployment[] {
-  return safeReadJson(REGISTRY_FILE, [
+  const defaults: RealDeployment[] = [
     {
       id: "dep-1",
-      name: "PHRS Default Home",
-      subdomain: "dashboard",
+      name: "All-in-One Library (AIOL)",
+      subdomain: "aiol",
       port: 3001,
-      techStack: "HTML/Tailwind",
+      techStack: "React & Node",
       status: "ONLINE",
-      cpu: 0.1,
-      memory: 14,
+      cpu: 1.2,
+      memory: 34,
       visitors: 142,
-      githubUrl: "Built-in"
+      githubUrl: "https://github.com/phrscrowd/aiol"
+    },
+    {
+      id: "dep-2",
+      name: "Civil Worker Book (CWRB)",
+      subdomain: "cwrb",
+      port: 3002,
+      techStack: "Next.js & PostgreSQL",
+      status: "ONLINE",
+      cpu: 0.4,
+      memory: 18,
+      visitors: 89,
+      githubUrl: "https://github.com/phrscrowd/cwrb"
+    },
+    {
+      id: "dep-3",
+      name: "AI Master Studio",
+      subdomain: "aims",
+      port: 3003,
+      techStack: "React & Gemini AI",
+      status: "ONLINE",
+      cpu: 0.8,
+      memory: 24,
+      visitors: 57,
+      githubUrl: "https://github.com/phrscrowd/aims"
     }
-  ]);
+  ];
+
+  const current = safeReadJson(REGISTRY_FILE, defaults);
+  let updated = false;
+  const merged = [...current];
+  defaults.forEach(def => {
+    if (!merged.some(item => item.id === def.id || item.subdomain === def.subdomain)) {
+      merged.push(def);
+      updated = true;
+    }
+  });
+
+  // Force update existing registry entries to have the correct name and techstack
+  merged.forEach(item => {
+    if (item.id === "dep-1") {
+      item.name = "All-in-One Library (AIOL)";
+      item.subdomain = "aiol";
+      item.techStack = "React & Node";
+      item.githubUrl = "https://github.com/phrscrowd/aiol";
+      updated = true;
+    } else if (item.id === "dep-2") {
+      item.name = "Civil Worker Book (CWRB)";
+      item.subdomain = "cwrb";
+      item.techStack = "Next.js & PostgreSQL";
+      item.githubUrl = "https://github.com/phrscrowd/cwrb";
+      updated = true;
+    } else if (item.id === "dep-3") {
+      item.name = "AI Master Studio";
+      item.subdomain = "aims";
+      item.techStack = "React & Gemini AI";
+      item.githubUrl = "https://github.com/phrscrowd/aims";
+      updated = true;
+    }
+  });
+
+  if (updated || current.length < defaults.length) {
+    saveRegistry(merged);
+  }
+  return merged;
 }
 
 function saveRegistry(registry: RealDeployment[]) {
@@ -591,6 +653,75 @@ app.get("/api/deployments", (req, res) => {
   res.json(getRegistry());
 });
 
+// 1.1 API: Auto-register new deployments (SDK Ping)
+app.options("/api/deployments/register", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  res.sendStatus(200);
+});
+
+app.post("/api/deployments/register", express.json(), (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { id, name, subdomain, port, techStack, githubUrl } = req.body;
+    if (!name || !subdomain) {
+      return res.status(400).json({ error: "Missing required fields: name, subdomain" });
+    }
+
+    const registry = getRegistry();
+    const existingIdx = registry.findIndex(d => d.subdomain === subdomain || d.id === id);
+    
+    const newEntry: RealDeployment = {
+      id: id || `dep-sdk-${Date.now()}`,
+      name,
+      subdomain,
+      port: port || 3000,
+      techStack: techStack || "Unknown SDK",
+      status: "ONLINE",
+      cpu: Number((Math.random() * 2).toFixed(1)),
+      memory: Math.floor(Math.random() * 50) + 10,
+      visitors: Math.floor(Math.random() * 100) + 1,
+      githubUrl: githubUrl || ""
+    };
+
+    if (existingIdx >= 0) {
+      // Update existing
+      registry[existingIdx] = { ...registry[existingIdx], ...newEntry, id: registry[existingIdx].id };
+    } else {
+      registry.push(newEntry);
+    }
+    
+    saveRegistry(registry);
+
+    // Also update the database representation
+    const db = getDatabase();
+    const depTable = db.find(t => t.name === "deployments");
+    if (depTable) {
+      const dbIdx = depTable.rows.findIndex(r => r.subdomain === subdomain || r.id === newEntry.id);
+      const rowEntry = {
+        id: newEntry.id,
+        name: newEntry.name,
+        subdomain: newEntry.subdomain,
+        port: newEntry.port,
+        techStack: newEntry.techStack,
+        status: newEntry.status
+      };
+      if (dbIdx >= 0) {
+        depTable.rows[dbIdx] = { ...depTable.rows[dbIdx], ...rowEntry };
+      } else {
+        depTable.rows.push(rowEntry);
+      }
+      saveDatabase(db);
+    }
+
+    res.json({ success: true, message: "Deployment registered successfully", deployment: newEntry });
+  } catch (error) {
+    console.error("SDK Registration Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // Real database file path
 const DB_FILE = path.join(HOSTED_DIR, "phrscrowd.db.json");
 
@@ -602,7 +733,7 @@ interface DbTable {
 }
 
 function getDatabase(): DbTable[] {
-  return safeReadJson(DB_FILE, [
+  const defaults = [
     {
       name: "users",
       columns: "id, name, role, verified, phone",
@@ -615,10 +746,44 @@ function getDatabase(): DbTable[] {
       name: "deployments",
       columns: "id, name, subdomain, port, techStack, status",
       rows: [
-        { id: "dep-1", name: "PHRS Default Home", subdomain: "dashboard", port: 3001, techStack: "HTML/Tailwind", status: "ONLINE" }
+        { id: "dep-1", name: "All-in-One Library (AIOL)", subdomain: "aiol", port: 3001, techStack: "React & Node", status: "ONLINE" },
+        { id: "dep-2", name: "Civil Worker Book (CWRB)", subdomain: "cwrb", port: 3002, techStack: "Next.js & PostgreSQL", status: "ONLINE" },
+        { id: "dep-3", name: "AI Master Studio", subdomain: "aims", port: 3003, techStack: "React & Gemini AI", status: "ONLINE" }
       ]
     }
-  ]);
+  ];
+
+  const current = safeReadJson(DB_FILE, defaults);
+  let updated = false;
+
+  current.forEach(table => {
+    if (table.name === "deployments") {
+      const defaultRows = [
+        { id: "dep-1", name: "All-in-One Library (AIOL)", subdomain: "aiol", port: 3001, techStack: "React & Node", status: "ONLINE" },
+        { id: "dep-2", name: "Civil Worker Book (CWRB)", subdomain: "cwrb", port: 3002, techStack: "Next.js & PostgreSQL", status: "ONLINE" },
+        { id: "dep-3", name: "AI Master Studio", subdomain: "aims", port: 3003, techStack: "React & Gemini AI", status: "ONLINE" }
+      ];
+      
+      // Ensure the default apps exist and have correct names
+      defaultRows.forEach(defRow => {
+        const existingIdx = table.rows.findIndex(r => r.id === defRow.id);
+        if (existingIdx >= 0) {
+          if (table.rows[existingIdx].name !== defRow.name || table.rows[existingIdx].subdomain !== defRow.subdomain) {
+             table.rows[existingIdx] = { ...table.rows[existingIdx], ...defRow };
+             updated = true;
+          }
+        } else {
+          table.rows.push(defRow);
+          updated = true;
+        }
+      });
+    }
+  });
+
+  if (updated) {
+    saveDatabase(current);
+  }
+  return current;
 }
 
 function saveDatabase(db: DbTable[]) {
@@ -1870,7 +2035,15 @@ app.post("/api/sms/send", async (req, res) => {
   }
 });
 
+app.options("/api/otp/send", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.sendStatus(200);
+});
+
 app.post("/api/otp/send", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   try {
     const { phone, otp, message, content, text } = req.body || {};
     const targetPhone = phone || req.body.to || req.body.number || "";
@@ -1994,7 +2167,15 @@ app.post("/api/sms/generate-otp", async (req, res) => {
   }
 });
 
+app.options("/api/sms/verify-otp", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.sendStatus(200);
+});
+
 app.post("/api/sms/verify-otp", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   try {
     const db = safeReadJson(REALTIME_DB_FILE, { users: {}, settings: {}, sms_wallet: {}, sms_history: [] });
     const userOtp = req.body.otp ? req.body.otp.toString().trim() : "";

@@ -391,11 +391,12 @@ export async function sendOTP(phoneNumber) {
         "Content-Type": "application/json",
         "Authorization": \`Bearer \${PROJECT_KEY}\`
       },
-      body: JSON.stringify({ to: phoneNumber })
+      body: JSON.stringify({ phone: phoneNumber, otp: Math.floor(100000 + Math.random() * 900000).toString() })
     });
     return await response.json();
   } catch (err) {
     console.error("SMS Send Error:", err);
+    return { success: false, error: err.message };
   }
 }
 
@@ -408,18 +409,19 @@ export async function verifyOTP(phoneNumber, otpCode) {
         "Content-Type": "application/json",
         "Authorization": \`Bearer \${PROJECT_KEY}\`
       },
-      body: JSON.stringify({ phone: phoneNumber, code: otpCode })
+      body: JSON.stringify({ phone: phoneNumber, otp: otpCode })
     });
     return await response.json();
   } catch (err) {
     console.error("OTP Verify Error:", err);
+    return { success: false, error: err.message };
   }
 }`}
                       </pre>
                       <button 
                         className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
                         onClick={() => {
-                          const c = `// PHRS SMS & OTP Gateway Integration\nconst PHRS_GATEWAY = "${currentGateway}";\nconst PROJECT_KEY = "<YOUR_PROJECT_KEY>";\n\nexport async function sendOTP(phoneNumber) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/otp/send\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${PROJECT_KEY}\`\n      },\n      body: JSON.stringify({ to: phoneNumber })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("SMS Send Error:", err);\n  }\n}\n\nexport async function verifyOTP(phoneNumber, otpCode) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/sms/verify-otp\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${PROJECT_KEY}\`\n      },\n      body: JSON.stringify({ phone: phoneNumber, code: otpCode })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("OTP Verify Error:", err);\n  }\n}`;
+                          const c = `// PHRS SMS & OTP Gateway Integration\nconst PHRS_GATEWAY = "${currentGateway}";\nconst PROJECT_KEY = "<YOUR_PROJECT_KEY>";\n\nexport async function sendOTP(phoneNumber) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/otp/send\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${PROJECT_KEY}\`\n      },\n      body: JSON.stringify({ phone: phoneNumber, otp: Math.floor(100000 + Math.random() * 900000).toString() })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("SMS Send Error:", err);\n    return { success: false, error: err.message };\n  }\n}\n\nexport async function verifyOTP(phoneNumber, otpCode) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/sms/verify-otp\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${PROJECT_KEY}\`\n      },\n      body: JSON.stringify({ phone: phoneNumber, otp: otpCode })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("OTP Verify Error:", err);\n    return { success: false, error: err.message };\n  }\n}`;
                           navigator.clipboard.writeText(c);
                         }}
                         title="Copy Code"

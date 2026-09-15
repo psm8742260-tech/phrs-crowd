@@ -195,7 +195,7 @@ export default function CloudRunTab({ state }: { state: any }) {
                     <p className="text-sm text-slate-500 mb-4 flex items-center gap-1">
                       Deploy a website or API. <a href="#" className="text-[#1a73e8] hover:underline flex items-center gap-1">Learn more <LucideIcons.ExternalLink className="w-3 h-3" /></a>
                     </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <button 
                         onClick={() => { setCloudRunSubTab('Crowd Hosting'); setShowNewProjModal(true); }}
                         className="flex flex-col items-center justify-center gap-3 p-6 border border-slate-200 rounded-lg bg-white hover:border-[#1a73e8] hover:shadow-sm transition group"
@@ -219,7 +219,7 @@ export default function CloudRunTab({ state }: { state: any }) {
                     <p className="text-sm text-slate-500 mb-4 flex items-center gap-1">
                       Run scripts, cron jobs, or parallelized data processing workloads. <a href="#" className="text-[#1a73e8] hover:underline flex items-center gap-1">Learn more <LucideIcons.ExternalLink className="w-3 h-3" /></a>
                     </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <button 
                         onClick={() => { setCloudRunSubTab('Jobs'); setIsCreatingJob(true); }}
                         className="flex flex-col items-center justify-center gap-3 p-6 border border-slate-200 rounded-lg bg-white hover:border-[#1a73e8] hover:shadow-sm transition group"
@@ -243,18 +243,29 @@ export default function CloudRunTab({ state }: { state: any }) {
                     <p className="text-sm text-slate-500 mb-4 flex items-center gap-1">
                       Write and deploy functions or source code using your favorite language. <a href="#" className="text-[#1a73e8] hover:underline flex items-center gap-1">Learn more <LucideIcons.ExternalLink className="w-3 h-3" /></a>
                     </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      {['Node.js', 'Python', 'Go', 'Java', 'PHP', '.NET', 'Ruby'].map(lang => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {[
+                        { name: 'Node.js', icon: LucideIcons.Hexagon },
+                        { name: 'Python', icon: LucideIcons.Terminal },
+                        { name: 'Go', icon: LucideIcons.Zap },
+                        { name: 'Java', icon: LucideIcons.Coffee },
+                        { name: 'PHP', icon: LucideIcons.FileCode },
+                        { name: '.NET', icon: LucideIcons.Blocks },
+                        { name: 'Ruby', icon: LucideIcons.Gem }
+                      ].map(lang => (
                         <button 
-                          key={lang} 
+                          key={lang.name} 
                           onClick={() => {
-                            setActiveTab('Agent');
-                            setAgentChatInput(`Create a highly robust serverless function using ${lang} that handles requests securely.`);
+                            setActiveTab('agent_platform');
+                            setAgentChatInput(`Create a highly robust serverless function using ${lang.name} that handles requests securely.`);
+                            if (typeof state.setIsAgentPanelOpen === 'function') {
+                              state.setIsAgentPanelOpen(true);
+                            }
                           }}
                           className="flex flex-col items-center justify-center gap-3 p-6 border border-slate-200 rounded-lg bg-white hover:border-[#1a73e8] hover:shadow-sm transition group"
                         >
-                          <LucideIcons.Code2 className="w-8 h-8 text-slate-700 group-hover:text-[#1a73e8]" />
-                          <span className="text-sm font-medium text-slate-700 group-hover:text-[#1a73e8]">{lang}</span>
+                          <lang.icon className="w-8 h-8 text-slate-700 group-hover:text-[#1a73e8]" />
+                          <span className="text-sm font-medium text-slate-700 group-hover:text-[#1a73e8]">{lang.name}</span>
                         </button>
                       ))}
                     </div>
@@ -565,27 +576,27 @@ export default function CloudRunTab({ state }: { state: any }) {
                       RADAR NODES: {orchestratorNodes.length}
                     </div>
                     <div className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-mono font-bold border border-emerald-100">
-                      FLEET: {projects.length + orchestratorNodes.length} SERVICES ONLINE
+                      FLEET: {deployments.length > 0 ? deployments.length : projects.length + orchestratorNodes.length} SERVICES ONLINE
                     </div>
                   </div>
                 </div>
                 <div className="space-y-4">
-                  {[...orchestratorNodes, ...projects].map((project: any, idx: number) => (
+                  {[...deployments.map(d => ({ ...d, url: d.url || (d.subdomain ? `https://${d.subdomain}.phrscrowd.online` : "") })), ...orchestratorNodes, ...projects.filter(p => !deployments.find(d => d.name === p.name || d.id === p.id))].map((project: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className={`w-3 h-3 rounded-full ${project.status === 'Running' || project.status === 'ONLINE' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} title={project.status}></div>
                         <div>
                           <p className="font-bold text-slate-900 text-sm">{project.name || 'Untitled Service'} {project.pwaVersion ? <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 ml-2">v{project.pwaVersion}</span> : null}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-slate-500 uppercase font-mono bg-slate-100 px-1.5 py-0.5 rounded">asia-southeast1</span>
-                            <span className="text-[10px] text-slate-500 uppercase font-mono bg-slate-100 px-1.5 py-0.5 rounded">100% TRAFFIC</span>
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            <span className="text-[10px] text-slate-500 uppercase font-mono bg-slate-100 px-2 py-1 rounded whitespace-nowrap">asia-southeast1</span>
+                            <span className="text-[10px] text-slate-500 uppercase font-mono bg-slate-100 px-2 py-1 rounded whitespace-nowrap">100% TRAFFIC</span>
                             {project.url && (
-                              <div className="flex items-center gap-3">
+                              <div className="flex flex-wrap items-center gap-2 mt-1 sm:mt-0">
                                 <a 
                                   href={project.url} 
                                   target="_blank" 
                                   rel="noreferrer" 
-                                  className="text-[10px] text-slate-500 font-bold hover:text-indigo-600 hover:underline flex items-center gap-1"
+                                  className="text-[10px] text-slate-600 font-bold hover:text-indigo-600 hover:underline flex items-center gap-1 bg-white border border-slate-200 px-2 py-1 rounded shadow-sm whitespace-nowrap"
                                   title="Domain Link"
                                 >
                                   <ExternalLink className="w-3 h-3" />
@@ -596,7 +607,7 @@ export default function CloudRunTab({ state }: { state: any }) {
                                     href={`/hosted/${project.url.replace('https://', '').replace('.phrscrowd.online/', '').replace(/\/$/, '')}/`}
                                     target="_blank" 
                                     rel="noreferrer" 
-                                    className="text-[10px] text-emerald-600 font-bold hover:text-emerald-700 hover:underline flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 shadow-sm"
+                                    className="text-[10px] text-emerald-700 font-bold hover:text-emerald-800 hover:underline flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 shadow-sm whitespace-nowrap"
                                     title="Direct Path Link (Works instantly without DNS)"
                                   >
                                     <ExternalLink className="w-3 h-3" />

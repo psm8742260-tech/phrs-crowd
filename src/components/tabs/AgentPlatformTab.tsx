@@ -271,14 +271,13 @@ export default function AgentPlatformTab({ state }: { state: any }) {
                       </div>
                     </div>
 
-                    <div className="md:col-span-3 p-6 rounded-xl border border-indigo-100 bg-indigo-50/30 space-y-4">
+                    <div className="md:col-span-3 p-5 rounded-xl border border-indigo-100 bg-indigo-50/30 space-y-4">
                       <div>
-                        <h3 className="font-bold text-sm text-indigo-900 mb-1">Welcome to AI Master Studio (ఏఐ మాస్టర్ స్టూడియో)</h3>
+                        <h3 className="font-bold text-sm text-indigo-900 mb-1">Welcome to AI Master Studio</h3>
                         <p className="text-xs text-indigo-700/80 leading-relaxed">
-                          గూగుల్ క్లౌడ్‌కు "Google AI Studio" ఎలాగో, మన **PHRS Crowd Server** కు ఈ **AI Master Studio** అలా అనుసంధానమై ఉంది! ఇక్కడి నుండి మీరు నేరుగా మీ స్వంత అటానమస్ ఏఐ ఏజెంట్లను డిప్లాయ్ చేయవచ్చు, డీప్ సీక్ ఏపీఐతో చాట్ చేయవచ్చు మరియు పూర్తి సర్వర్ లోడ్‌ను ఆటోమేటిక్‌గా పర్యవేక్షించవచ్చు.
+                          Deploy autonomous AI agents and monitor your PHRS Crowd Server.
                         </p>
                       </div>
-
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-indigo-100/50">
                         <div className="bg-white p-3 rounded-lg border border-indigo-50/80 flex items-center justify-between">
                           <div>
