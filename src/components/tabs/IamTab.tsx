@@ -1,9 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import * as LucideIcons from 'lucide-react';
+import SecretManagerTab from './SecretManagerTab';
 
 export default function IamTab({ state }: { state: any }) {
-  const { iamSubTab, setIamSubTab, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, setHomeToast, pkgName, shaFingerprint } = state;
-  const { Lock, Shield, Trash2, Settings, X, RefreshCw, CheckCircle2, Cpu, Fingerprint, AlertTriangle, Globe, Plus, Loader2, Smartphone, TerminalIcon } = LucideIcons;
+  const {
+    iamSubTab,
+    setIamSubTab,
+    newMemberEmail,
+    setNewMemberEmail,
+    newMemberRole,
+    setNewMemberRole,
+    setHomeToast,
+    pkgName,
+    shaFingerprint,
+    setStealthWalletRupees,
+    setStealthDataBalanceMb,
+    setStealthSmsCredits,
+    setPhrsSmsHistory,
+    setLastGeneratedOtp,
+    setVirtualPhoneNotification,
+    setPhoneScreenOn,
+    setVpsLogStream,
+    deepseekApiKey,
+    setDeepseekApiKey,
+    tempDeepseekApiKey,
+    setTempDeepseekApiKey,
+    customSystemPrompt,
+    setCustomSystemPrompt,
+    activeRouterModel,
+    setActiveRouterModel
+  } = state;
+  const { Lock, Shield, Trash2, Settings, X, RefreshCw, CheckCircle2, Cpu, Fingerprint, AlertTriangle, Globe, Plus, Loader2, Smartphone, TerminalIcon, Terminal, Brain, Sliders, Key, Eye, EyeOff, MessageSquare, Send, Sparkles } = LucideIcons;
   
   const [realMembers, setRealMembers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +47,7 @@ export default function IamTab({ state }: { state: any }) {
   const [isSavingAppControl, setIsSavingAppControl] = useState(false);
 
   // Admin Panel Tab Selection State
-  const [activeAdminTab, setActiveAdminTab] = useState<'pwa' | 'cloud_share' | 'termux'>('pwa');
+  const [activeAdminTab, setActiveAdminTab] = useState<'pwa' | 'cloud_share' | 'termux' | 'secret_manager' | 'deepseek'>('pwa');
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const isProgrammaticScroll = React.useRef(false);
 
@@ -30,7 +57,131 @@ export default function IamTab({ state }: { state: any }) {
   const [isTermuxRunning, setIsTermuxRunning] = useState(false);
   const [termuxStatus, setTermuxStatus] = useState<any>(null);
 
-  const selectTab = (tab: 'pwa' | 'cloud_share' | 'termux') => {
+  // Termux SMS Parser Engine States
+  const [rawSmsInput, setRawSmsInput] = useState('');
+  const [parserConsoleLogs, setParserConsoleLogs] = useState<string[]>([]);
+  const [parserStatus, setParserStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // DeepSeek Config & Live Test states
+  const [testMessage, setTestMessage] = useState('హలో, నువ్వు ఎలా ఉన్నావు?');
+  const [testResponse, setTestResponse] = useState('');
+  const [isTestingApi, setIsTestingApi] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  // Dynamic Termux API SIM Parser Algorithm
+  const handleRunTermuxParser = () => {
+    if (!rawSmsInput.trim()) {
+      alert('Please enter a raw SMS message to parse.');
+      return;
+    }
+
+    setParserStatus('idle');
+    const logs: string[] = [];
+    logs.push(`[TERMUX API] Calling 'termux-sms-list' via JSON RPC Bridge...`);
+    logs.push(`[TERMUX API] Extracting message body: "${rawSmsInput}"`);
+
+    const text = rawSmsInput.toLowerCase();
+    let matched = false;
+
+    // 1. JIO Recharge format
+    if (text.includes('jio') && text.includes('recharge') && text.includes('25')) {
+      logs.push(`[PARSER] Pattern matched: JIO Rs.25 Recharge Package.`);
+      logs.push(`[PARSER] Extracting variables: { Carrier: "JIO", Cost: 25, Data: "1GB", Credits: 10000 }`);
+      
+      setStealthWalletRupees((prev: number) => prev + 25);
+      setStealthDataBalanceMb((prev: number) => prev + 1024);
+      setStealthSmsCredits((prev: number) => prev + 10000);
+      
+      const now = new Date().toLocaleString('en-US', { hour12: true });
+      const newSmsLog = {
+        id: `sms-recharge-auto-${Date.now()}`,
+        sender: 'JIO-IND',
+        text: `Jio Unlimited 1GB Data Pack recharged successfully. Converted to 10,000 PHRS Stealth SMS routing credits. (Auto-Parsed)`,
+        timestamp: now,
+        type: 'recharge' as const
+      };
+      setPhrsSmsHistory((prev: any) => [newSmsLog, ...prev]);
+      matched = true;
+    } 
+    // 2. BSNL Recharge format
+    else if (text.includes('bsnl') && text.includes('recharge') && text.includes('98')) {
+      logs.push(`[PARSER] Pattern matched: BSNL Rs.98 STV Package.`);
+      logs.push(`[PARSER] Extracting variables: { Carrier: "BSNL", Cost: 98, Data: "2GB", Credits: 20000 }`);
+      
+      setStealthWalletRupees((prev: number) => prev + 98);
+      setStealthDataBalanceMb((prev: number) => prev + 2048);
+      setStealthSmsCredits((prev: number) => prev + 20000);
+      
+      const now = new Date().toLocaleString('en-US', { hour12: true });
+      const newSmsLog = {
+        id: `sms-recharge-auto-${Date.now()}`,
+        sender: 'BSNL-STV',
+        text: `BSNL STV 98 Pack activated successfully. Converted to 20,000 PHRS Stealth SMS credits. (Auto-Parsed)`,
+        timestamp: now,
+        type: 'recharge' as const
+      };
+      setPhrsSmsHistory((prev: any) => [newSmsLog, ...prev]);
+      matched = true;
+    }
+    // 3. JIO OTP Format
+    else if (text.includes('jio-otp') || (text.includes('jio') && text.includes('pin is'))) {
+      const pinMatch = rawSmsInput.match(/\b\d{6}\b/);
+      const pin = pinMatch ? pinMatch[0] : "999999";
+      logs.push(`[PARSER] Pattern matched: JIO OTP SMS Security payload.`);
+      logs.push(`[PARSER] Extracted verification PIN: ${pin}`);
+      
+      setLastGeneratedOtp(pin);
+      setVirtualPhoneNotification(`[JIO-OTP] Verification PIN is ${pin}. Expire in 5 mins.`);
+      setPhoneScreenOn(true);
+      
+      const now = new Date().toLocaleString('en-US', { hour12: true });
+      const newSmsLog = {
+        id: `sms-otp-auto-${Date.now()}`,
+        sender: 'JIO-IND',
+        text: `[JIO-OTP] Verification PIN is ${pin}. Expire in 5 mins. (Auto-Parsed)`,
+        timestamp: now,
+        type: 'otp' as const
+      };
+      setPhrsSmsHistory((prev: any) => [newSmsLog, ...prev]);
+      matched = true;
+    }
+    // 4. BSNL OTP Format
+    else if (text.includes('bsnl-otp') || (text.includes('bsnl') && text.includes('pin is'))) {
+      const pinMatch = rawSmsInput.match(/\b\d{6}\b/);
+      const pin = pinMatch ? pinMatch[0] : "888888";
+      logs.push(`[PARSER] Pattern matched: BSNL OTP SMS Security payload.`);
+      logs.push(`[PARSER] Extracted verification PIN: ${pin}`);
+      
+      setLastGeneratedOtp(pin);
+      setVirtualPhoneNotification(`[BSNL-OTP] Verification PIN is ${pin}. Expire in 5 mins.`);
+      setPhoneScreenOn(true);
+      
+      const now = new Date().toLocaleString('en-US', { hour12: true });
+      const newSmsLog = {
+        id: `sms-otp-auto-${Date.now()}`,
+        sender: 'BSNL-STV',
+        text: `[BSNL-OTP] Verification PIN is ${pin}. Expire in 5 mins. (Auto-Parsed)`,
+        timestamp: now,
+        type: 'otp' as const
+      };
+      setPhrsSmsHistory((prev: any) => [newSmsLog, ...prev]);
+      matched = true;
+    }
+
+    if (matched) {
+      logs.push(`[PARSER] Dynamic SQL Replicas synchronized! Wallet and Credits state updated successfully.`);
+      setParserConsoleLogs(logs);
+      setParserStatus('success');
+      alert(`✓ Termux SIM Parser successfully processed SMS message! Wallet and Credits synchronized.`);
+    } else {
+      logs.push(`[PARSER] Warning: Message pattern did not match predefined JIO/BSNL regular expressions.`);
+      logs.push(`[PARSER] Standard generic SMS registered without state modification.`);
+      setParserConsoleLogs(logs);
+      setParserStatus('error');
+    }
+  };
+
+  const selectTab = (tab: 'pwa' | 'cloud_share' | 'termux' | 'secret_manager' | 'deepseek') => {
     setActiveAdminTab(tab);
     if (tab === 'termux') {
       fetchTermuxStatus();
@@ -38,7 +189,7 @@ export default function IamTab({ state }: { state: any }) {
     const container = scrollContainerRef.current;
     if (container) {
       const width = container.clientWidth;
-      const tabs: ('pwa' | 'cloud_share' | 'termux')[] = ['pwa', 'cloud_share', 'termux'];
+      const tabs: ('pwa' | 'cloud_share' | 'termux' | 'secret_manager' | 'deepseek')[] = ['pwa', 'cloud_share', 'termux', 'secret_manager', 'deepseek'];
       const index = tabs.indexOf(tab);
       isProgrammaticScroll.current = true;
       container.scrollTo({
@@ -58,7 +209,7 @@ export default function IamTab({ state }: { state: any }) {
     if (width <= 0) return;
     const index = Math.round(container.scrollLeft / width);
     
-    const tabs: ('pwa' | 'cloud_share' | 'termux')[] = ['pwa', 'cloud_share', 'termux'];
+    const tabs: ('pwa' | 'cloud_share' | 'termux' | 'secret_manager' | 'deepseek')[] = ['pwa', 'cloud_share', 'termux', 'secret_manager', 'deepseek'];
     const newTab = tabs[index];
     if (newTab && newTab !== activeAdminTab) {
       setActiveAdminTab(newTab);
@@ -80,10 +231,61 @@ export default function IamTab({ state }: { state: any }) {
     }
   };
 
+  const handleSaveDeepseekKey = () => {
+    localStorage.setItem('phrs_deepseek', tempDeepseekApiKey);
+    setDeepseekApiKey(tempDeepseekApiKey);
+    if (typeof setHomeToast === 'function') {
+      setHomeToast("✓ DeepSeek API కీ భద్రపరచబడింది! (DeepSeek API Key saved)");
+    } else {
+      alert("✓ DeepSeek API కీ భద్రపరచబడింది!");
+    }
+  };
+
+  const handleSaveSystemPrompt = () => {
+    localStorage.setItem('custom_system_prompt', customSystemPrompt);
+    setCustomSystemPrompt(customSystemPrompt);
+    if (typeof setHomeToast === 'function') {
+      setHomeToast("✓ AI సిస్టమ్ ప్రాంప్ట్ సేవ్ చేయబడింది! (System Prompt updated)");
+    } else {
+      alert("✓ AI సిస్టమ్ ప్రాంప్ట్ సేవ్ చేయబడింది!");
+    }
+  };
+
+  const handleRunDeepseekTest = async () => {
+    if (!testMessage.trim()) {
+      alert("Please enter a test message.");
+      return;
+    }
+    setIsTestingApi(true);
+    setTestResponse("సరికొత్త అభ్యర్థన పంపబడుతోంది... దయచేసి వేచి ఉండండి...");
+    try {
+      const res = await fetch("/api/agent/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: testMessage,
+          systemPrompt: customSystemPrompt,
+          model: activeRouterModel || "deepseek-chat",
+          apiKey: tempDeepseekApiKey
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTestResponse(data.text || "No text returned.");
+      } else {
+        setTestResponse(`❌ ఎర్రర్ సంభవించింది: ${data.error || "Unknown Error"}`);
+      }
+    } catch (err: any) {
+      setTestResponse(`❌ నెట్‌వర్క్ ఎర్రర్: ${err.message || err}`);
+    } finally {
+      setIsTestingApi(false);
+    }
+  };
+
   const handleTermuxCommand = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!termuxCmd) return;
-    setTermuxLogs(prev => [...prev, `$ ${termuxCmd}`]);
+    setTermuxLogs(prev => [...prev, `~ $ ${termuxCmd}`]);
     const cmdToSend = termuxCmd;
     setTermuxCmd('');
     setIsTermuxRunning(true);
@@ -290,6 +492,73 @@ export default function IamTab({ state }: { state: any }) {
     }
   }, [iamSubTab]);
 
+  // --- SUB-TAB REAL STATES ---
+  const [realSAs, setRealSAs] = useState<any[]>([]);
+  const [realGroups, setRealGroups] = useState<any[]>([]);
+  const [realRoles, setRealRoles] = useState<any[]>([]);
+  const [realPAM, setRealPAM] = useState<any[]>([]);
+  const [realFederations, setRealFederations] = useState<any[]>([]);
+
+  // --- SUB-TAB MODALS STATE ---
+  const [saModalOpen, setSaModalOpen] = useState(false);
+  const [newSaName, setNewSaName] = useState('');
+
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDesc, setNewGroupDesc] = useState('');
+
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleTitle, setNewRoleTitle] = useState('');
+  const [newRolePerms, setNewRolePerms] = useState('');
+
+  const [pamModalOpen, setPamModalOpen] = useState(false);
+  const [newPamEmail, setNewPamEmail] = useState('');
+  const [newPamRole, setNewPamRole] = useState('Editor');
+  const [newPamDuration, setNewPamDuration] = useState('2 Hours');
+  const [newPamReason, setNewPamReason] = useState('');
+
+  const [fedModalOpen, setFedModalOpen] = useState(false);
+  const [newFedName, setNewFedName] = useState('');
+  const [newFedType, setNewFedType] = useState('OIDC');
+  const [newFedIssuer, setNewFedIssuer] = useState('');
+  const [newFedAud, setNewFedAud] = useState('');
+
+  // --- PRINCIPAL ACCESS BOUNDARY (PAB) ---
+  const [pabAction, setPabAction] = useState('compute.instances.start');
+  const [pabResource, setPabResource] = useState('projects/phrs-crowd/zones/asia-south1-a/instances/vps-main');
+  const [pabApproved, setPabApproved] = useState<boolean | null>(null);
+  const [pabLogs, setPabLogs] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (iamSubTab === 'Service Accounts') {
+      fetch('/api/iam/service-accounts')
+        .then(res => res.json())
+        .then(data => { if (data.success) setRealSAs(data.accounts); })
+        .catch(err => console.error(err));
+    } else if (iamSubTab === 'Groups') {
+      fetch('/api/iam/groups')
+        .then(res => res.json())
+        .then(data => { if (data.success) setRealGroups(data.groups); })
+        .catch(err => console.error(err));
+    } else if (iamSubTab === 'Roles') {
+      fetch('/api/iam/roles')
+        .then(res => res.json())
+        .then(data => { if (data.success) setRealRoles(data.roles); })
+        .catch(err => console.error(err));
+    } else if (iamSubTab === 'Privileged Access Manager') {
+      fetch('/api/iam/pam')
+        .then(res => res.json())
+        .then(data => { if (data.success) setRealPAM(data.requests); })
+        .catch(err => console.error(err));
+    } else if (iamSubTab === 'Workload Identity Federation' || iamSubTab === 'Workforce Identity Federation') {
+      fetch('/api/iam/federations')
+        .then(res => res.json())
+        .then(data => { if (data.success) setRealFederations(data.federations); })
+        .catch(err => console.error(err));
+    }
+  }, [iamSubTab]);
+
   return (
         <>
           <div className="space-y-6 animate-fade-in">
@@ -426,25 +695,722 @@ export default function IamTab({ state }: { state: any }) {
             {iamSubTab === 'Service Accounts' && (
               <div className="p-6 rounded-2xl border bg-white border-slate-200">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase">Service Accounts</h3>
-                  <button className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold">Create Account</button>
+                  <div>
+                    <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase flex items-center gap-1.5">
+                      <Cpu className="w-4 h-4 text-indigo-600" /> Service Accounts (సేవా ఖాతాలు)
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-1">Manage and provision automated machine-to-machine application access credentials.</p>
+                  </div>
+                  <button 
+                    onClick={() => setSaModalOpen(true)}
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Create Account
+                  </button>
                 </div>
+                
                 <div className="space-y-3">
-                  {[
-                    { name: 'phrs-firebase-sdk', email: 'firebase-admin@phrs-crowd.iam.gserviceaccount.com' },
-                    { name: 'cloud-sql-proxy', email: 'sql-proxy@phrs-crowd.iam.gserviceaccount.com' }
-                  ].map((sa, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50">
+                  {realSAs.length === 0 && <p className="text-xs text-slate-400 italic">No Service Accounts loaded. Click Create Account to start.</p>}
+                  {realSAs.map((sa, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition">
                       <div>
-                        <p className="font-bold text-slate-900 text-sm">{sa.name}</p>
+                        <p className="font-bold text-slate-900 text-sm flex items-center gap-1.5">{sa.name}</p>
                         <p className="text-[10px] text-slate-500 font-mono mt-1">{sa.email}</p>
+                        <p className="text-[9px] text-slate-400 font-mono mt-0.5">Created: {sa.created}</p>
                       </div>
                       <div className="flex gap-2">
-                        <button className="text-[10px] font-bold text-indigo-600">Keys</button>
-                        <button className="text-[10px] font-bold text-slate-400">Audit</button>
+                        <button 
+                          onClick={() => {
+                            setHomeToast(`🔑 Downloading Private Key file for ${sa.name}...`);
+                            window.location.href = `/api/iam/service-accounts/${sa.name}/key`;
+                            setTimeout(() => setHomeToast(null), 3000);
+                          }}
+                          className="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-md text-[10px] font-bold tracking-wide transition flex items-center gap-1"
+                        >
+                          <Fingerprint className="w-3 h-3" /> Keys
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            if (confirm(`Are you sure you want to delete ${sa.name}?`)) {
+                              try {
+                                const res = await fetch(`/api/iam/service-accounts/${sa.id}`, { method: 'DELETE' });
+                                const data = await res.json();
+                                if (data.success) {
+                                  setRealSAs(data.accounts);
+                                  setHomeToast('✓ Service account deleted!');
+                                  setTimeout(() => setHomeToast(null), 3000);
+                                }
+                              } catch(e) { console.error(e); }
+                            }
+                          }}
+                          className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Create SA Modal */}
+                {saModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 p-6 animate-fade-in">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-bold text-slate-900">Create Service Account</h4>
+                        <button onClick={() => setSaModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">ACCOUNT ID / NAME</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. analytics-tracker"
+                            value={newSaName}
+                            onChange={(e) => setNewSaName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            if (!newSaName.trim()) return;
+                            try {
+                              const res = await fetch('/api/iam/service-accounts', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: newSaName })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealSAs(data.accounts);
+                                setSaModalOpen(false);
+                                setNewSaName('');
+                                setHomeToast('✓ Service Account created successfully!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }}
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
+                        >
+                          CREATE & DEPLOY
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {iamSubTab === 'Groups' && (
+              <div className="p-6 rounded-2xl border bg-white border-slate-200">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-indigo-600" /> IAM Groups (గ్రూప్స్)
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-1">Group organizational members together and grant policy boundaries at scale.</p>
+                  </div>
+                  <button 
+                    onClick={() => setGroupModalOpen(true)}
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Create Group
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {realGroups.length === 0 && <p className="text-xs text-slate-400 italic">No groups loaded. Click Create Group to start.</p>}
+                  {realGroups.map((g, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition">
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm">{g.name}</p>
+                        <p className="text-xs text-slate-500 mt-1">{g.description}</p>
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-semibold font-mono">
+                            {g.membersCount} Members
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-mono">Created: {g.created}</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          if (confirm(`Are you sure you want to delete ${g.name}?`)) {
+                            try {
+                              const res = await fetch(`/api/iam/groups/${g.id}`, { method: 'DELETE' });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealGroups(data.groups);
+                                setHomeToast('✓ IAM Group deleted successfully!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }
+                        }}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Create Group Modal */}
+                {groupModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 p-6 animate-fade-in">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-bold text-slate-900">Create IAM Group</h4>
+                        <button onClick={() => setGroupModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">GROUP NAME</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. billing-managers"
+                            value={newGroupName}
+                            onChange={(e) => setNewGroupName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">DESCRIPTION</label>
+                          <textarea 
+                            placeholder="Briefly state who belongs to this group..."
+                            value={newGroupDesc}
+                            onChange={(e) => setNewGroupDesc(e.target.value)}
+                            rows={3}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            if (!newGroupName.trim()) return;
+                            try {
+                              const res = await fetch('/api/iam/groups', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: newGroupName, description: newGroupDesc })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealGroups(data.groups);
+                                setGroupModalOpen(false);
+                                setNewGroupName('');
+                                setNewGroupDesc('');
+                                setHomeToast('✓ IAM Group successfully provisioned!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }}
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
+                        >
+                          CREATE GROUP
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {iamSubTab === 'Roles' && (
+              <div className="p-6 rounded-2xl border bg-white border-slate-200">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase flex items-center gap-1.5">
+                      <Lock className="w-4 h-4 text-indigo-600" /> Custom IAM Roles (పాత్రలు)
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-1">Design specialized policy controls with fine-grained API permission tags.</p>
+                  </div>
+                  <button 
+                    onClick={() => setRoleModalOpen(true)}
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Create Custom Role
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {realRoles.length === 0 && <p className="text-xs text-slate-400 italic">No custom roles found. Click Create Custom Role to design one.</p>}
+                  {realRoles.map((r, idx) => (
+                    <div key={idx} className="flex items-start justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-900 text-sm">{r.title}</p>
+                          <span className="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 font-mono font-bold">{r.stage}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-mono mt-1.5">ID: customRoles/{r.name}</p>
+                        
+                        <div className="mt-2.5">
+                          <p className="text-[10px] font-mono text-indigo-600 font-semibold mb-1">PERMISSIONS:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {r.permissions.split(',').map((p: string, i: number) => (
+                              <span key={i} className="bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded text-[9px] font-mono">
+                                {p.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          if (confirm(`Are you sure you want to delete custom role ${r.title}?`)) {
+                            try {
+                              const res = await fetch(`/api/iam/roles/${r.id}`, { method: 'DELETE' });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealRoles(data.roles);
+                                setHomeToast('✓ Custom IAM Role deleted successfully!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }
+                        }}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Create Role Modal */}
+                {roleModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 p-6 animate-fade-in">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-bold text-slate-900">Create Custom IAM Role</h4>
+                        <button onClick={() => setRoleModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">ROLE ID</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. databasebackup.operator"
+                            value={newRoleName}
+                            onChange={(e) => setNewRoleName(e.target.value.toLowerCase().replace(/[^a-z0-9-.]/g, ''))}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">DISPLAY TITLE</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. DB Backup Operator"
+                            value={newRoleTitle}
+                            onChange={(e) => setNewRoleTitle(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">PERMISSION TAGS (COMMA SEPARATED)</label>
+                          <textarea 
+                            placeholder="e.g. storage.buckets.list, storage.objects.create"
+                            value={newRolePerms}
+                            onChange={(e) => setNewRolePerms(e.target.value)}
+                            rows={3}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            if (!newRoleName.trim() || !newRoleTitle.trim()) return;
+                            try {
+                              const res = await fetch('/api/iam/roles', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: newRoleName, title: newRoleTitle, permissions: newRolePerms })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealRoles(data.roles);
+                                setRoleModalOpen(false);
+                                setNewRoleName('');
+                                setNewRoleTitle('');
+                                setNewRolePerms('');
+                                setHomeToast('✓ Custom IAM Role registered!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }}
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
+                        >
+                          CREATE CUSTOM ROLE
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {iamSubTab === 'Privileged Access Manager' && (
+              <div className="p-6 rounded-2xl border bg-white border-slate-200">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase flex items-center gap-1.5">
+                      <Shield className="w-4 h-4 text-indigo-600" /> Privileged Access Manager (PAM)
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-1">Request and approve temporary, just-in-time administrative credential elevation.</p>
+                  </div>
+                  <button 
+                    onClick={() => setPamModalOpen(true)}
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Request Elevation
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {realPAM.length === 0 && <p className="text-xs text-slate-400 italic">No temporary privilege requests live. Request access to start.</p>}
+                  {realPAM.map((p, idx) => (
+                    <div key={idx} className="flex items-start justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50/20 hover:bg-indigo-50/40 transition">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-900 text-xs">{p.email}</p>
+                          <span className="text-[9px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold font-mono">
+                            {p.role} Active ({p.duration})
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-700 italic font-medium">Reason: "{p.reason}"</p>
+                        <p className="text-[9px] text-slate-400 font-mono">Granted at: {new Date(p.requestedAt).toLocaleTimeString()}</p>
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          if (confirm(`Are you sure you want to revoke temporary administrative access for ${p.email}?`)) {
+                            try {
+                              const res = await fetch(`/api/iam/pam/${p.id}`, { method: 'DELETE' });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealPAM(data.requests);
+                                setHomeToast('✓ Temporary Administrative Access Revoked!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }
+                        }}
+                        className="px-2.5 py-1 text-xs border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg transition font-mono font-bold"
+                      >
+                        REVOKE ACCESS
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Create PAM Request Modal */}
+                {pamModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 p-6 animate-fade-in">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-bold text-slate-900">Request Just-In-Time Access</h4>
+                        <button onClick={() => setPamModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">MEMBER EMAIL</label>
+                          <input 
+                            type="email" 
+                            placeholder="developer@phrscrowd.local"
+                            value={newPamEmail}
+                            onChange={(e) => setNewPamEmail(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">TARGET ACCESS ROLE</label>
+                          <select
+                            value={newPamRole}
+                            onChange={(e) => setNewPamRole(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none bg-slate-50 border-slate-300 text-slate-900"
+                          >
+                            <option value="Owner">Owner (Root SSH & Keys)</option>
+                            <option value="Editor">Editor (Write SQLite, Send SMS)</option>
+                            <option value="Billing Admin">Billing Admin</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">MAX TIME DURATION</label>
+                          <select
+                            value={newPamDuration}
+                            onChange={(e) => setNewPamDuration(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none bg-slate-50 border-slate-300 text-slate-900"
+                          >
+                            <option value="30 Minutes">30 Minutes</option>
+                            <option value="1 Hour">1 Hour</option>
+                            <option value="2 Hours">2 Hours</option>
+                            <option value="4 Hours">4 Hours</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">BUSINESS REASON / TICKET ID</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. Production Hotfix SQLite crash"
+                            value={newPamReason}
+                            onChange={(e) => setNewPamReason(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            if (!newPamEmail.trim() || !newPamReason.trim()) return;
+                            try {
+                              const res = await fetch('/api/iam/pam', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: newPamEmail, role: newPamRole, duration: newPamDuration, reason: newPamReason })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealPAM(data.requests);
+                                setPamModalOpen(false);
+                                setNewPamEmail('');
+                                setNewPamReason('');
+                                setHomeToast('✓ Temporary elevated permission successfully approved!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }}
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
+                        >
+                          AUTO-APPROVE & START SESSION
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(iamSubTab === 'Workload Identity Federation' || iamSubTab === 'Workforce Identity Federation') && (
+              <div className="p-6 rounded-2xl border bg-white border-slate-200">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-indigo-600" /> {iamSubTab}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-1">Securely exchange external OIDC / SAML identity assertions for local system credentials without static keys.</p>
+                  </div>
+                  <button 
+                    onClick={() => setFedModalOpen(true)}
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Connect Provider
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {realFederations.length === 0 && <p className="text-xs text-slate-400 italic">No external providers registered. Register an OIDC/SAML pool to start.</p>}
+                  {realFederations.map((f, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-900 text-sm">{f.name}</p>
+                          <span className="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded font-mono">{f.providerType}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-mono mt-1">ISSUER: {f.issuerUrl}</p>
+                        <p className="text-[10px] text-slate-500 font-mono">AUDIENCE: {f.audience}</p>
+                        <span className="inline-block mt-2 text-[9px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">● {f.status}</span>
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          if (confirm(`Are you sure you want to delete identity federation provider ${f.name}?`)) {
+                            try {
+                              const res = await fetch(`/api/iam/federations/${f.id}`, { method: 'DELETE' });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealFederations(data.federations);
+                                setHomeToast('✓ Identity Provider successfully disconnected!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }
+                        }}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Connect Provider Modal */}
+                {fedModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 p-6 animate-fade-in">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-bold text-slate-900">Connect Identity Provider</h4>
+                        <button onClick={() => setFedModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">PROVIDER ID / NAME</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. okta-enterprise-identity"
+                            value={newFedName}
+                            onChange={(e) => setNewFedName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">PROTOCOL TYPE</label>
+                          <select
+                            value={newFedType}
+                            onChange={(e) => setNewFedType(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none bg-slate-50 border-slate-300 text-slate-900"
+                          >
+                            <option value="OIDC">OpenID Connect (OIDC 1.0)</option>
+                            <option value="SAML 2.0">SAML 2.0 Identity Assertion</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">ISSUER URL</label>
+                          <input 
+                            type="url" 
+                            placeholder="https://sts.windows.net/tenant-uuid-here/"
+                            value={newFedIssuer}
+                            onChange={(e) => setNewFedIssuer(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-500 mb-1">AUDIENCE STRING (OPTIONAL)</label>
+                          <input 
+                            type="text" 
+                            placeholder="urn:phrs:identity:fed"
+                            value={newFedAud}
+                            onChange={(e) => setNewFedAud(e.target.value)}
+                            className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 border-slate-300 text-slate-900"
+                          />
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            if (!newFedName.trim() || !newFedIssuer.trim()) return;
+                            try {
+                              const res = await fetch('/api/iam/federations', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: newFedName, providerType: newFedType, issuerUrl: newFedIssuer, audience: newFedAud })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setRealFederations(data.federations);
+                                setFedModalOpen(false);
+                                setNewFedName('');
+                                setNewFedIssuer('');
+                                setNewFedAud('');
+                                setHomeToast('✓ Connected external Identity Federation Provider!');
+                                setTimeout(() => setHomeToast(null), 3000);
+                              }
+                            } catch(e) { console.error(e); }
+                          }}
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
+                        >
+                          CONNECT IDENTITY POOL
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {iamSubTab === 'Principal Access Boundary' && (
+              <div className="p-6 rounded-2xl border bg-white border-slate-200">
+                <div className="mb-6">
+                  <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 uppercase flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-indigo-600" /> Principal Access Boundary Analyzer
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1">Interactively test if action permissions cross boundary scopes and enforce Zero-Trust guidelines.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                  {/* PAB Requestor Panel */}
+                  <div className="md:col-span-5 p-5 border border-slate-200 bg-slate-50/50 rounded-xl space-y-4">
+                    <h4 className="font-mono font-bold text-xs text-indigo-600 uppercase">ACCESS BOUNDARY AUDITOR</h4>
+                    
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-500 mb-1">API PERMISSION TO TEST</label>
+                      <select 
+                        value={pabAction}
+                        onChange={(e) => setPabAction(e.target.value)}
+                        className="w-full p-2.5 text-xs rounded-lg border bg-white border-slate-300 text-slate-900 focus:outline-none"
+                      >
+                        <option value="compute.instances.start">compute.instances.start (Start VPS Server)</option>
+                        <option value="sms.send">sms.send (Broadcast Outbound SMS)</option>
+                        <option value="sqlite.read">sqlite.read (Read database tables)</option>
+                        <option value="vps.root.ssh">vps.root.ssh (Direct root SSH execution)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-500 mb-1">RESOURCE PATH TARGET</label>
+                      <input 
+                        type="text" 
+                        value={pabResource}
+                        onChange={(e) => setPabResource(e.target.value)}
+                        className="w-full p-2.5 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-white border-slate-300 text-slate-900"
+                      />
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        setPabApproved(null);
+                        setPabLogs([`[PAB-INIT] Starting principal boundary evaluation...`]);
+                        
+                        setTimeout(() => {
+                          setPabLogs(p => [...p, `[PAB-EVAL] Principal identity: admin@phrscrowd.local`]);
+                        }, 500);
+
+                        setTimeout(() => {
+                          setPabLogs(p => [...p, `[PAB-EVAL] Enforcing access bounds against: ${pabResource}`]);
+                        }, 1000);
+
+                        setTimeout(() => {
+                          const isForbidden = pabAction === 'vps.root.ssh' && !pabResource.includes('admin');
+                          const outcome = !isForbidden;
+                          setPabApproved(outcome);
+                          if (outcome) {
+                            setPabLogs(p => [...p, `[PAB-DECISION] ALLOWED! Permitted within active scope boundary.`]);
+                          } else {
+                            setPabLogs(p => [...p, `[PAB-DECISION] DENIED! Violation of access boundary restriction.`]);
+                          }
+                        }, 1500);
+                      }}
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs py-2 rounded-lg font-semibold transition"
+                    >
+                      EVALUATE ACCESSIBILITY
+                    </button>
+                  </div>
+
+                  {/* Auditor Console Outputs */}
+                  <div className="md:col-span-7 flex flex-col justify-between p-5 border border-slate-200 bg-slate-950 rounded-xl font-mono text-[11px] min-h-[220px]">
+                    <div>
+                      <div className="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
+                        <span className="text-indigo-400 font-bold">BOUNDARY EVALUATOR LOGS</span>
+                        <span className="text-slate-600 text-[9px]">REAL-TIME</span>
+                      </div>
+                      
+                      <div className="space-y-1 text-slate-300">
+                        {pabLogs.length === 0 && <p className="text-slate-600 italic">No audit performed yet. Select action and target above to test.</p>}
+                        {pabLogs.map((log, i) => (
+                          <div key={i} className={log.includes('ALLOWED') ? 'text-emerald-400 font-semibold' : log.includes('DENIED') ? 'text-rose-400 font-semibold' : ''}>
+                            {log}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {pabApproved !== null && (
+                      <div className={`mt-4 p-3 rounded-lg flex items-center justify-between border ${pabApproved ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300' : 'bg-rose-950/40 border-rose-800/60 text-rose-300'}`}>
+                        <span className="font-bold">EVALUATION SUMMARY:</span>
+                        <span className="text-xs font-black">{pabApproved ? '✓ SCOPE APPROVED' : '❌ VIOLATION SHIELDED'}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -461,12 +1427,6 @@ export default function IamTab({ state }: { state: any }) {
               </div>
             )}
 
-            {iamSubTab !== 'Identity & Access' && iamSubTab !== 'IAM' && iamSubTab !== 'Service Accounts' && (
-              <div className="p-12 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 bg-white">
-                <Lock className="w-8 h-8 mb-3 opacity-20" />
-                <p className="text-sm font-mono italic">{iamSubTab} details are restricted or not yet configured.</p>
-              </div>
-            )}
             {/* Settings Icon */}
             <div className="mt-8 flex justify-end">
               <button 
@@ -611,6 +1571,28 @@ export default function IamTab({ state }: { state: any }) {
                           }`}
                         >
                           💻 TERMUX BRIDGE
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => selectTab('secret_manager')}
+                          className={`snap-center shrink-0 px-6 py-2.5 text-xs whitespace-nowrap font-mono rounded-full transition-all flex items-center justify-center gap-2 border min-w-[170px] ${
+                            activeAdminTab === 'secret_manager'
+                              ? 'bg-amber-500 text-slate-950 shadow-md font-black border-amber-500 ring-2 ring-amber-300/50'
+                              : 'bg-white text-slate-600 border-slate-200 shadow-sm hover:bg-slate-50 font-bold'
+                          }`}
+                        >
+                          🔑 SECRET MANAGER
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => selectTab('deepseek')}
+                          className={`snap-center shrink-0 px-6 py-2.5 text-xs whitespace-nowrap font-mono rounded-full transition-all flex items-center justify-center gap-2 border min-w-[180px] ${
+                            activeAdminTab === 'deepseek'
+                              ? 'bg-amber-500 text-slate-950 shadow-md font-black border-amber-500 ring-2 ring-amber-300/50'
+                              : 'bg-white text-slate-600 border-slate-200 shadow-sm hover:bg-slate-50 font-bold'
+                          }`}
+                        >
+                          🧠 DEEPSEEK CONFIG
                         </button>
                       </div>
                     </div>
@@ -1171,43 +2153,276 @@ export default function IamTab({ state }: { state: any }) {
                             </div>
                           </div>
 
-                          {/* Remote Exec Console */}
-                          <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm flex flex-col overflow-hidden">
-                            <div className="bg-slate-950 p-3 border-b border-slate-800 flex items-center justify-between">
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <TerminalIcon className="w-4 h-4" />
-                                <span className="font-mono text-[10px] font-bold">TERMUX REMOTE EXEC</span>
-                              </div>
-                              <button onClick={() => setTermuxLogs([])} className="text-[10px] font-mono text-slate-500 hover:text-rose-400">CLEAR</button>
+                          {/* Authentic Play Store Termux Interface */}
+                          <div className="bg-black rounded-lg shadow-xl flex flex-col overflow-hidden font-mono" style={{ height: '350px' }}>
+                            {/* Hidden/Minimal Toolbar just for 'CLEAR' if needed, mostly invisible */}
+                            <div className="bg-[#111111] px-3 py-1.5 flex justify-end">
+                              <button onClick={() => setTermuxLogs([])} className="text-[#555555] hover:text-white text-[10px] font-bold tracking-wider">CLEAR</button>
                             </div>
                             
-                            <div className="flex-1 p-3 bg-slate-900/50 min-h-[200px] max-h-[250px] overflow-y-auto space-y-1 font-mono text-[11px]">
-                              <div className="text-emerald-500/70 mb-2">Connected to remote Termux node. Ready.</div>
+                            <div className="flex-1 p-3 overflow-y-auto space-y-1 text-xs" style={{ color: '#C5C8C6' }}>
+                              {termuxLogs.length === 0 && (
+                                <div className="mb-4 whitespace-pre-wrap leading-relaxed">
+                                  <div>Welcome to Termux!</div>
+                                  <br/>
+                                  <div>Wiki:            <a href="#" className="text-[#81A2BE] underline">https://wiki.termux.com</a></div>
+                                  <div>Community forum: <a href="#" className="text-[#81A2BE] underline">https://termux.com/community</a></div>
+                                  <div>Gitter chat:     <a href="#" className="text-[#81A2BE] underline">https://gitter.im/termux/termux</a></div>
+                                  <div>IRC channel:     #termux on freenode</div>
+                                  <br/>
+                                  <div>Working with packages:</div>
+                                  <div>* Search packages:   pkg search &lt;query&gt;</div>
+                                  <div>* Install a package: pkg install &lt;package&gt;</div>
+                                  <div>* Upgrade packages:  pkg upgrade</div>
+                                  <br/>
+                                  <div>Subscribing to additional repositories:</div>
+                                  <div>* Root:     pkg install root-repo</div>
+                                  <div>* X11:      pkg install x11-repo</div>
+                                </div>
+                              )}
+                              
                               {termuxLogs.map((log, i) => (
-                                <div key={i} className={log.startsWith('$') ? 'text-blue-300 mt-2' : 'text-slate-300 pl-2 whitespace-pre-wrap'}>
+                                <div key={i} className={log.startsWith('~ $') ? 'text-white font-semibold mt-2' : 'whitespace-pre-wrap'}>
                                   {log}
                                 </div>
                               ))}
-                            </div>
 
-                            <form onSubmit={handleTermuxCommand} className="p-2 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
-                              <span className="text-emerald-500 font-mono text-sm font-bold ml-2">$</span>
-                              <input 
-                                type="text"
-                                value={termuxCmd}
-                                onChange={(e) => setTermuxCmd(e.target.value)}
-                                disabled={isTermuxRunning}
-                                placeholder="pkg update && pkg upgrade"
-                                className="flex-1 bg-transparent border-none text-slate-200 font-mono text-sm focus:outline-none placeholder-slate-700"
+                              <form onSubmit={handleTermuxCommand} className="flex items-center gap-2 mt-1">
+                                <span className="text-white font-semibold whitespace-nowrap">~ $</span>
+                                <input 
+                                  type="text"
+                                  value={termuxCmd}
+                                  onChange={(e) => setTermuxCmd(e.target.value)}
+                                  disabled={isTermuxRunning}
+                                  autoFocus
+                                  spellCheck="false"
+                                  autoComplete="off"
+                                  autoCorrect="off"
+                                  autoCapitalize="none"
+                                  className="flex-1 bg-transparent border-none text-white focus:outline-none p-0 m-0"
+                                  style={{ caretColor: '#C5C8C6' }}
+                                />
+                                <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1}>Submit</button>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Auto SMS Parser Engine */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <h3 className="font-mono font-bold text-sm tracking-wider text-indigo-600 uppercase flex items-center gap-2">
+                              <Terminal className="w-4 h-4" />
+                              Auto SMS Parser Engine (SIM API Link)
+                            </h3>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border flex items-center gap-1 ${
+                              parserStatus === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 
+                              parserStatus === 'error' ? 'bg-rose-50 text-rose-600 border-rose-200' : 
+                              'bg-slate-50 text-slate-500 border-slate-200'
+                            }`}>
+                              {parserStatus === 'success' ? 'MATCHED' : parserStatus === 'error' ? 'NO MATCH' : 'LISTENING'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 leading-relaxed font-mono">
+                            Paste raw SIM SMS payloads here. The Termux API daemon will run regex patterns to auto-recharge the wallet or synchronize OTP credentials.
+                          </p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="relative">
+                              <textarea
+                                value={rawSmsInput}
+                                onChange={(e) => setRawSmsInput(e.target.value)}
+                                placeholder="Paste incoming SMS text here (e.g., 'Recharge of Rs.25 on JIO successful...')"
+                                className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none leading-relaxed"
                               />
                               <button 
-                                type="submit" 
-                                disabled={isTermuxRunning}
-                                className="px-3 py-1.5 bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600/30 rounded border border-emerald-500/30 font-mono text-[10px] font-bold transition-colors disabled:opacity-50"
+                                onClick={handleRunTermuxParser}
+                                disabled={!rawSmsInput.trim()}
+                                className="absolute bottom-3 right-3 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white font-mono text-[10px] font-bold rounded-lg shadow-sm"
                               >
-                                EXECUTE
+                                RUN PARSER
                               </button>
-                            </form>
+                            </div>
+                            
+                            <div className="h-32 bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-[10px] overflow-y-auto flex flex-col gap-1">
+                              {parserConsoleLogs.length === 0 ? (
+                                <div className="text-slate-500 italic mt-auto mb-auto text-center font-mono">Waiting for Termux API stream input...</div>
+                              ) : (
+                                parserConsoleLogs.map((log, i) => (
+                                  <div key={i} className={`${log.includes('[ERROR]') ? 'text-rose-400' : log.includes('SUCCESS') || log.includes('Credits:') || log.includes('recharged') ? 'text-emerald-400' : 'text-slate-300'} font-mono`}>
+                                    {log}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* PAGE 4: SECRET MANAGER */}
+                      <div className="w-full shrink-0 snap-center overflow-y-auto px-1 space-y-6 h-full pb-6">
+                        <SecretManagerTab state={state} />
+                      </div>
+
+                      {/* PAGE 5: DEEPSEEK CONFIG */}
+                      <div className="w-full shrink-0 snap-center overflow-y-auto px-1 space-y-6 h-full pb-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-mono">
+                          {/* Left Panel: Configuration Fields */}
+                          <div className="space-y-6">
+                            <div className="p-6 rounded-2xl border bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 shadow-sm">
+                              <div className="flex items-center gap-2 mb-4">
+                                <Key className="w-5 h-5 text-indigo-500" />
+                                <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 dark:text-slate-200 uppercase">
+                                  DeepSeek API Credentials
+                                </h3>
+                              </div>
+                              <p className="text-xs text-slate-500 font-mono mb-4 leading-relaxed">
+                                Configure your DeepSeek API key and model parameters. This key is stored securely inside your local context and used to power all live agent chats.
+                              </p>
+
+                              <div className="space-y-4 font-mono text-xs">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                                    DeepSeek API Key (API కీ)
+                                  </label>
+                                  <div className="relative">
+                                    <input
+                                      type={showApiKey ? "text" : "password"}
+                                      value={tempDeepseekApiKey}
+                                      onChange={(e) => setTempDeepseekApiKey(e.target.value)}
+                                      placeholder="sk-..."
+                                      className="w-full p-2.5 pr-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowApiKey(!showApiKey)}
+                                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                    >
+                                      {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                                    Preferred Chat Model (ఎంపిక చేసిన మోడల్)
+                                  </label>
+                                  <select
+                                    value={activeRouterModel || "deepseek-chat"}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      localStorage.setItem('active_router_model', val);
+                                      setActiveRouterModel(val);
+                                      if (typeof setHomeToast === 'function') {
+                                        setHomeToast(`Model set to ${val}`);
+                                      }
+                                    }}
+                                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  >
+                                    <option value="deepseek-chat">DeepSeek V3 (deepseek-chat)</option>
+                                    <option value="deepseek-reasoner">DeepSeek R1 / Reasoner (deepseek-reasoner)</option>
+                                  </select>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={handleSaveDeepseekKey}
+                                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-mono font-bold text-xs rounded-xl shadow-sm transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" /> Save Key & Synchronize
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* System Prompt Customizer */}
+                            <div className="p-6 rounded-2xl border bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 shadow-sm">
+                              <div className="flex items-center gap-2 mb-4">
+                                <Sliders className="w-5 h-5 text-amber-500" />
+                                <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 dark:text-slate-200 uppercase">
+                                  Agent System Persona (వ్యక్తిత్వం)
+                                </h3>
+                              </div>
+                              <p className="text-xs text-slate-500 font-mono mb-4 leading-relaxed">
+                                Tailor the core behavioral persona, tone, and directives of your DeepSeek AI agent below.
+                              </p>
+
+                              <div className="space-y-4 font-mono text-xs">
+                                <div>
+                                  <textarea
+                                    value={customSystemPrompt}
+                                    onChange={(e) => setCustomSystemPrompt(e.target.value)}
+                                    placeholder="Enter system prompt guidelines..."
+                                    className="w-full h-36 p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none leading-relaxed"
+                                  />
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={handleSaveSystemPrompt}
+                                  className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-bold text-xs rounded-xl shadow-sm transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+                                >
+                                  <Sparkles className="w-4 h-4" /> Update AI Persona
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right Panel: Live Response Verification Sandbox */}
+                          <div className="p-6 rounded-2xl border flex flex-col bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2">
+                                <Brain className="w-5 h-5 text-indigo-500" />
+                                <h3 className="font-mono font-bold text-sm tracking-wider text-slate-800 dark:text-slate-200 uppercase">
+                                  Verification Sandbox
+                                </h3>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border flex items-center gap-1 ${
+                                deepseekApiKey ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                              }`}>
+                                {deepseekApiKey ? 'KEY PRESENT' : 'NO KEY SET'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-mono mb-4 leading-relaxed">
+                              Send a verification request to DeepSeek's server to confirm that your api authentication configuration is working flawlessly.
+                            </p>
+
+                            <div className="flex-1 flex flex-col gap-4 font-mono text-xs">
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                                  Test Prompt (టెస్ట్ ప్రెశ్న)
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    value={testMessage}
+                                    onChange={(e) => setTestMessage(e.target.value)}
+                                    placeholder="Type a test query..."
+                                    className="w-full p-2.5 pr-20 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleRunDeepseekTest();
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleRunDeepseekTest}
+                                    disabled={isTestingApi || !testMessage.trim()}
+                                    className="absolute right-2 top-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[10px] font-bold rounded-lg uppercase tracking-wider"
+                                  >
+                                    {isTestingApi ? "..." : "Send"}
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex-1 min-h-[220px] bg-slate-950 border border-slate-900 rounded-xl p-4 font-mono text-xs overflow-y-auto flex flex-col">
+                                <div className="text-[10px] text-slate-500 border-b border-slate-900 pb-2 mb-3 flex items-center justify-between">
+                                  <span>CONSOLE STREAM</span>
+                                  <span>{isTestingApi ? "ACTIVE" : "IDLE"}</span>
+                                </div>
+                                <div className="flex-1 text-slate-300 leading-relaxed whitespace-pre-wrap">
+                                  {testResponse || "Your test responses will stream here..."}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>

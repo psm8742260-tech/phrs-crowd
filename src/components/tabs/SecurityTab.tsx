@@ -51,8 +51,8 @@ export default function SecurityTab({ state }: { state: any }) {
                     onClick={() => {
                       const randomId = Math.random().toString(36).substring(7);
                       setGeneratedKeyPair({
-                        public: `ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8u6PHRS_${randomId}...`,
-                        private: `-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAsPHRS_${randomId}...\n-----END RSA PRIVATE KEY-----`
+                        public: `ssh-rsa <YOUR-GENERATED-PUBLIC-KEY-HERE>`,
+                        private: `-----BEGIN RSA PRIVATE KEY-----\n<YOUR-GENERATED-PRIVATE-KEY-HERE>\n-----END RSA PRIVATE KEY-----`
                       });
                       setHomeToast("✓ Cryptographic SSH Keypair compiled!");
                       setTimeout(() => setHomeToast(null), 3000);

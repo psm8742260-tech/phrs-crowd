@@ -639,7 +639,7 @@ module.exports = { sendSMS };`}
         )}
 
         {selectedSubMenu === 'Recharge (₹25) Config' && (
-          <div className="animate-fade-in grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="animate-fade-in max-w-3xl mx-auto">
             {/* Dual-SIM Recharge Simulator */}
             <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
               <div className="flex items-center justify-between mb-3">
@@ -717,56 +717,6 @@ module.exports = { sendSMS };`}
                 </div>
                 <div className="mt-2 text-[10px] font-mono text-slate-500 text-right">
                   Yield: <span className="font-bold text-amber-500">{(customMb * 10).toLocaleString()} SMS Credits</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Auto SMS Parser Engine */}
-            <div className={`p-6 rounded-2xl border flex flex-col ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-mono font-bold text-sm tracking-wider text-indigo-500 uppercase flex items-center gap-2">
-                  <Terminal className="w-4 h-4" />
-                  Auto SMS Parser Engine
-                </h3>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border flex items-center gap-1 ${
-                  parserStatus === 'success' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 
-                  parserStatus === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
-                  'bg-slate-500/10 text-slate-500 border-slate-500/20'
-                }`}>
-                  {parserStatus === 'success' ? 'MATCHED' : parserStatus === 'error' ? 'NO MATCH' : 'LISTENING'}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-mono mb-4 leading-relaxed">
-                Paste raw SMS content here. The Termux background service will parse it via Regex to auto-recharge your wallet or verify OTPs without manual intervention.
-              </p>
-              
-              <div className="flex-1 flex flex-col gap-3">
-                <div className="relative">
-                  <textarea
-                    value={rawSmsInput}
-                    onChange={(e) => setRawSmsInput(e.target.value)}
-                    placeholder="Paste incoming SMS text here (e.g., 'Recharge of Rs.25 on JIO successful...')"
-                    className="w-full h-28 p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none leading-relaxed"
-                  />
-                  <button 
-                    onClick={handleRunTermuxParser}
-                    disabled={!rawSmsInput.trim()}
-                    className="absolute bottom-3 right-3 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white font-mono text-[10px] font-bold rounded-lg shadow-sm"
-                  >
-                    RUN PARSER
-                  </button>
-                </div>
-                
-                <div className="flex-1 min-h-[120px] bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-[10px] overflow-y-auto flex flex-col gap-1">
-                  {parserConsoleLogs.length === 0 ? (
-                    <div className="text-slate-600 italic mt-auto mb-auto text-center">Waiting for SMS input...</div>
-                  ) : (
-                    parserConsoleLogs.map((log, i) => (
-                      <div key={i} className={`${log.includes('[ERROR]') ? 'text-red-400' : log.includes('SUCCESS') || log.includes('Credits:') ? 'text-emerald-400' : 'text-slate-300'}`}>
-                        {log}
-                      </div>
-                    ))
-                  )}
                 </div>
               </div>
             </div>

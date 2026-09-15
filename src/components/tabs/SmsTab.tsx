@@ -20,8 +20,8 @@ export default function SmsTab({ state }: { state: any }) {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
-              {/* Left Column: API parameters configuration */}
-              <div className="lg:col-span-4 space-y-6">
+              {/* Balanced 2-Column Row for Settings and Standalone package */}
+              <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 <div className={`p-5 rounded-2xl border transition-colors ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                   <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">GATEWAY SETTINGS</h3>
@@ -78,7 +78,7 @@ export default function SmsTab({ state }: { state: any }) {
 
                     <button 
                       onClick={() => {
-                        setVpsLogStream(prev => [...prev, `[SMS] Saved SMS config parameters for: ${smsGateway.toUpperCase()}`]);
+                        setVpsLogStream((prev: any) => [...prev, `[SMS] Saved SMS config parameters for: ${smsGateway.toUpperCase()}`]);
                         alert('✓ SMS Config Saved to VPS state!');
                       }}
                       className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded-lg font-semibold shadow-lg transition-all"
@@ -111,152 +111,13 @@ export default function SmsTab({ state }: { state: any }) {
 
                   <button
                     onClick={() => {
-                      setVpsLogStream(prev => [...prev, `[STANDALONE-6606.ok] Generated complete standalone server ZIP package. Ready for offline deployment on local mobile IP.`]);
+                      setVpsLogStream((prev: any) => [...prev, `[STANDALONE-6606.ok] Generated complete standalone server ZIP package. Ready for offline deployment on local mobile IP.`]);
                       alert('✓ PHRS_Crowd_Server_Standalone_6606.ok.zip Download Initialized!\n\nExtract and run:\n1. npm install\n2. npm run build\n3. npm start (Runs on local IP without External Platforms dependency)');
                     }}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2.5 rounded-lg font-semibold shadow-lg transition-all flex items-center justify-center gap-2"
                   >
                     <span>📦 DOWNLOAD STANDALONE ZIP [6606.ok]</span>
                   </button>
-                </div>
-
-              </div>
-
-              {/* Middle/Right: Live Simulator & virtual smartphone notifications! */}
-              <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-12 gap-6">
-                
-                {/* Active Test verification workspace */}
-                <div className="md:col-span-7 space-y-6">
-                  
-                  <div className={`p-5 rounded-2xl border transition-colors h-full ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                    <h3 className="font-mono font-bold text-xs tracking-wider text-indigo-500 uppercase mb-4">VERIFICATION SIMULATOR</h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1">TARGET PHONE NUMBER</label>
-                        <div className="flex gap-2">
-                          <input 
-                            type="tel" 
-                            placeholder="e.g. +91 98765 43210" 
-                            value={testPhoneNumber}
-                            onChange={(e) => setTestPhoneNumber(e.target.value)}
-                            className={`flex-1 p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                          />
-                          <button 
-                            onClick={handleSendTestSms}
-                            disabled={isSendingOtp}
-                            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-mono text-xs px-4 py-2 rounded-lg font-semibold transition"
-                          >
-                            {isSendingOtp ? 'SENDING...' : 'SEND OTP'}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-500 mb-1">OTP DIGIT LENGTH</label>
-                        <select
-                          value={otpLength}
-                          onChange={(e) => setOtpLength(parseInt(e.target.value))}
-                          className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                        >
-                          <option value={2}>2 Digits (e.g. 48)</option>
-                          <option value={3}>3 Digits (e.g. 729)</option>
-                          <option value={4}>4 Digits (e.g. 8204)</option>
-                          <option value={6}>6 Digits (e.g. 529104)</option>
-                        </select>
-                      </div>
-
-                      {lastGeneratedOtp && (
-                        <div className="p-4 bg-indigo-950/10 border border-indigo-900/40 rounded-xl space-y-3">
-                          <label className="block text-[10px] font-mono text-slate-400">ENTER {otpLength}-DIGIT RECEIVED SMS OTP</label>
-                          <div className="flex gap-2">
-                            <input 
-                              type="text" 
-                              maxLength={otpLength}
-                              placeholder="Type SMS code..." 
-                              value={verificationInput}
-                              onChange={(e) => setVerificationInput(e.target.value)}
-                              className={`flex-1 p-2 text-xs rounded-lg border text-center font-bold tracking-widest focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                            />
-                            <button 
-                              onClick={handleVerifyOtp}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs px-4 py-2 rounded-lg font-semibold transition"
-                            >
-                              VERIFY OTP
-                            </button>
-                          </div>
-
-                          {verificationStatus === 'success' && (
-                            <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono mt-1">
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>OTP MATCHED! Login verification successful.</span>
-                            </div>
-                          )}
-
-                          {verificationStatus === 'error' && (
-                            <div className="flex items-center gap-2 text-rose-400 text-xs font-mono mt-1">
-                              <AlertCircle className="w-4 h-4" />
-                              <span>INCORRECT PIN! Security validation failed.</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Smartphone simulation layout */}
-                <div className="md:col-span-5 flex justify-center">
-                  
-                  <div className="w-[240px] h-[440px] bg-slate-200 rounded-[36px] p-3 border-[6px] border-slate-300 shadow-xl relative flex flex-col justify-between overflow-hidden">
-                    
-                    {/* Speaker & camera notch */}
-                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-24 h-5 bg-slate-200 rounded-full z-20 flex items-center justify-center">
-                      <div className="w-10 h-1 bg-slate-300 rounded-full mb-1"></div>
-                    </div>
-
-                    {/* Smartphone display */}
-                    <div className="flex-1 bg-gradient-to-b from-indigo-50 to-slate-100 rounded-[28px] p-3 pt-6 relative flex flex-col justify-between overflow-hidden">
-                      
-                      {/* Top mobile bar */}
-                      <div className="flex justify-between items-center text-[8px] font-mono text-slate-600 px-1">
-                        <span>PHRS Net</span>
-                        <span>02:18 AM</span>
-                      </div>
-
-                      {/* Notification overlay popup */}
-                      {virtualPhoneNotification && (
-                        <div className="absolute top-10 left-2 right-2 bg-white/95 border border-indigo-100 rounded-xl p-2.5 shadow-xl z-40 animate-bounce">
-                          <div className="flex justify-between items-center mb-1 text-[8px] font-mono text-indigo-600">
-                            <span>📩 SMS MESSAGES</span>
-                            <button onClick={() => setVirtualPhoneNotification(null)} className="text-slate-400 hover:text-slate-700">×</button>
-                          </div>
-                          <p className="text-[10px] font-sans text-slate-800 leading-normal">
-                            {virtualPhoneNotification}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Home screen layout */}
-                      <div className="flex-1 flex flex-col justify-center items-center text-center p-2">
-                        <Phone className="w-10 h-10 text-indigo-600 mb-2 opacity-85" />
-                        <span className="text-[10px] font-mono text-slate-700">Virtual Mobile Device</span>
-                        <p className="text-[8px] text-slate-600 mt-1 max-w-[140px]">
-                          Incoming OTP requests will pop up automatically as a secure notification.
-                        </p>
-                      </div>
-
-                      {/* Mobile bottom actions */}
-                      <div className="flex justify-center mt-2">
-                        <div className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center bg-white hover:bg-slate-50 cursor-pointer">
-                          <div className="w-2.5 h-2.5 bg-slate-500 rounded-sm"></div>
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </div>
-
                 </div>
 
               </div>

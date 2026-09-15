@@ -70,8 +70,9 @@ export default function HomeTab({ state }: { state: any }) {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <>
+              <>
                     {/* PROJECT INFO CARD (GCP STYLE MATCHING SCREENSHOT) */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                       <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
@@ -662,26 +663,14 @@ export default function HomeTab({ state }: { state: any }) {
                         </div>
                         <p className="text-[11px] text-slate-500 text-center">API traffic is normal. Gemini model latency is at {(networkLatency / 20).toFixed(1)}s average.</p>
                       </div>
-                      <div className="p-3 border-t border-slate-50 bg-slate-50/20">
-                        <button onClick={() => setActiveTab('api_board')} className="text-xs font-bold text-blue-600 hover:underline">Go to APIs overview</button>
+                      <div className="p-3 border-t border-slate-50 bg-slate-50/20 text-center">
+                        <span className="text-[10px] text-slate-400 font-mono">STATUS: OPTIMIZED</span>
                       </div>
                     </div>
 
                     {/* Actions Row */}
                     <div className="md:col-span-2 xl:col-span-12">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <button 
-                          onClick={() => {
-                            setActiveTab('api_board');
-                            setHomeToast("Redirected to API Board - Gemini keys are active");
-                            setTimeout(() => setHomeToast(null), 3000);
-                          }}
-                          className="flex items-center px-4 py-2 bg-white hover:bg-[#1a73e8]/5 border border-[#1a73e8] rounded-md text-left text-xs font-semibold text-[#1a73e8] transition shadow-xs group"
-                        >
-                          <span className="w-5 h-5 bg-[#1a73e8] text-white rounded-xs flex items-center justify-center font-bold text-xs mr-2 shrink-0">+</span>
-                          <span>Create Gemini API key</span>
-                        </button>
-
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button 
                           onClick={() => {
                             setActiveTab('agent_platform');
@@ -732,7 +721,7 @@ export default function HomeTab({ state }: { state: any }) {
                       <h3 className="text-lg font-medium text-slate-850">Quick access</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {[
-                          { tab: 'api_board', icon: 'API', name: 'APIs & Services', desc: 'Manage proxy routers' },
+                          { tab: 'agent_platform', icon: <Sparkles className="w-5 h-5 text-indigo-600" />, name: 'AI Studio', desc: 'Manage AI Agents' },
                           { tab: 'database', icon: <Shield className="w-5 h-5 text-indigo-600" />, name: 'IAM & Admin', desc: 'Configure databases' },
                           { tab: 'billing', icon: <CreditCard className="w-5 h-5 text-emerald-600" />, name: 'Billing', desc: 'Manage accounts' },
                           { tab: 'cloud_storage', icon: <Database className="w-5 h-5 text-amber-600" />, name: 'Storage', desc: 'Manage buckets' }
@@ -1128,7 +1117,6 @@ export default function HomeTab({ state }: { state: any }) {
           )}
         </div>
       </div>
-    </div>
   </>
 );
 }

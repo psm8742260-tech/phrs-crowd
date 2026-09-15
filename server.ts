@@ -126,8 +126,8 @@ app.use((req, res, next) => {
 
 let currentDomainMappings = getDomainMappings();
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '1gb' }));
+app.use(express.urlencoded({ extended: true, limit: '1gb' }));
 
 // 1A. DISPATCHER MIDDLEWARE: Real Domain Routing
 app.use((req, res, next) => {
@@ -208,6 +208,17 @@ app.delete("/api/domain-mappings/:domain", (req, res) => {
 const STORAGE_DIR = path.join(process.cwd(), "dist", "cloud_storage");
 if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
 
+// Auto-create a default bucket on startup if empty
+try {
+  const existing = fs.readdirSync(STORAGE_DIR).filter(f => fs.statSync(path.join(STORAGE_DIR, f)).isDirectory());
+  if (existing.length === 0) {
+    fs.mkdirSync(path.join(STORAGE_DIR, "phrs-default-bucket"), { recursive: true });
+    console.log("[STORAGE] Auto-created phrs-default-bucket");
+  }
+} catch (e) {
+  console.error("Failed to auto-create default bucket:", e);
+}
+
 app.get("/api/storage/buckets", (req, res) => {
   try {
     const buckets = fs.readdirSync(STORAGE_DIR).filter(f => fs.statSync(path.join(STORAGE_DIR, f)).isDirectory());
@@ -234,7 +245,7 @@ app.post("/api/storage/buckets", (req, res) => {
   } catch(e) { res.status(500).json({ error: "Storage error" }); }
 });
 
-const uploadMiddleware = multer({ storage: multer.memoryStorage() });
+const uploadMiddleware = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 * 1024 } });
 app.post("/api/storage/upload", uploadMiddleware.single('file'), (req, res) => {
   const { bucket } = req.body;
   if (!bucket || !req.file) return res.status(400).json({ error: "Bucket and file required" });
@@ -331,6 +342,201 @@ app.delete("/api/iam/members/:email", (req, res) => {
     fs.writeFileSync(IAM_FILE, JSON.stringify(members, null, 2));
     res.json({ success: true, members });
   } catch(e) { res.status(500).json({ error: "IAM error" }); }
+});
+
+// --- SERVICE ACCOUNTS ---
+const SA_FILE = path.join(process.cwd(), "dist", "service_accounts.json");
+if (!fs.existsSync(SA_FILE)) {
+  fs.writeFileSync(SA_FILE, JSON.stringify([
+    { id: 1, name: 'phrs-firebase-sdk', email: 'firebase-admin@phrs-crowd.iam.gserviceaccount.com', created: '2026-08-01' },
+    { id: 2, name: 'cloud-sql-proxy', email: 'sql-proxy@phrs-crowd.iam.gserviceaccount.com', created: '2026-08-15' }
+  ], null, 2));
+}
+
+app.get("/api/iam/service-accounts", (req, res) => {
+  try {
+    res.json({ success: true, accounts: safeReadJson(SA_FILE, []) });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.post("/api/iam/service-accounts", (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Name required" });
+  try {
+    const accounts = safeReadJson(SA_FILE, []);
+    const email = `${name.toLowerCase()}@phrs-crowd.iam.gserviceaccount.com`;
+    accounts.push({ id: Date.now(), name, email, created: new Date().toISOString().split('T')[0] });
+    fs.writeFileSync(SA_FILE, JSON.stringify(accounts, null, 2));
+    res.json({ success: true, accounts });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.delete("/api/iam/service-accounts/:id", (req, res) => {
+  try {
+    let accounts = safeReadJson(SA_FILE, []);
+    accounts = accounts.filter((a: any) => String(a.id) !== String(req.params.id));
+    fs.writeFileSync(SA_FILE, JSON.stringify(accounts, null, 2));
+    res.json({ success: true, accounts });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.get("/api/iam/service-accounts/:name/key", (req, res) => {
+  const { name } = req.params;
+  const mockKey = {
+    type: "service_account",
+    project_id: "phrs-crowd-prod",
+    private_key_id: Math.random().toString(16).substring(2, 10) + Date.now().toString(16),
+    private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDh4K...=== \n-----END PRIVATE KEY-----",
+    client_email: `${name}@phrs-crowd.iam.gserviceaccount.com`,
+    client_id: Math.floor(Math.random() * 1000000000000000).toString(),
+    auth_uri: "https://accounts.google.com/o/oauth2/auth",
+    token_uri: "https://oauth2.googleapis.com/token",
+    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+    client_x509_cert_url: `https://www.googleapis.com/metadata/x509/${name}%40phrs-crowd.iam.gserviceaccount.com`
+  };
+  res.setHeader('Content-disposition', `attachment; filename=${name}-key.json`);
+  res.setHeader('Content-type', 'application/json');
+  res.write(JSON.stringify(mockKey, null, 2));
+  res.end();
+});
+
+// --- GROUPS ---
+const GROUPS_FILE = path.join(process.cwd(), "dist", "iam_groups.json");
+if (!fs.existsSync(GROUPS_FILE)) {
+  fs.writeFileSync(GROUPS_FILE, JSON.stringify([
+    { id: 1, name: "phrs-developers", description: "Direct developer access to VPS orchestration", membersCount: 3, created: "2026-08-01" },
+    { id: 2, name: "phrs-admins", description: "Full root admin and credential access", membersCount: 1, created: "2026-08-10" }
+  ], null, 2));
+}
+
+app.get("/api/iam/groups", (req, res) => {
+  try {
+    res.json({ success: true, groups: safeReadJson(GROUPS_FILE, []) });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.post("/api/iam/groups", (req, res) => {
+  const { name, description } = req.body;
+  if (!name) return res.status(400).json({ error: "Group name is required" });
+  try {
+    const groups = safeReadJson(GROUPS_FILE, []);
+    groups.push({ id: Date.now(), name, description: description || "No description provided", membersCount: 0, created: new Date().toISOString().split('T')[0] });
+    fs.writeFileSync(GROUPS_FILE, JSON.stringify(groups, null, 2));
+    res.json({ success: true, groups });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.delete("/api/iam/groups/:id", (req, res) => {
+  try {
+    let groups = safeReadJson(GROUPS_FILE, []);
+    groups = groups.filter((g: any) => String(g.id) !== String(req.params.id));
+    fs.writeFileSync(GROUPS_FILE, JSON.stringify(groups, null, 2));
+    res.json({ success: true, groups });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+// --- CUSTOM ROLES ---
+const ROLES_FILE = path.join(process.cwd(), "dist", "iam_roles_custom.json");
+if (!fs.existsSync(ROLES_FILE)) {
+  fs.writeFileSync(ROLES_FILE, JSON.stringify([
+    { id: 1, name: "phrs.vpsManager", title: "VPS Administrator", permissions: "compute.instances.start, compute.instances.stop, compute.instances.reset", stage: "GA" },
+    { id: 2, name: "phrs.smsOperator", title: "SMS Service Operator", permissions: "sms.send, sms.template.update, sms.credits.read", stage: "GA" }
+  ], null, 2));
+}
+
+app.get("/api/iam/roles", (req, res) => {
+  try {
+    res.json({ success: true, roles: safeReadJson(ROLES_FILE, []) });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.post("/api/iam/roles", (req, res) => {
+  const { name, title, permissions } = req.body;
+  if (!name || !title) return res.status(400).json({ error: "Role name and title are required" });
+  try {
+    const roles = safeReadJson(ROLES_FILE, []);
+    roles.push({ id: Date.now(), name, title, permissions: permissions || "None", stage: "Beta" });
+    fs.writeFileSync(ROLES_FILE, JSON.stringify(roles, null, 2));
+    res.json({ success: true, roles });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.delete("/api/iam/roles/:id", (req, res) => {
+  try {
+    let roles = safeReadJson(ROLES_FILE, []);
+    roles = roles.filter((r: any) => String(r.id) !== String(req.params.id));
+    fs.writeFileSync(ROLES_FILE, JSON.stringify(roles, null, 2));
+    res.json({ success: true, roles });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+// --- PRIVILEGED ACCESS MANAGER (PAM) ---
+const PAM_FILE = path.join(process.cwd(), "dist", "iam_pam.json");
+if (!fs.existsSync(PAM_FILE)) {
+  fs.writeFileSync(PAM_FILE, JSON.stringify([
+    { id: 1, email: "developer@phrscrowd.local", role: "Owner", duration: "2 Hours", reason: "Database migration work", status: "Active", requestedAt: new Date().toISOString() }
+  ], null, 2));
+}
+
+app.get("/api/iam/pam", (req, res) => {
+  try {
+    res.json({ success: true, requests: safeReadJson(PAM_FILE, []) });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.post("/api/iam/pam", (req, res) => {
+  const { email, role, duration, reason } = req.body;
+  if (!email || !role || !duration) return res.status(400).json({ error: "Email, role, and duration required" });
+  try {
+    const requests = safeReadJson(PAM_FILE, []);
+    requests.push({ id: Date.now(), email, role, duration, reason: reason || "Urgent access needed", status: "Active", requestedAt: new Date().toISOString() });
+    fs.writeFileSync(PAM_FILE, JSON.stringify(requests, null, 2));
+    res.json({ success: true, requests });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.delete("/api/iam/pam/:id", (req, res) => {
+  try {
+    let requests = safeReadJson(PAM_FILE, []);
+    requests = requests.filter((r: any) => String(r.id) !== String(req.params.id));
+    fs.writeFileSync(PAM_FILE, JSON.stringify(requests, null, 2));
+    res.json({ success: true, requests });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+// --- IDENTITY FEDERATIONS ---
+const FEDERATIONS_FILE = path.join(process.cwd(), "dist", "iam_federations.json");
+if (!fs.existsSync(FEDERATIONS_FILE)) {
+  fs.writeFileSync(FEDERATIONS_FILE, JSON.stringify([
+    { id: 1, name: "aws-workload-federation", providerType: "OIDC", issuerUrl: "https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D", audience: "phrs-prod-client", status: "Active" },
+    { id: 2, name: "azure-ad-workforce", providerType: "SAML 2.0", issuerUrl: "https://sts.windows.net/37b9853c-1481-4200/", audience: "urn:phrs:azure:ad", status: "Active" }
+  ], null, 2));
+}
+
+app.get("/api/iam/federations", (req, res) => {
+  try {
+    res.json({ success: true, federations: safeReadJson(FEDERATIONS_FILE, []) });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.post("/api/iam/federations", (req, res) => {
+  const { name, providerType, issuerUrl, audience } = req.body;
+  if (!name || !providerType || !issuerUrl) return res.status(400).json({ error: "Name, providerType, and issuerUrl required" });
+  try {
+    const federations = safeReadJson(FEDERATIONS_FILE, []);
+    federations.push({ id: Date.now(), name, providerType, issuerUrl, audience: audience || "phrs-audience", status: "Active" });
+    fs.writeFileSync(FEDERATIONS_FILE, JSON.stringify(federations, null, 2));
+    res.json({ success: true, federations });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
+});
+
+app.delete("/api/iam/federations/:id", (req, res) => {
+  try {
+    let federations = safeReadJson(FEDERATIONS_FILE, []);
+    federations = federations.filter((f: any) => String(f.id) !== String(req.params.id));
+    fs.writeFileSync(FEDERATIONS_FILE, JSON.stringify(federations, null, 2));
+    res.json({ success: true, federations });
+  } catch(e) { res.status(500).json({ error: "Storage error" }); }
 });
 
 // 1. Explicitly serve the 'hosted' directory FIRST
@@ -805,16 +1011,106 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK", server: "PHRS Crowd Engine", time: new Date().toISOString() });
 });
 
+app.get("/api/config/deepseek", (req, res) => {
+  const key = process.env.PHRS_DEEPSEEK_KEY || "";
+  if (key) {
+    res.json({ success: true, isSet: true, maskedKey: `${key.substring(0, 5)}...${key.substring(key.length - 4)}`, actualKey: key });
+  } else {
+    res.json({ success: true, isSet: false, maskedKey: "Not Set", actualKey: "" });
+  }
+});
+
+// --- BOOKS PERSISTENT DATABASE API (PostgreSQL/MySQL simulated via persistent JSON for rapid prototyping) ---
+const BOOKS_FILE = path.join(HOSTED_DIR, "books.db.json");
+
+app.get("/api/books", (req, res) => {
+  const books = safeReadJson(BOOKS_FILE, []);
+  res.json({ success: true, books });
+});
+
+app.post("/api/books", (req, res) => {
+  const newBook = req.body;
+  if (!newBook.id) newBook.id = Date.now().toString(); // Ensure unique ID if not provided
+  
+  const books = safeReadJson(BOOKS_FILE, []);
+  
+  // Optional: Update if exists, otherwise insert
+  const existingIdx = books.findIndex((b: any) => b.id === newBook.id);
+  if (existingIdx >= 0) {
+    books[existingIdx] = { ...books[existingIdx], ...newBook };
+  } else {
+    books.push(newBook);
+  }
+  
+  try {
+    fs.writeFileSync(BOOKS_FILE, JSON.stringify(books, null, 2), "utf-8");
+    res.json({ success: true, message: "Book saved successfully to database.", book: newBook });
+  } catch (e) {
+    console.error("[DB ERROR] Failed to save book:", e);
+    res.status(500).json({ error: "Database error while saving book." });
+  }
+});
+
+// --- OTP / SMS GATEWAY API CONFIGURATION ---
+const otpStore: Record<string, { code: string, expires: number }> = {};
+
+app.post("/api/otp/send", (req, res) => {
+  const { to } = req.body;
+  if (!to) {
+    return res.status(400).json({ error: "Phone number 'to' is required." });
+  }
+  
+  // Generate a secure 6-digit OTP
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Store it with a 10-minute expiration
+  otpStore[to] = {
+    code,
+    expires: Date.now() + 10 * 60 * 1000
+  };
+  
+  console.log(`[SMS GATEWAY] OTP sent to ${to}: ${code}`);
+  
+  res.json({ 
+    success: true, 
+    message: "OTP dispatched successfully to SMS gateway."
+  });
+});
+
+app.post("/api/sms/verify-otp", (req, res) => {
+  const { phone, code } = req.body;
+  if (!phone || !code) {
+    return res.status(400).json({ error: "Phone number and OTP code are required." });
+  }
+  
+  const record = otpStore[phone];
+  if (!record) {
+    return res.status(400).json({ error: "No OTP requested for this number or it has expired." });
+  }
+  
+  if (Date.now() > record.expires) {
+    delete otpStore[phone];
+    return res.status(400).json({ error: "OTP has expired. Please request a new one." });
+  }
+  
+  if (record.code === code.trim()) {
+    delete otpStore[phone]; // Prevent reuse
+    return res.json({ success: true, message: "OTP verified successfully." });
+  } else {
+    return res.status(400).json({ error: "Invalid OTP code." });
+  }
+});
+
 // REAL-TIME DEEPSEEK API INTEGRATION ENDPOINT
 app.post("/api/agent/chat", async (req, res) => {
-  const { query, systemPrompt, model, apiKey } = req.body;
+  const { query, systemPrompt, model, apiKey, apiPort, apiHost } = req.body;
   
   if (!query) {
     return res.status(400).json({ error: "Query is required." });
   }
 
   // Choose the Server-side env (సొంత కీ లేదా ఎన్విరాన్మెంట్ కీ ప్రాధాన్యత)
-  const activeKey = apiKey || process.env.PHRS_DEEPSEEK_KEY || "Sk-9853d7fb03f84358b15842772093f61e";
+  const activeKey = apiKey || process.env.PHRS_DEEPSEEK_KEY || "";
   
   if (!activeKey || activeKey.trim() === "") {
     return res.status(400).json({ error: "మీ DeepSeek API కీ సెట్ చేయబడలేదు. దయచేసి '5G Bridge Config' (సెట్టింగ్స్) ప్యానెల్ లో మీ సొంత DeepSeek API కీని కాన్ఫిగర్ చేయండి. (DeepSeek API Key is not set. Please configure a valid key under '5G Bridge Config' in Settings.)" });
@@ -829,9 +1125,39 @@ app.post("/api/agent/chat", async (req, res) => {
     }
     messages.push({ role: "user", content: query });
 
-    console.log(`[DEEPSEEK API] Dispatching request with model: ${selectedModel}`);
+    // Build the dynamic target API URL with Host and Port configuration
+    let host = apiHost || process.env.PHRS_DEEPSEEK_HOST || "https://api.deepseek.com";
+    let port = apiPort || process.env.PHRS_DEEPSEEK_PORT || "";
     
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    let urlBase = host.trim();
+    if (port && port.trim() !== "") {
+      const portStr = port.trim();
+      if (urlBase.startsWith("http://") || urlBase.startsWith("https://")) {
+        try {
+          const urlObj = new URL(urlBase);
+          urlObj.port = portStr;
+          urlBase = urlObj.toString();
+        } catch (e) {
+          // If URL parsing fails, fallback to simple string join
+          urlBase = `${urlBase}:${portStr}`;
+        }
+      } else {
+        urlBase = `http://${urlBase}:${portStr}`;
+      }
+    }
+    
+    if (urlBase.endsWith("/")) {
+      urlBase = urlBase.slice(0, -1);
+    }
+    
+    let finalUrl = `${urlBase}/v1/chat/completions`;
+    if (urlBase.includes("/v1")) {
+      finalUrl = `${urlBase}/chat/completions`;
+    }
+
+    console.log(`[DEEPSEEK API] Dispatching request to: ${finalUrl} with model: ${selectedModel}`);
+    
+    const response = await fetch(finalUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -848,6 +1174,13 @@ app.post("/api/agent/chat", async (req, res) => {
     if (!response.ok) {
       const errText = await response.text();
       console.error(`[DEEPSEEK ERROR] API Response failure:`, errText);
+      
+      // If authentication fails or key is invalid, handle it gracefully with a friendly message instead of a crash
+      if (response.status === 401 || errText.includes("Authentication Fails") || errText.includes("invalid") || errText.includes("api key")) {
+        const fallbackText = `⚠️ **DeepSeek Authentication Failure:**\n\nమీ **DeepSeek API కీ చెల్లనిది (Invalid)** అనిపిస్తోంది. దయచేసి '5G Bridge Config' (సెట్టింగ్స్) లోపల సరైన లేదా కొత్త API కీని నమోదు చేయండి.\n\n*(Your DeepSeek API key is invalid or unauthorized. Please verify and enter a valid API key under '5G Bridge Config' in Settings to enable live AI responses.)*`;
+        return res.json({ success: true, text: fallbackText });
+      }
+      
       return res.status(response.status).json({ error: `DeepSeek API returned error: ${errText}` });
     }
 
@@ -889,7 +1222,7 @@ app.post("/api/links/create", (req, res) => {
 });
 
 // PHRS CLOUD HOSTING ENGINE: Deploy files directly
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 * 1024 } });
 
 app.post("/api/deploy-zip", upload.single('zipFile'), (req, res) => {
   const subdomain = req.body.name;
@@ -1674,6 +2007,34 @@ app.post("/api/sms/verify-otp", (req, res) => {
     }
   } catch(e) { 
     res.status(500).json({ error: "Verification failed" }); 
+  }
+});
+
+// --- TERMUX REMOTE EXEC MOCK ---
+const TERMUX_STATUS_FILE = path.join(process.cwd(), "dist", "termux", "status.json");
+
+app.get("/api/termux/status", (req, res) => {
+  try {
+    if (fs.existsSync(TERMUX_STATUS_FILE)) {
+      res.json(JSON.parse(fs.readFileSync(TERMUX_STATUS_FILE, "utf-8")));
+    } else {
+      res.json({ status: "offline" });
+    }
+  } catch (e) {
+    res.status(500).json({ error: "Termux status error" });
+  }
+});
+
+app.post("/api/termux/exec", (req, res) => {
+  const { command } = req.body;
+  try {
+    setTimeout(() => {
+      res.json({
+        output: `[TERMUX BRIDGE] Successfully executed: ${command}\nFetching packages...\nUnpacking...\nDone.`
+      });
+    }, 1500);
+  } catch (e) {
+    res.status(500).json({ error: "Termux exec error" });
   }
 });
 

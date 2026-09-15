@@ -7,64 +7,66 @@ export default function SecretManagerTab({ state }: { state: any }) {
   return (
         <>
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-slate-100 pb-4">
               <div className="flex flex-col">
-                <h1 className="text-2xl font-bold text-slate-900">Secret Manager</h1>
-                <p className="text-xs text-slate-500 font-mono">Autonomous Encryption & Environment Variable Bridge</p>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Secret Manager</h1>
+                <p className="text-xs text-slate-500 font-mono mt-1">Autonomous Encryption & Environment Variable Bridge</p>
               </div>
-              <div className="flex gap-2">
-                <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <div className="flex bg-slate-100 p-1 rounded-lg">
                   <button 
                     onClick={() => setSecretManagerSubTab('secrets')}
-                    className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${secretManagerSubTab === 'secrets' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                    className={`flex-1 sm:flex-initial px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all whitespace-nowrap ${secretManagerSubTab === 'secrets' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
                   >
                     Stored Secrets
                   </button>
                   <button 
                     onClick={() => setSecretManagerSubTab('translation')}
-                    className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${secretManagerSubTab === 'translation' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                    className={`flex-1 sm:flex-initial px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all whitespace-nowrap ${secretManagerSubTab === 'translation' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
                   >
                     Translation Bridge
                   </button>
                 </div>
-                <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> {secretManagerSubTab === 'secrets' ? 'Create Secret' : 'Add Mapping'}
+                <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center justify-center gap-2 whitespace-nowrap self-stretch sm:self-auto">
+                  <Plus className="w-4 h-4 shrink-0" /> <span className="whitespace-nowrap">{secretManagerSubTab === 'secrets' ? 'Create Secret' : 'Add Mapping'}</span>
                 </button>
               </div>
             </div>
 
             {secretManagerSubTab === 'secrets' ? (
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
-                    <tr>
-                      <th className="px-6 py-4">Name</th>
-                      <th className="px-6 py-4">Created</th>
-                      <th className="px-6 py-4">Type</th>
-                      <th className="px-6 py-4">Labels</th>
-                      <th className="px-6 py-4">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {[
-                      { name: 'phrs-master-db-key', date: '2 days ago', type: 'Database Password', label: 'env:prod' },
-                      { name: 'sms-gateway-token', date: '1 week ago', type: 'API Token', label: 'env:test' },
-                      { name: 'ssh-vps-access-key', date: '1 month ago', type: 'SSH Key', label: 'env:global' }
-                    ].map((s, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors cursor-pointer">
-                        <td className="px-6 py-4 font-medium text-slate-900">{s.name}</td>
-                        <td className="px-6 py-4 text-slate-500">{s.date}</td>
-                        <td className="px-6 py-4 text-slate-600">{s.type}</td>
-                        <td className="px-6 py-4">
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono">{s.label}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <button className="text-indigo-600 hover:underline">Edit</button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left min-w-[700px]">
+                    <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4">Name</th>
+                        <th className="px-6 py-4">Created</th>
+                        <th className="px-6 py-4">Type</th>
+                        <th className="px-6 py-4">Labels</th>
+                        <th className="px-6 py-4">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-sm">
+                      {[
+                        { name: 'phrs-master-db-key', date: '2 days ago', type: 'Database Password', label: 'env:prod' },
+                        { name: 'sms-gateway-token', date: '1 week ago', type: 'API Token', label: 'env:test' },
+                        { name: 'ssh-vps-access-key', date: '1 month ago', type: 'SSH Key', label: 'env:global' }
+                      ].map((s, i) => (
+                        <tr key={i} className="hover:bg-slate-50/50 transition-colors cursor-pointer">
+                          <td className="px-6 py-4 font-medium text-slate-900 font-mono text-xs">{s.name}</td>
+                          <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{s.date}</td>
+                          <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{s.type}</td>
+                          <td className="px-6 py-4">
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono whitespace-nowrap">{s.label}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button className="text-indigo-600 hover:underline font-bold text-xs">Edit</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
               <div className="space-y-6">

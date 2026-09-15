@@ -8,6 +8,31 @@ export default function DatabaseTab({ state }: { state: any }) {
   const [realCollections, setRealCollections] = useState<string[]>([]);
   const [realDocsData, setRealDocsData] = useState<any>({});
   const [docContent, setDocContent] = useState('');
+  const [internalBooks, setInternalBooks] = useState<any[]>([]);
+
+  // Local state for other DB panels
+  const [alloyClusters, setAlloyClusters] = useState<{name: string, status: string, memory: string}[]>([]);
+  const [spannerInstances, setSpannerInstances] = useState<{name: string, nodes: number, status: string}[]>([]);
+  const [bigtableInstances, setBigtableInstances] = useState<{name: string, type: string, status: string}[]>([]);
+  const [memoryStoreCaches, setMemoryStoreCaches] = useState<{name: string, capacity: string, status: string}[]>([]);
+
+  const fetchInternalBooks = async () => {
+    try {
+      const res = await fetch('/api/books');
+      const data = await res.json();
+      if(data.books) {
+        setInternalBooks(data.books);
+      }
+    } catch(e) {
+      console.warn("Failed to fetch internal books DB", e);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedSubMenu === 'Cloud SQL') {
+      fetchInternalBooks();
+    }
+  }, [selectedSubMenu]);
 
   const fetchCollections = async () => {
     try {
@@ -120,13 +145,16 @@ export default function DatabaseTab({ state }: { state: any }) {
   };
 
   useEffect(() => {
-    if (phrsDbSubTab === 'Firestore Database') {
+    if (phrsDbSubTab === 'Firestore Database' || phrsDbSubTab === 'Project Overview') {
       fetchCollections();
-    } else if (phrsDbSubTab === 'Authentication') {
+    }
+    if (phrsDbSubTab === 'Authentication' || phrsDbSubTab === 'Project Overview') {
       fetchUsers();
-    } else if (phrsDbSubTab === 'Realtime Database') {
+    }
+    if (phrsDbSubTab === 'Realtime Database') {
       fetchRealtimeDb();
-    } else if (phrsDbSubTab === 'Storage') {
+    }
+    if (phrsDbSubTab === 'Storage' || phrsDbSubTab === 'Project Overview') {
       fetchStorageFiles();
     }
   }, [phrsDbSubTab]);
@@ -155,11 +183,11 @@ export default function DatabaseTab({ state }: { state: any }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                    <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
                      <h3 className="text-sm font-semibold text-indigo-900">Total Clusters</h3>
-                     <p className="text-4xl font-black text-indigo-600 mt-2">4</p>
+                     <p className="text-4xl font-black text-indigo-600 mt-2">{alloyClusters.length + spannerInstances.length + bigtableInstances.length + memoryStoreCaches.length}</p>
                    </div>
                    <div className="p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
                      <h3 className="text-sm font-semibold text-emerald-900">Active Queries</h3>
-                     <p className="text-4xl font-black text-emerald-600 mt-2">1,204</p>
+                     <p className="text-4xl font-black text-emerald-600 mt-2">{internalBooks.length * 14 + 12}</p>
                    </div>
                    <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100">
                      <h3 className="text-sm font-semibold text-amber-900">Health Status</h3>
@@ -170,12 +198,74 @@ export default function DatabaseTab({ state }: { state: any }) {
             )}
             {selectedSubMenu === 'Cloud SQL' && (
               <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">Cloud SQL Instances</h1>
-                <p className="text-slate-600 mb-6">Manage your managed relational PostgreSQL, MySQL, and SQL Server instances.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <h3 className="text-lg font-bold text-slate-700">No Instances Found</h3>
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Instance</button>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h1 className="text-2xl font-bold text-slate-900">PHRS Internal Database</h1>
+                    <p className="text-slate-600">Local JSON persistent storage for Digital Library.</p>
+                  </div>
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">Connected</span>
+                </div>
+                
+                <div className="mt-8">
+                  <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Database className="w-5 h-5 text-indigo-500" />
+                    Table: books
+                  </h3>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                          <th className="p-4">ID</th>
+                          <th className="p-4">Title</th>
+                          <th className="p-4">Author</th>
+                          <th className="p-4">Category</th>
+                          <th className="p-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {internalBooks.length > 0 ? (
+                          internalBooks.map((book: any, idx: number) => (
+                            <tr key={book.id || idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                              <td className="p-4 text-sm text-slate-600 font-mono">{book.id?.substring(0, 8) || `...${idx}`}</td>
+                              <td className="p-4 text-sm text-slate-800 font-semibold">{book.title || 'Untitled'}</td>
+                              <td className="p-4 text-sm text-slate-600">{book.author || 'Unknown'}</td>
+                              <td className="p-4 text-sm">
+                                <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-md">{book.category || 'General'}</span>
+                              </td>
+                              <td className="p-4 text-sm">
+                                {book.isUnlocked ? (
+                                  <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md flex items-center gap-1 w-max">
+                                    <CheckCircle2 className="w-3 h-3" /> Unlocked
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-md flex items-center gap-1 w-max">
+                                    Locked (₹{book.costToUnlock})
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr className="border-b border-slate-100">
+                            <td className="p-8 text-sm text-slate-500 font-medium col-span-5 text-center" colSpan={5}>
+                              No books found in the internal database. Add a book from the Library App to see it here!
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-4 flex gap-3">
+                    <button 
+                      onClick={async () => {
+                        await fetchInternalBooks();
+                        alert('Refreshed latest books from server.');
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" /> Fetch Latest
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -183,18 +273,61 @@ export default function DatabaseTab({ state }: { state: any }) {
               <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
                 <h1 className="text-2xl font-bold text-slate-900 mb-4">AlloyDB for PostgreSQL</h1>
                 <p className="text-slate-600 mb-6">Fully managed PostgreSQL-compatible database service for your most demanding enterprise database workloads.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button 
-                    onClick={() => {
-                      setHomeToast("✓ Initializing AlloyDB cluster: primary-cluster-01...");
-                      setVpsLogStream(prev => [...prev, `[CLOUDSQL] Provisioning AlloyDB PostgreSQL cluster`]);
-                      setTimeout(() => setHomeToast(null), 3000);
-                    }}
-                    className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
-                  >
-                    Create Cluster
-                  </button>
+                <div className="mt-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-indigo-500" />
+                      Clusters
+                    </h3>
+                    <button 
+                      onClick={() => {
+                        const newCluster = {name: `primary-cluster-0${alloyClusters.length + 1}`, status: 'Running', memory: '16GB'};
+                        setAlloyClusters([...alloyClusters, newCluster]);
+                        setHomeToast(`✓ Initialized AlloyDB cluster: ${newCluster.name}`);
+                        setVpsLogStream(prev => [...prev, `[ALLOYDB] Provisioned PostgreSQL cluster ${newCluster.name}`]);
+                        setTimeout(() => setHomeToast(null), 3000);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" /> Create Cluster
+                    </button>
+                  </div>
+                  {alloyClusters.length > 0 ? (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                            <th className="p-4">Cluster Name</th>
+                            <th className="p-4">Memory</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {alloyClusters.map((cluster, idx) => (
+                            <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
+                              <td className="p-4 text-sm text-slate-800 font-semibold">{cluster.name}</td>
+                              <td className="p-4 text-sm text-slate-600">{cluster.memory}</td>
+                              <td className="p-4 text-sm">
+                                <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md flex items-center gap-1 w-max">
+                                  <CheckCircle2 className="w-3 h-3" /> {cluster.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-sm">
+                                <button onClick={() => setAlloyClusters(alloyClusters.filter((_, i) => i !== idx))} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4"/></button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
+                      <Database className="w-16 h-16 text-slate-300 mb-4" />
+                      <h3 className="text-lg font-bold text-slate-700">No Clusters Found</h3>
+                      <p className="text-slate-500 text-sm mt-2">Create an AlloyDB cluster to get started.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -202,29 +335,122 @@ export default function DatabaseTab({ state }: { state: any }) {
               <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
                 <h1 className="text-2xl font-bold text-slate-900 mb-4">Spanner</h1>
                 <p className="text-slate-600 mb-6">Fully managed, mission-critical relational database service that offers transactional consistency at global scale.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button 
-                    onClick={() => {
-                      setHomeToast("✓ Creating Spanner instance: global-phrs-db...");
-                      setVpsLogStream(prev => [...prev, `[SPANNER] Deploying global strongly consistent instance`]);
-                      setTimeout(() => setHomeToast(null), 3000);
-                    }}
-                    className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
-                  >
-                    Create Instance
-                  </button>
-                </div>
+                <div className="mt-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-indigo-500" />
+                      Instances
+                    </h3>
+                    <button 
+                      onClick={() => {
+                        const newInstance = {name: `global-phrs-db-0${spannerInstances.length + 1}`, nodes: 3, status: 'Ready'};
+                        setSpannerInstances([...spannerInstances, newInstance]);
+                        setHomeToast(`✓ Created Spanner instance: ${newInstance.name}`);
+                        setVpsLogStream(prev => [...prev, `[SPANNER] Deploying global strongly consistent instance ${newInstance.name}`]);
+                        setTimeout(() => setHomeToast(null), 3000);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" /> Create Instance
+                    </button>
+                  </div>
+                  {spannerInstances.length > 0 ? (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                            <th className="p-4">Instance Name</th>
+                            <th className="p-4">Nodes</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {spannerInstances.map((instance, idx) => (
+                            <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
+                              <td className="p-4 text-sm text-slate-800 font-semibold">{instance.name}</td>
+                              <td className="p-4 text-sm text-slate-600">{instance.nodes} Nodes (Multi-region)</td>
+                              <td className="p-4 text-sm">
+                                <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md flex items-center gap-1 w-max">
+                                  <CheckCircle2 className="w-3 h-3" /> {instance.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-sm">
+                                <button onClick={() => setSpannerInstances(spannerInstances.filter((_, i) => i !== idx))} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4"/></button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
+                      <Database className="w-16 h-16 text-slate-300 mb-4" />
+                      <h3 className="text-lg font-bold text-slate-700">No Instances Found</h3>
+                    </div>
+                  )}
+                 </div>
               </div>
             )}
             {selectedSubMenu === 'Bigtable' && (
               <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
                 <h1 className="text-2xl font-bold text-slate-900 mb-4">Bigtable</h1>
                 <p className="text-slate-600 mb-6">A fully managed, scalable NoSQL database service for large analytical and operational workloads.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">Create Instance</button>
-                </div>
+                <div className="mt-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-indigo-500" />
+                      Instances
+                    </h3>
+                    <button 
+                      onClick={() => {
+                        const newInstance = {name: `bt-analytics-0${bigtableInstances.length + 1}`, type: 'SSD', status: 'Ready'};
+                        setBigtableInstances([...bigtableInstances, newInstance]);
+                        setHomeToast(`✓ Created Bigtable instance: ${newInstance.name}`);
+                        setVpsLogStream(prev => [...prev, `[BIGTABLE] Provisioned NoSQL cluster ${newInstance.name}`]);
+                        setTimeout(() => setHomeToast(null), 3000);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" /> Create Instance
+                    </button>
+                  </div>
+                  {bigtableInstances.length > 0 ? (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                            <th className="p-4">Instance Name</th>
+                            <th className="p-4">Storage Type</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bigtableInstances.map((instance, idx) => (
+                            <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
+                              <td className="p-4 text-sm text-slate-800 font-semibold">{instance.name}</td>
+                              <td className="p-4 text-sm text-slate-600">{instance.type}</td>
+                              <td className="p-4 text-sm">
+                                <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md flex items-center gap-1 w-max">
+                                  <CheckCircle2 className="w-3 h-3" /> {instance.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-sm">
+                                <button onClick={() => setBigtableInstances(bigtableInstances.filter((_, i) => i !== idx))} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4"/></button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
+                      <Database className="w-16 h-16 text-slate-300 mb-4" />
+                      <h3 className="text-lg font-bold text-slate-700">No Instances Found</h3>
+                    </div>
+                  )}
+                 </div>
               </div>
             )}
             {selectedSubMenu === 'Firestore' && (
@@ -250,19 +476,61 @@ export default function DatabaseTab({ state }: { state: any }) {
               <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
                 <h1 className="text-2xl font-bold text-slate-900 mb-4">Memorystore</h1>
                 <p className="text-slate-600 mb-6">Fully managed in-memory data store service for Redis and Memcached at Google Cloud.</p>
-                <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
-                  <Database className="w-16 h-16 text-slate-300 mb-4" />
-                  <button 
-                    onClick={() => {
-                      setHomeToast("✓ Provisioning Memorystore Redis instance: cache-01...");
-                      setVpsLogStream(prev => [...prev, `[MEMORYSTORE] Memory allocation: 5GB Tier-1 Redis active`]);
-                      setTimeout(() => setHomeToast(null), 3000);
-                    }}
-                    className="mt-4 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
-                  >
-                    Create Instance
-                  </button>
-                </div>
+                <div className="mt-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-indigo-500" />
+                      Caches
+                    </h3>
+                    <button 
+                      onClick={() => {
+                        const newCache = {name: `cache-tier1-0${memoryStoreCaches.length + 1}`, capacity: '5GB', status: 'Running'};
+                        setMemoryStoreCaches([...memoryStoreCaches, newCache]);
+                        setHomeToast(`✓ Provisioning Memorystore Redis instance: ${newCache.name}...`);
+                        setVpsLogStream(prev => [...prev, `[MEMORYSTORE] Memory allocation: 5GB Tier-1 Redis active for ${newCache.name}`]);
+                        setTimeout(() => setHomeToast(null), 3000);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" /> Create Instance
+                    </button>
+                  </div>
+                  {memoryStoreCaches.length > 0 ? (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                            <th className="p-4">Cache Name</th>
+                            <th className="p-4">Capacity</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {memoryStoreCaches.map((cache, idx) => (
+                            <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
+                              <td className="p-4 text-sm text-slate-800 font-semibold">{cache.name}</td>
+                              <td className="p-4 text-sm text-slate-600">{cache.capacity} Redis Node</td>
+                              <td className="p-4 text-sm">
+                                <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md flex items-center gap-1 w-max">
+                                  <CheckCircle2 className="w-3 h-3" /> {cache.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-sm">
+                                <button onClick={() => setMemoryStoreCaches(memoryStoreCaches.filter((_, i) => i !== idx))} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4"/></button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-10 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-center">
+                      <Database className="w-16 h-16 text-slate-300 mb-4" />
+                      <h3 className="text-lg font-bold text-slate-700">No Caches Found</h3>
+                    </div>
+                  )}
+                 </div>
               </div>
             )}
 
@@ -522,7 +790,7 @@ export default function DatabaseTab({ state }: { state: any }) {
                   </div>
                   <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
                     <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">FIRESTORE COLLECTION INDEX</h3>
-                    <div className="text-3xl font-bold text-slate-800">{Object.keys(firestoreCollections).length} Collections</div>
+                    <div className="text-3xl font-bold text-slate-800">{realCollections.length} Collections</div>
                     <p className="text-[10px] text-slate-500 mt-1">NoSQL Indexing operational</p>
                   </div>
                   <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -1440,7 +1708,6 @@ export default function DatabaseTab({ state }: { state: any }) {
                 {/* execution playground & execution log screen */}
                 <div className="lg:col-span-8 p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-4">
                   <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase">EXECUTION PLAYGROUND</h3>
-                  <p className="text-xs text-slate-500">Inject JSON test payloads directly into your cloud functions runtime environment and view instant log traces below.</p>
                   
                   <div className="space-y-4 font-mono text-xs">
                     <div>
@@ -1454,7 +1721,7 @@ export default function DatabaseTab({ state }: { state: any }) {
 
                     <div>
                       <label className="block text-[10px] text-slate-500 mb-1">TEST PAYLOAD (JSON FORMAT)</label>
-                      <textarea id="play_payload_input" rows={3} defaultValue={`{\n  "uid": "usr_9812",\n  "email": "test@phrscrowd.local",\n  "timestamp": "${new Date().toISOString()}"\n}`} className="w-full p-2 border rounded-lg bg-slate-50 text-slate-800 font-mono" />
+                      <textarea id="play_payload_input" rows={8} defaultValue={`{\n  "uid": "usr_9812",\n  "email": "test@phrscrowd.local",\n  "timestamp": "${new Date().toISOString()}"\n}`} className="w-full p-2 border rounded-lg bg-slate-50 text-slate-800 font-mono" />
                     </div>
 
                     <button 

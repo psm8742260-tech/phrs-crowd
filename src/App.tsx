@@ -14,7 +14,6 @@ import BillingTab from './components/tabs/BillingTab';
 import RecentlyVisitedTab from './components/tabs/RecentlyVisitedTab';
 import SolutionsTab from './components/tabs/SolutionsTab';
 import ExportTab from './components/tabs/ExportTab';
-import ApiBoardTab from './components/tabs/ApiBoardTab';
 import ConsoleTab from './components/tabs/ConsoleTab';
 import SmsGatewayTab from './components/tabs/SmsGatewayTab';
 import NetworkConfigTab from './components/tabs/NetworkConfigTab';
@@ -235,7 +234,7 @@ export default function App() {
   const [buildProgress, setBuildProgress] = useState(0);
   const [activeVirtualApp, setActiveVirtualApp] = useState<Deployment | null>(null);
   const [simulatedVisitorCount, setSimulatedVisitorCount] = useState(12);
-  const [smartRouteModal, setSmartRouteModal] = useState<{ url: string; service?: string } | null>(null);
+  const [smartRouteModal, setSmartRouteModal] = useState<{ url: string; service?: string } | null>(null); const [shortLinks, setShortLinks] = useState<any[]>([]); const [linkSlug, setLinkSlug] = useState(""); const [linkTarget, setLinkTarget] = useState(""); const handleCreateShortLink = () => {};
   
   // Hosting state
   const [hostFileName, setHostFileName] = useState('index.html');
@@ -345,9 +344,9 @@ export default function App() {
 
   // AI & Admin API Board state
   const [apiKeys, setApiKeys] = useState<{ [key: string]: string }>({
-    gemini: localStorage.getItem('phrs_key_gemini') || 'AIzaSyA89127hHjK7as2167s',
-    deepseek: localStorage.getItem('phrs_key_deepseek') || 'sk-ds-9012hjs8h12bs7816h',
-    openai: localStorage.getItem('phrs_key_openai') || 'sk-proj-uH81927hs7b12s89'
+    gemini: localStorage.getItem('phrs_key_gemini') || '',
+    deepseek: localStorage.getItem('phrs_key_deepseek') || '',
+    openai: localStorage.getItem('phrs_key_openai') || ''
   });
   const [isRoutingActive, setIsRoutingActive] = useState(true);
   const [routingHistory, setRoutingHistory] = useState<Array<{prompt: string; target: string; latency: number; cost: number; response: string}>>([
@@ -434,6 +433,8 @@ export default function App() {
   const [remoteNodeIp, setRemoteNodeIp] = useState(() => localStorage.getItem('phrs_ip') || '104.21.42.180');
   const [deviceSerial, setDeviceSerial] = useState(() => localStorage.getItem('phrs_serial') || '10BF4C1HQ2000R1');
   const [deepseekApiKey, setDeepseekApiKey] = useState(() => localStorage.getItem('phrs_deepseek') || '');
+  const [deepseekApiHost, setDeepseekApiHost] = useState(() => localStorage.getItem('phrs_deepseek_host') || 'https://api.deepseek.com');
+  const [deepseekApiPort, setDeepseekApiPort] = useState(() => localStorage.getItem('phrs_deepseek_port') || '');
   
   // Admin Compilation Portal States
   const [showAdminPortal, setShowAdminPortal] = useState(false);
@@ -451,6 +452,8 @@ export default function App() {
   const [tempRemoteNodeIp, setTempRemoteNodeIp] = useState(() => localStorage.getItem('phrs_ip') || '104.21.42.180');
   const [tempDeviceSerial, setTempDeviceSerial] = useState(() => localStorage.getItem('phrs_serial') || '10BF4C1HQ2000R1');
   const [tempDeepseekApiKey, setTempDeepseekApiKey] = useState(() => localStorage.getItem('phrs_deepseek') || '');
+  const [tempDeepseekApiHost, setTempDeepseekApiHost] = useState(() => localStorage.getItem('phrs_deepseek_host') || 'https://api.deepseek.com');
+  const [tempDeepseekApiPort, setTempDeepseekApiPort] = useState(() => localStorage.getItem('phrs_deepseek_port') || '');
 
   // Cloud Run states
   const [cloudRunImage, setCloudRunImage] = useState('gcr.io/phrscrowd/express-app:latest');
@@ -576,6 +579,21 @@ export default function App() {
       alert("PHRS సర్వర్ సెట్టింగ్స్ విజయవంతంగా అప్డేట్ అయ్యాయి! సిస్టమ్ రీస్టార్ట్ అవుతోంది...");
       location.reload();
     };
+  }, []);
+
+  // Fetch server-configured DeepSeek API key status and pre-fill if empty
+  useEffect(() => {
+    fetch('/api/config/deepseek')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.isSet) {
+          if (!localStorage.getItem('phrs_deepseek')) {
+            setDeepseekApiKey(data.actualKey);
+            setTempDeepseekApiKey(data.actualKey);
+          }
+        }
+      })
+      .catch(err => console.error("Error loading server DeepSeek config:", err));
   }, []);
 
   // Cloud SQL states
@@ -810,6 +828,8 @@ export default function App() {
           query: `Write a robust, production-ready code snippet or program in "${agentCodeLanguage}" based on the following instruction: "${promptText}". Output only the source code wrapped inside a markdown code block starting with \`\`\`${agentCodeLanguage} and ending with \`\`\`. Do not write long explanations, keep descriptions short and focus on supplying the complete, clean code block.`,
           systemPrompt: `You are PHRS Code Architect. You generate ultra-clean, production-ready, error-free ${agentCodeLanguage} code based on user prompt. Always provide the code in block notation.`,
           apiKey: deepseekApiKey,
+          apiHost: deepseekApiHost,
+          apiPort: deepseekApiPort,
           model: 'deepseek-chat'
         })
       });
@@ -884,6 +904,8 @@ export default function App() {
           query: queryText,
           systemPrompt: customSystemPrompt || "మీరు పీహెచ్ఆర్ఎస్ క్రౌడ్ కన్సోల్ యొక్క అధికారిక బ్రహ్మాస్త్ర 3.5 అల్ట్రా ఏఐ ఏజెంట్. డెవలపర్‌లకు క్లౌడ్ సర్వీస్, కోడ్ రైటింగ్ మరియు పీహెచ్ఆర్ఎస్ మేనేజ్‌మెంట్‌లో అద్భుతమైన మార్గదర్శకత్వం అందించండి.",
           apiKey: deepseekApiKey,
+          apiHost: deepseekApiHost,
+          apiPort: deepseekApiPort,
           model: selectedAgentId ? (agents.find((a: any) => a.id === selectedAgentId)?.model || 'deepseek-chat') : 'deepseek-chat'
         })
       });
@@ -1495,12 +1517,6 @@ export default function App() {
 
   const navSections = [
     {
-      id: 'secret_manager',
-      label: 'Secret Manager',
-      icon: Key,
-      subMenus: ['Secret Overview', 'Credentials', 'SSH Keys', 'API Tokens']
-    },
-    {
       id: 'cloud_build',
       label: 'Cloud Build',
       icon: RefreshCw,
@@ -1547,12 +1563,6 @@ export default function App() {
       label: 'Marketplace',
       icon: ShoppingCart,
       subMenus: ['Browse', 'purchase', 'and deploy ready-to-use software and solutions']
-    },
-    {
-      id: 'apis_services',
-      label: 'APIs & Services',
-      icon: Cpu,
-      subMenus: ['Enabled APIs & services', 'Library', 'Credentials', 'OAuth consent screen', 'Page usage agreements']
     },
     {
       id: 'agent_platform',
@@ -1797,7 +1807,7 @@ export default function App() {
   }
 
 
-    const globalState = { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, otpLength, setOtpLength, phrsSmsHistory, setPhrsSmsHistory, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick, handleDeployFile, triggerCodeGeneration, startAtomicDeepScan, handleTestAIRoute, isFirebaseSection
+    const globalState = { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, shortLinks, setShortLinks, linkSlug, setLinkSlug, linkTarget, setLinkTarget, handleCreateShortLink, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, otpLength, setOtpLength, phrsSmsHistory, setPhrsSmsHistory, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, deepseekApiHost, setDeepseekApiHost, deepseekApiPort, setDeepseekApiPort, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, tempDeepseekApiHost, setTempDeepseekApiHost, tempDeepseekApiPort, setTempDeepseekApiPort, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, computeSubTab, setComputeSubTab, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick, handleDeployFile, triggerCodeGeneration, startAtomicDeepScan, handleTestAIRoute, isFirebaseSection
     };
   return (
     <div className={`min-h-screen font-sans flex flex-col transition-colors duration-200 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
@@ -2095,21 +2105,6 @@ export default function App() {
                 {isSidebarOpen && <span className="truncate text-blue-600 font-semibold">View all products</span>}
               </button>
 
-              {/* Get Agent Platform API key button */}
-              <button
-                onClick={() => {
-                  setActiveTab('api_board');
-                  setHomeToast("Configure credentials for Gemini & DeepSeek models");
-                  setTimeout(() => setHomeToast(null), 3000);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-sans font-medium transition-colors ${
-                  isDarkMode ? 'text-slate-300 hover:bg-slate-800/50' : 'text-slate-700 hover:bg-slate-200/40'
-                }`}
-              >
-                <Key className="w-4 h-4 text-blue-500 shrink-0" />
-                {isSidebarOpen && <span className="truncate text-blue-600 font-semibold">Get Agent Platform API key</span>}
-              </button>
-
               {/* System IP & Telemetry Info (Compact) */}
               {isSidebarOpen && (
                 <div className={`mt-2 p-2.5 rounded-lg text-[9px] font-mono space-y-1 ${isDarkMode ? 'bg-slate-950/40 text-slate-500' : 'bg-slate-100 text-slate-500'}`}>
@@ -2238,13 +2233,6 @@ export default function App() {
               </div>
             </div>
           </div>
-        )}
-
-        {/* ==============================================
-            TAB: SECRET MANAGER
-            ============================================== */}
-        {activeTab === 'secret_manager' && (
-          <SecretManagerTab state={globalState} />
         )}
 
         {/* ==============================================
@@ -2726,7 +2714,7 @@ export default function App() {
                         <div className="space-y-1">
                           <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                             <Lock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                            <span>డీప్‌సీక్ API కీ</span>
+                            <span>డీప్‌సీక్ API కీ (API Key)</span>
                           </label>
                           <input 
                             type="password"
@@ -2736,6 +2724,38 @@ export default function App() {
                             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-mono text-xs text-slate-800"
                           />
                           <p className="text-[10px] text-slate-400">Used for edge intelligence routing.</p>
+                        </div>
+
+                        {/* Parameter 4: DeepSeek API Host */}
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <Globe className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                            <span>డీప్‌సీక్ API హోస్ట్ (API Host)</span>
+                          </label>
+                          <input 
+                            type="text"
+                            value={tempDeepseekApiHost}
+                            onChange={(e) => setTempDeepseekApiHost(e.target.value)}
+                            placeholder="https://api.deepseek.com"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-mono text-xs text-slate-800"
+                          />
+                          <p className="text-[10px] text-slate-400">Default: https://api.deepseek.com</p>
+                        </div>
+
+                        {/* Parameter 5: DeepSeek API Port */}
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <Terminal className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                            <span>డీప్‌సీక్ API పోర్ట్ (API Port)</span>
+                          </label>
+                          <input 
+                            type="text"
+                            value={tempDeepseekApiPort}
+                            onChange={(e) => setTempDeepseekApiPort(e.target.value)}
+                            placeholder="e.g. 443"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-mono text-xs text-slate-800"
+                          />
+                          <p className="text-[10px] text-slate-400">Network port (optional, e.g., 443 or custom port).</p>
                         </div>
                       </div>
 
@@ -2755,12 +2775,16 @@ export default function App() {
                             localStorage.setItem('phrs_serial', tempDeviceSerial);
                             localStorage.setItem('phrs_ip', tempRemoteNodeIp);
                             localStorage.setItem('phrs_deepseek', tempDeepseekApiKey);
+                            localStorage.setItem('phrs_deepseek_host', tempDeepseekApiHost);
+                            localStorage.setItem('phrs_deepseek_port', tempDeepseekApiPort);
                             setDeviceSerial(tempDeviceSerial);
                             setRemoteNodeIp(tempRemoteNodeIp);
                             setDeepseekApiKey(tempDeepseekApiKey);
+                            setDeepseekApiHost(tempDeepseekApiHost);
+                            setDeepseekApiPort(tempDeepseekApiPort);
                             setVpsLogStream(logs => [
                               ...logs,
-                              `[CONFIG UPDATE] Saved new config. Serial: ${tempDeviceSerial}, Auth Domain IP: ${tempRemoteNodeIp}, DeepSeek: PRESENT. Synchronizing with local 5G bridge.`
+                              `[CONFIG UPDATE] Saved new config. Serial: ${tempDeviceSerial}, Auth Domain IP: ${tempRemoteNodeIp}, DeepSeek: ${tempDeepseekApiKey ? 'PRESENT' : 'NOT SET'}, Host: ${tempDeepseekApiHost}, Port: ${tempDeepseekApiPort || 'Default'}. Synchronizing with local 5G bridge.`
                             ]);
                             setHomeToast('✓ Dynamic Server & Device Configuration Saved & Synced!');
                             setTimeout(() => setHomeToast(null), 3000);
@@ -2775,6 +2799,8 @@ export default function App() {
                             setTempDeviceSerial(deviceSerial);
                             setTempRemoteNodeIp(remoteNodeIp);
                             setTempDeepseekApiKey(deepseekApiKey);
+                            setTempDeepseekApiHost(deepseekApiHost);
+                            setTempDeepseekApiPort(deepseekApiPort);
                             setHomeToast('Reverted to current live configuration');
                             setTimeout(() => setHomeToast(null), 2000);
                           }}
@@ -2954,13 +2980,6 @@ export default function App() {
             ============================================== */}
         {activeTab === 'console' && (
           <ConsoleTab state={globalState} />
-        )}
-
-        {/* ==============================================
-            TAB 5: ADMIN API BOARD MANAGEMENT PANEL (AI)
-            ============================================== */}
-        {activeTab === 'api_board' && (
-          <ApiBoardTab state={globalState} />
         )}
 
         {/* ==============================================
