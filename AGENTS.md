@@ -45,3 +45,4 @@
 34. **Component Architecture:** ప్రతి కోడ్ ఫైల్ ఒకే క్రమాన్ని పాటించాలి (Imports -> Types -> Component Logic -> Exports).
 35. **Error Resilience:** యాప్ క్రాష్ అవ్వకుండా ఉండటానికి కీలకమైన కాంపోనెంట్స్ చుట్టూ 'Error Boundaries' ఉండాలి.
 36. **Local State Preference:** అనవసరమైన చోట గ్లోబల్ స్టేట్ వాడకూడదు. వీలైనంత వరకు లోకల్ స్టేట్ (`useState`) వాడాలి.
+37. **Changelog Maintenance:** ఏజెంట్ ప్రతి మార్పును తప్పనిసరిగా `CHANGELOG.md` లో రికార్డ్ చేయాలి.

@@ -122,12 +122,43 @@ app.post('/api/ai/route', async (req, res) => {
     model,
     response: \`Processed prompt through secure proxy: "\${prompt}" using custom-routed VPS endpoints.\`,
     tokens_used: prompt.length / 4 + 10,
-    cost: model.includes('deepseek') ? '$0.00014' : '$0.00007'
+    cost: model.includes('deepseek') ? '\$0.00014' : '\$0.00007'
   });
 });
 
+// 5. Auto Self-Registration to Cloud Console
+const CENTRAL_CONSOLE = process.env.CENTRAL_CONSOLE || 'https://phrscrowd.online';
+
+async function registerWithCentralCloud() {
+  try {
+    const payload = {
+      id: \`sdk-vps-\${Math.floor(1000 + Math.random() * 9000)}\`,
+      name: \`PHRS-SelfHost-\${PORT}\`,
+      subdomain: \`vps-port-\${PORT}\`,
+      techStack: 'React/Vite Core with SQLite'
+    };
+    
+    console.log(\`[SDK AUTO-REG] Attempting connection to \${CENTRAL_CONSOLE}...\`);
+    const response = await fetch(\`\${CENTRAL_CONSOLE}/api/deployments/register\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (response.ok) {
+      console.log(\`[SDK AUTO-REG] ✓ Successfully auto-registered to Cloud Console as: \${payload.name}\`);
+    } else {
+      console.warn(\`[SDK AUTO-REG] Warning: Central Console returned status \${response.status}\`);
+    }
+  } catch (err) {
+    console.error(\`[SDK AUTO-REG] Registration skipped or offline: \${err.message}\`);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(\`PHRS Crowd - VPS Cloud Console listening on port \${PORT}\`);
+  // Trigger auto registration to console
+  setTimeout(registerWithCentralCloud, 1000);
 });
 `;
 

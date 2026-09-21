@@ -13,12 +13,12 @@ export default function VpcNetworkTab({ state }: { state: any }) {
         const text = await res.text();
         const trimmed = text.trim();
         if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-          throw new Error("Response is not JSON");
+          return null;
         }
         try {
           return JSON.parse(trimmed);
         } catch (e) {
-          throw new Error("Invalid JSON: " + (e as Error).message);
+          return null;
         }
       })
       .then(data => {

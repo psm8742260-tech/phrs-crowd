@@ -41,7 +41,7 @@ export default function DatabaseTab({ state }: { state: any }) {
       const text = await res.text();
       const trimmed = text.trim();
       if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-        throw new Error("Response is not JSON");
+        return null;
       }
       const data = JSON.parse(trimmed);
       if (data.success) {
@@ -57,7 +57,7 @@ export default function DatabaseTab({ state }: { state: any }) {
       const text = await res.text();
       const trimmed = text.trim();
       if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-        throw new Error("Response is not JSON");
+        return null;
       }
       const data = JSON.parse(trimmed);
       if (data.success) {
@@ -73,7 +73,7 @@ export default function DatabaseTab({ state }: { state: any }) {
       const text = await res.text();
       const trimmed = text.trim();
       if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-        throw new Error("Response is not JSON");
+        return null;
       }
       const data = JSON.parse(trimmed);
       if (data && !data.error) {
@@ -89,7 +89,7 @@ export default function DatabaseTab({ state }: { state: any }) {
       const text = await res.text();
       const trimmed = text.trim();
       if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-        throw new Error("Response is not JSON");
+        return null;
       }
       const data = JSON.parse(trimmed);
       if (data.success) {
@@ -111,7 +111,7 @@ export default function DatabaseTab({ state }: { state: any }) {
       const text = await res.text();
       const trimmed = text.trim();
       if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-        throw new Error("Response is not JSON");
+        return null;
       }
       const data = JSON.parse(trimmed);
       if (data.success) {
@@ -133,7 +133,7 @@ export default function DatabaseTab({ state }: { state: any }) {
       const text = await res.text();
       const trimmed = text.trim();
       if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-        throw new Error("Response is not JSON");
+        return null;
       }
       const data = JSON.parse(trimmed);
       if (data.success) {

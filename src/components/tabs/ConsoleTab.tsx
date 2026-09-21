@@ -377,41 +377,47 @@ export default function ConsoleTab({ state }: { state: any }) {
                     <p className="text-[10px] text-slate-500 leading-relaxed font-sans h-8">
                       మీ అప్లికేషన్లలో OTP జెనరేట్ చేయడానికి మరియు SMSలు పంపడానికి అవసరమైన గేట్‌വേ ఇంటిగ్రేషన్ కోడ్.
                     </p>
-                    <div className="relative group">
+                     <div className="relative group">
                       <pre className="w-full bg-slate-950 text-emerald-400 p-4 rounded-xl text-[11px] font-mono overflow-y-auto h-[260px] leading-relaxed border border-slate-900 shadow-inner whitespace-pre-wrap select-all">{`/**
- * PHRS Crowd - Master Secure SDK 
+ * PHRS Crowd - Secure SMS & OTP Gateway SDK
+ * 
+ * Usage in external projects:
+ * import { sendOTP, verifyOTP } from './phrs-sms-sdk.js';
  */
+
+// 🟢 ప్రధాన (Root) డొమైన్కు మళ్లించబడింది!
 const PHRS_GATEWAY = "https://phrscrowd.online";
+const PROJECT_KEY = "6606.0k"; // Default API key/authorization
 
-// 🔒 Encrypted Credentials (Zero Plaintext / Zero Hints)
-const _encToken = "NjYwNi5vaw==";
-const _encDsKey = "c2stOTg1M2Q3ZmIwM2Y4NDM1OGIxNTg0Mjc3MjA5M2Y2MWU=";
-
-const getGatewayToken = () => atob(_encToken);
-const getDeepSeekKey = () => atob(_encDsKey);
-
-// ⚡ 0. Auto-Telemetry / Instant Server Ping
+// ⚡ Automatic SDK Ping / Instant Registration Telemetry
 (async function initProjectTelemetry() {
   try {
-    const origin = typeof window !== "undefined" ? window.location.origin : (typeof process !== "undefined" && process.env?.PWD) ? process.env.PWD : "node-service";
+    const origin = typeof window !== "undefined" ? window.location.origin : "vps-node-service";
     const appTitle = typeof document !== "undefined" ? document.title : "PHRS Client Node";
-    await fetch(\`\${PHRS_GATEWAY}/api/projects/heartbeat\`, {
+    await fetch(\`\${PHRS_GATEWAY}/api/projects\`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": \`Bearer \${getGatewayToken()}\` },
-      body: JSON.stringify({ origin: origin, appName: appTitle, timestamp: new Date().toISOString(), status: "ACTIVE" })
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": \`Bearer \${PROJECT_KEY}\`
+      },
+      body: JSON.stringify({ 
+        id: \`sdk-\${Math.floor(1000 + Math.random() * 9000)}\`,
+        name: appTitle || "External Node",
+        status: "ACTIVE" 
+      })
     });
-  } catch (e) { /* సైలెంట్ ఫెయిల్ సేఫ్ */ }
+  } catch (e) { /* Silent fail-safe */ }
 })();
 
-// 1. SMS & OTP Functions
 export async function sendOTP(phoneNumber) {
   try {
     const response = await fetch(\`\${PHRS_GATEWAY}/api/otp/send\`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": \`Bearer \${getGatewayToken()}\`
+        "Authorization": \`Bearer \${PROJECT_KEY}\`
       },
+      // మన బ్యాకెండ్ ఇప్పుడు { phone, otp } అని అడుగుతోంది
       body: JSON.stringify({ 
         phone: phoneNumber, 
         otp: Math.floor(100000 + Math.random() * 900000).toString() 
@@ -430,8 +436,9 @@ export async function verifyOTP(phoneNumber, otpCode) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": \`Bearer \${getGatewayToken()}\`
+        "Authorization": \`Bearer \${PROJECT_KEY}\`
       },
+      // మన బ్యాకెండ్ ఇప్పుడు { phone, otp } అని అడుగుతోంది 
       body: JSON.stringify({ phone: phoneNumber, otp: otpCode })
     });
     return await response.json();
@@ -439,30 +446,12 @@ export async function verifyOTP(phoneNumber, otpCode) {
     console.error("OTP Verify Error:", err);
     return { success: false, error: err.message };
   }
-}
-
-// 2. DeepSeek AI Integration Function
-export async function callDeepSeekAI(promptMessage) {
-  try {
-    const response = await fetch(\`\${PHRS_GATEWAY}/api/ai/deepseek\`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": \`Bearer \${getDeepSeekKey()}\`
-      },
-      body: JSON.stringify({ prompt: promptMessage })
-    });
-    return await response.json();
-  } catch (err) {
-    console.error("DeepSeek AI Error:", err);
-    return { success: false, error: err.message };
-  }
 }`}
                       </pre>
                       <button 
                         className="absolute top-3 right-3 p-1.5 bg-slate-800 hover:bg-indigo-600 text-white rounded-lg shadow transition-colors"
                         onClick={() => {
-                          const c = `/**\n * PHRS Crowd - Master Secure SDK \n */\nconst PHRS_GATEWAY = "https://phrscrowd.online";\n\n// 🔒 Encrypted Credentials (Zero Plaintext / Zero Hints)\nconst _encToken = "NjYwNi5vaw==";\nconst _encDsKey = "c2stOTg1M2Q3ZmIwM2Y4NDM1OGIxNTg0Mjc3MjA5M2Y2MWU=";\n\nconst getGatewayToken = () => atob(_encToken);\nconst getDeepSeekKey = () => atob(_encDsKey);\n\n// ⚡ 0. Auto-Telemetry / Instant Server Ping\n(async function initProjectTelemetry() {\n  try {\n    const origin = typeof window !== "undefined" ? window.location.origin : (typeof process !== "undefined" && process.env?.PWD) ? process.env.PWD : "node-service";\n    const appTitle = typeof document !== "undefined" ? document.title : "PHRS Client Node";\n    await fetch(\`\${PHRS_GATEWAY}/api/projects/heartbeat\`, {\n      method: "POST",\n      headers: { "Content-Type": "application/json", "Authorization": \`Bearer \${getGatewayToken()}\` },\n      body: JSON.stringify({ origin: origin, appName: appTitle, timestamp: new Date().toISOString(), status: "ACTIVE" })\n    });\n  } catch (e) { /* silent fail-safe */ }\n})();\n\n// 1. SMS & OTP Functions\nexport async function sendOTP(phoneNumber) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/otp/send\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${getGatewayToken()}\`\n      },\n      body: JSON.stringify({ \n        phone: phoneNumber, \n        otp: Math.floor(100000 + Math.random() * 900000).toString() \n      })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("SMS Send Error:", err);\n    return { success: false, error: err.message };\n  }\n}\n\nexport async function verifyOTP(phoneNumber, otpCode) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/sms/verify-otp\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${getGatewayToken()}\`\n      },\n      body: JSON.stringify({ phone: phoneNumber, otp: otpCode })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("OTP Verify Error:", err);\n    return { success: false, error: err.message };\n  }\n}\n\n// 2. DeepSeek AI Integration Function\nexport async function callDeepSeekAI(promptMessage) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/ai/deepseek\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${getDeepSeekKey()}\`\n      },\n      body: JSON.stringify({ prompt: promptMessage })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("DeepSeek AI Error:", err);\n    return { success: false, error: err.message };\n  }\n}`;
+                          const c = `/**\n * PHRS Crowd - Secure SMS & OTP Gateway SDK\n * \n * Usage in external projects:\n * import { sendOTP, verifyOTP } from './phrs-sms-sdk.js';\n */\n\n// 🟢 ప్రధాన (Root) డొమైన్కు మళ్లించబడింది!\nconst PHRS_GATEWAY = "https://phrscrowd.online";\nconst PROJECT_KEY = "6606.0k"; // Default API key/authorization\n\n// ⚡ Automatic SDK Ping / Instant Registration Telemetry\n(async function initProjectTelemetry() {\n  try {\n    const origin = typeof window !== "undefined" ? window.location.origin : "vps-node-service";\n    const appTitle = typeof document !== "undefined" ? document.title : "PHRS Client Node";\n    await fetch(\`\${PHRS_GATEWAY}/api/projects\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${PROJECT_KEY}\`\n      },\n      body: JSON.stringify({ \n        id: \`sdk-\${Math.floor(1000 + Math.random() * 9000)}\`,\n        name: appTitle || "External Node",\n        status: "ACTIVE" \n      })\n    });\n  } catch (e) { /* Silent fail-safe */ }\n})();\n\nexport async function sendOTP(phoneNumber) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/otp/send\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${PROJECT_KEY}\`\n      },\n      body: JSON.stringify({ \n        phone: phoneNumber, \n        otp: Math.floor(100000 + Math.random() * 900000).toString() \n      })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("SMS Send Error:", err);\n    return { success: false, error: err.message };\n  }\n}\n\nexport async function verifyOTP(phoneNumber, otpCode) {\n  try {\n    const response = await fetch(\`\${PHRS_GATEWAY}/api/sms/verify-otp\`, {\n      method: "POST",\n      headers: {\n        "Content-Type": "application/json",\n        "Authorization": \`Bearer \${PROJECT_KEY}\`\n      },\n      body: JSON.stringify({ phone: phoneNumber, otp: otpCode })\n    });\n    return await response.json();\n  } catch (err) {\n    console.error("OTP Verify Error:", err);\n    return { success: false, error: err.message };\n  }\n}`;
                           navigator.clipboard.writeText(c);
                         }}
                         title="Copy Code"

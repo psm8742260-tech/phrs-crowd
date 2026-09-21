@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import SecretManagerTab from './components/tabs/SecretManagerTab';
 import CloudRunTab from './components/tabs/CloudRunTab';
 import ComputeEngineTab from './components/tabs/ComputeEngineTab';
@@ -56,7 +56,7 @@ export default function App() {
   // Navigation and active project
   const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'phrs_maps' | 'cloud_share' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console' | 'vps_engine'>('home');
   const [snippetFormat, setSnippetFormat] = useState('Module');
-  const [projects, setProjects] = useState<Project[]>(() => {
+    const [projects, setProjects] = useState<Project[]>(() => {
     const defaultMaster: Project = {
       id: 'phrs-master-cloud',
       name: 'PHRS Crowd',
@@ -66,20 +66,41 @@ export default function App() {
       project_number: '398230688462',
       url: 'https://phrscrowd.online'
     };
+    const defaultOldMoney: Project = {
+      id: '159a1f68-dbdb-45af-aa36-1f7019ccb5e3',
+      name: 'Old Money Traders',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      api_hits: 2450,
+      url: 'https://ais-dev-it3r6x7jg7pp4gq2c7gvfw-398230688462.asia-southeast1.run.app'
+    };
     try {
       const saved = localStorage.getItem('phrs_projects');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasMaster = parsed.some(p => p.id === 'phrs-master-cloud');
+          const hasOldMoney = parsed.some(p => p.id === '159a1f68-dbdb-45af-aa36-1f7019ccb5e3');
+          let list = [...parsed];
+          if (!hasMaster) {
+            list = [defaultMaster, ...list];
+          } else {
+            list = list.map(p => p.id === 'phrs-master-cloud' ? { ...p, name: 'PHRS Crowd', project_number: '398230688462' } : p);
+          }
+          if (!hasOldMoney) {
+            list = [...list, defaultOldMoney];
+          }
+          return list;
+        }
       }
     } catch (e) {
       console.error("Project recovery failed, resetting to defaults.");
     }
-    return [defaultMaster];
+    return [defaultMaster, defaultOldMoney];
   });
   const [selectedProjectId, setSelectedProjectId] = useState<string>(() => {
     const saved = localStorage.getItem('phrs_selected_project_id');
-    return saved || 'phrs-master-cloud';
+    return saved && saved !== 'undefined' ? saved : 'phrs-master-cloud';
   });
   const [newProjName, setNewProjName] = useState('');
   const [showNewProjModal, setShowNewProjModal] = useState(false);
@@ -133,7 +154,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ command: cmd })
     })
-    .then(res => res.json())
+    .then(res => res.text()).then(t => { try { return JSON.parse(t); } catch { return {}; } })
     .then(data => {
       setTerminalHistory(prev => [...prev, { type: 'out', text: data.stdout }]);
     })
@@ -541,13 +562,12 @@ export default function App() {
   const ADMIN_PASSWORD = '6606.ok';
 
   // Auto-detect mobile/user IP & Dynamic IP Auto-Sync Engine
-  const detectIp = async () => {
+  const detectIp = useCallback(async () => {
     try {
-      const response = await fetch('https://api.ipify.org?format=json');
+      const response = await fetch('/api/detect-ip');
       if (!response.ok) throw new Error("HTTP error " + response.status);
       const ct = response.headers.get("content-type");
       if (!ct || !ct.includes("application/json")) {
-        // Fallback to reading response as plain text or setting default if it returns HTML
         const text = await response.text();
         if (text && !text.trim().startsWith('<') && text.length < 45) {
           const cleanIp = text.trim();
@@ -561,7 +581,6 @@ export default function App() {
       if (data && data.ip) {
         setMobileIp(prevIp => {
           if (prevIp !== 'Detecting...' && prevIp !== data.ip) {
-            // Dynamic IP change detected - auto sync without manual reconnect
             setVpsLogStream(logs => [
               ...logs, 
               `[DYNAMIC IP SYNC] Mobile IP changed from ${prevIp} to ${data.ip}. Auto-rebound VPC tunnel & AI bridge seamlessly.`
@@ -575,12 +594,17 @@ export default function App() {
     } catch (error) {
       setMobileIp(prev => prev === 'Detecting...' ? '106.213.85.112' : prev);
     }
-  };
+  }, []);
 
   // Auto-detect network status changes (e.g. WiFi <-> Mobile 4G/5G handoff)
-  const handleNetworkChange = () => {
+  const handleNetworkChange = useCallback(() => {
     detectIp();
-  };
+  }, [detectIp]);
+
+  const isAutoInternetEnabledRef = useRef(isAutoInternetEnabled);
+  useEffect(() => {
+    isAutoInternetEnabledRef.current = isAutoInternetEnabled;
+  }, [isAutoInternetEnabled]);
 
   // Dynamic IP Auto-Sync Heartbeat & Network Change Listener (Zero Manual Reconnect)
   useEffect(() => {
@@ -590,7 +614,7 @@ export default function App() {
 
     // Periodic Heartbeat check every 25 seconds for dynamic ISP IP rotation
     const ipSyncInterval = setInterval(() => {
-      if (isAutoInternetEnabled) {
+      if (isAutoInternetEnabledRef.current) {
         detectIp();
       }
     }, 25000);
@@ -599,7 +623,7 @@ export default function App() {
       window.removeEventListener('online', handleNetworkChange);
       clearInterval(ipSyncInterval);
     };
-  }, [isAutoInternetEnabled, handleNetworkChange]);
+  }, [detectIp, handleNetworkChange]);
 
   // Expose global settings saver for external SDK or console calls
   useEffect(() => {
@@ -615,7 +639,7 @@ export default function App() {
   // Fetch server-configured DeepSeek API key status and pre-fill if empty
   useEffect(() => {
     fetch('/api/config/deepseek')
-      .then(res => res.json())
+      .then(res => res.text()).then(t => { try { return JSON.parse(t); } catch { return {}; } })
       .then(data => {
         if (data.success && data.isSet) {
           if (!localStorage.getItem('phrs_deepseek')) {
@@ -624,7 +648,7 @@ export default function App() {
           }
         }
       })
-      .catch(err => console.error("Error loading server DeepSeek config:", err));
+      .catch(err => console.warn("Notice: DeepSeek config load skipped", err));
   }, []);
 
   // Cloud SQL states
@@ -1047,20 +1071,47 @@ export default function App() {
         const text = await res.text();
         const trimmed = text.trim();
         if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-          throw new Error("Response is not JSON");
+          return null;
         }
         try {
           return JSON.parse(trimmed);
         } catch (e) {
-          throw new Error("Invalid JSON: " + (e as Error).message);
+          return null;
         }
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (data && Array.isArray(data) && data.length > 0) {
           setDeployments(data);
         }
       })
-      .catch(err => console.error("Error loading deployments:", err));
+      .catch(err => console.warn("Notice: deployments load skipped", err));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/projects')
+      .then(async res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+          return null;
+        }
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {
+          return null;
+        }
+      })
+      .then(data => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setProjects(data);
+          const savedSel = localStorage.getItem('phrs_selected_project_id');
+          if (!savedSel || savedSel === 'undefined') {
+            setSelectedProjectId(data[0].id);
+          }
+        }
+      })
+      .catch(err => console.warn("Notice: projects load skipped", err));
   }, []);
 
   useEffect(() => {
@@ -1070,20 +1121,20 @@ export default function App() {
         const text = await res.text();
         const trimmed = text.trim();
         if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-          throw new Error("Response is not JSON");
+          return null;
         }
         try {
           return JSON.parse(trimmed);
         } catch (e) {
-          throw new Error("Invalid JSON: " + (e as Error).message);
+          return null;
         }
       })
       .then(data => {
-        if (data.data_balance_mb !== undefined) setStealthDataBalanceMb(data.data_balance_mb);
-        if (data.sms_credits !== undefined) setStealthSmsCredits(data.sms_credits);
-        if (data.wallet_rupees !== undefined) setStealthWalletRupees(data.wallet_rupees);
+        if (data && data.data_balance_mb !== undefined) setStealthDataBalanceMb(data.data_balance_mb);
+        if (data && data.sms_credits !== undefined) setStealthSmsCredits(data.sms_credits);
+        if (data && data.wallet_rupees !== undefined) setStealthWalletRupees(data.wallet_rupees);
       })
-      .catch(err => console.error("Error loading SMS wallet:", err));
+      .catch(err => console.warn("Notice: SMS wallet load skipped", err));
 
     fetch('/api/sms/history')
       .then(async res => {
@@ -1091,18 +1142,18 @@ export default function App() {
         const text = await res.text();
         const trimmed = text.trim();
         if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-          throw new Error("Response is not JSON");
+          return null;
         }
         try {
           return JSON.parse(trimmed);
         } catch (e) {
-          throw new Error("Invalid JSON: " + (e as Error).message);
+          return null;
         }
       })
       .then(data => {
-        if (Array.isArray(data)) setPhrsSmsHistory(data);
+        if (data && Array.isArray(data)) setPhrsSmsHistory(data);
       })
-      .catch(err => console.error("Error loading SMS history:", err));
+      .catch(err => console.warn("Notice: SMS history load skipped", err));
   }, []);
 
   useEffect(() => {
@@ -1112,20 +1163,20 @@ export default function App() {
         const text = await res.text();
         const trimmed = text.trim();
         if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-          throw new Error("Response is not JSON");
+          return null;
         }
         try {
           return JSON.parse(trimmed);
         } catch (e) {
-          throw new Error("Invalid JSON: " + (e as Error).message);
+          return null;
         }
       })
       .then(data => {
-        if (Array.isArray(data)) {
+        if (data && Array.isArray(data)) {
           setSqlTables(data);
         }
       })
-      .catch(err => console.error("Error loading DB tables:", err));
+      .catch(err => console.warn("Notice: DB tables load skipped", err));
   }, []);
 
   useEffect(() => {
@@ -1224,6 +1275,14 @@ export default function App() {
     localStorage.setItem('phrs_projects', JSON.stringify(updated));
     setSelectedProjectId(newProj.id);
     localStorage.setItem('phrs_selected_project_id', newProj.id);
+    
+    // Persist to server
+    fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newProj)
+    }).catch(console.error);
+
     setNewProjName('');
     setShowNewProjModal(false);
     setVpsLogStream(prev => [...prev, `[PROJECT] Created and activated new cloud workspace: "${newProj.name}"`]);
@@ -1371,7 +1430,7 @@ export default function App() {
             techStack: appTech
           })
         })
-        .then(res => res.json())
+        .then(res => res.text()).then(t => { try { return JSON.parse(t); } catch { return {}; } })
         .then(data => {
           setIsBuilding(false);
           if (data.success) {
@@ -3235,3 +3294,4 @@ export default function App() {
 </div>
   );
 }
+// trigger reload

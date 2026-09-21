@@ -387,12 +387,12 @@ export default function IamTab({ state }: { state: any }) {
           const text = await res.text();
           const trimmed = text.trim();
           if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-            throw new Error("Response is not JSON");
+            return null;
           }
           try {
             return JSON.parse(trimmed);
           } catch (e) {
-            throw new Error("Invalid JSON: " + (e as Error).message);
+            return null;
           }
         })
         .then(data => {
@@ -477,12 +477,12 @@ export default function IamTab({ state }: { state: any }) {
           const text = await res.text();
           const trimmed = text.trim();
           if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-            throw new Error("Response is not JSON");
+            return null;
           }
           try {
             return JSON.parse(trimmed);
           } catch (e) {
-            throw new Error("Invalid JSON: " + (e as Error).message);
+            return null;
           }
         })
         .then(data => {
@@ -1752,7 +1752,7 @@ export default function IamTab({ state }: { state: any }) {
 // PWA System Association & Global Radar Registration (మన యాప్ మన సర్వర్ చెప్పినట్టు ఉండేలా)
 (async function() {
   const CURRENT_LOCAL_VERSION = localStorage.getItem('pwa_system_version') || '1.0.0';
-  const MASTER_URL = '${typeof window !== "undefined" ? window.location.origin : "https://phrscrowd.online"}';
+  const MASTER_URL = typeof window !== "undefined" ? window.location.origin : "https://phrscrowd.online";
   const ENDPOINT = MASTER_URL + '/api/app-control';
   const REGISTER_ENDPOINT = MASTER_URL + '/api/orchestrator/register-node';
 
