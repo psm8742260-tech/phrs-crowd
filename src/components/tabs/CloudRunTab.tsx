@@ -35,6 +35,15 @@ export default function CloudRunTab({ state }: { state: any }) {
   const [registerTechStack, setRegisterTechStack] = useState('React/Vite');
 
   useEffect(() => {
+    fetch('/api/deployments')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && state.setDeployments) {
+          state.setDeployments(data);
+        }
+      })
+      .catch(console.error);
+
     fetch('/api/domain-mappings')
       .then(res => {
         if (!res.ok) throw new Error("HTTP error " + res.status);
@@ -131,14 +140,10 @@ export default function CloudRunTab({ state }: { state: any }) {
                         </thead>
                         <tbody className="text-slate-800">
                           {(() => {
-                            const combined = [...orchestratorNodes, ...projects];
-                            const displayNodes = combined.length > 0 ? combined : [
-                              { name: 'all-in-one-library', region: 'europe-west1', type: 'Service', time: '18 hours ago' },
-                              { name: 'reverseapk-studio', region: 'asia-southeast1', type: 'Service', time: '4 days ago' },
-                              { name: 'hybridnext-v-0', region: 'asia-southeast1', type: 'Service', time: '3 days ago' },
-                              { name: 'phrscrowd', region: 'europe-west1', type: 'Service', time: '3 days ago' },
-                              { name: 'hybridnext', region: 'asia-southeast1', type: 'Service', time: 'Aug 3, 2026' }
-                            ];
+                            const combined = [...deployments, ...orchestratorNodes, ...projects];
+                            const displayNodes = combined.filter((node, index, self) => 
+                              index === self.findIndex((t) => t.name === node.name || t.id === node.id)
+                            );
                             
                             return displayNodes.map((node: any, idx: number) => (
                               <tr 
@@ -250,26 +255,24 @@ export default function CloudRunTab({ state }: { state: any }) {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-6 text-[12px] text-slate-700 px-2 pb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-[#1a73e8]"></span> 
-                          PHRS Crowd: {metrics?.cpu || 0.86}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span> 
-                          Old Money Traders: {Math.max(0.1, (metrics?.cpu || 0.5) * 0.4).toFixed(2)}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-purple-500"></span> 
-                          All-in-One (AIOL): 0.7
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-cyan-500"></span> 
-                          Civil Worker (CWRB): 0.4
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-orange-500"></span> 
-                          AI Master Studio: 0.8
-                        </div>
+                        {deployments.slice(0, 6).map((d: any, index: number) => {
+                          const colors = ['bg-[#1a73e8]', 'bg-emerald-500', 'bg-purple-500', 'bg-cyan-500', 'bg-orange-500', 'bg-pink-500'];
+                          const colorClass = colors[index % colors.length];
+                          const cpuVal = index === 0 
+                            ? (metrics?.cpu || 0.86) 
+                            : index === 1 
+                              ? Math.max(0.1, (metrics?.cpu || 0.5) * 0.4).toFixed(2) 
+                              : Number((Math.random() * 0.5 + 0.1).toFixed(2));
+                          return (
+                            <div key={d.id || index} className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${colorClass}`}></span> 
+                              {d.name || d.id}: {cpuVal}
+                            </div>
+                          );
+                        })}
+                        {deployments.length === 0 && (
+                          <div className="text-xs text-slate-400 italic col-span-2 text-center py-2">No active registrations</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -842,6 +845,14 @@ export default function CloudRunTab({ state }: { state: any }) {
                     <button 
                       onClick={() => {
                         setHomeToast("✓ Fetching latest deployments...");
+                        fetch('/api/deployments')
+                          .then(res => res.json())
+                          .then(data => {
+                            if (Array.isArray(data) && state.setDeployments) {
+                              state.setDeployments(data);
+                            }
+                          })
+                          .catch(console.error);
                         fetch('/api/domain-mappings')
                           .then(res => res.json())
                           .then(data => setRealDomainMappings(data || {}))
@@ -941,9 +952,9 @@ export default function CloudRunTab({ state }: { state: any }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800">
-                      {[...deployments.map(d => ({ ...d, url: d.url || (d.subdomain ? `https://${d.subdomain}.phrscrowd.online` : ""), type: 'Repository' })), 
-                        ...orchestratorNodes.map(o => ({ ...o, type: 'Source' })), 
-                        ...projects.filter(p => !deployments.find(d => d.name === p.name || d.id === p.id)).map(p => ({ ...p, type: 'Source' }))]
+                      {[...deployments.map(d => ({ ...d, url: d.publicUrl || d.url || (d.subdomain ? `https://phrscrowd.online/${d.subdomain}` : "") })), 
+                        ...orchestratorNodes, 
+                        ...projects.filter(p => !deployments.find(d => d.name === p.name || d.id === p.id))]
                         .filter(project => {
                           if (!serviceSearch) return true;
                           const name = (project.name || '').toLowerCase();
@@ -986,16 +997,28 @@ export default function CloudRunTab({ state }: { state: any }) {
                               {/* Name column */}
                               <td className="p-3">
                                 <div className="flex items-center gap-2">
-                                  {project.type === 'Repository' ? (
-                                    <LucideIcons.GitBranch className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                  {project.techStack?.includes("SDK") || project.studioName?.includes("SDK") ? (
+                                    <LucideIcons.Terminal className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                                   ) : (
-                                    <LucideIcons.Terminal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <LucideIcons.GitBranch className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                                   )}
                                   
                                   <div className="flex flex-col">
-                                    <span className="font-bold text-blue-400 group-hover:underline cursor-pointer truncate max-w-[220px]">
+                                    <span 
+                                      onClick={() => {
+                                        const targetUrl = project.publicUrl || project.url;
+                                        if (targetUrl) window.open(targetUrl, '_blank');
+                                      }}
+                                      className="font-bold text-blue-400 group-hover:underline cursor-pointer truncate max-w-[220px]"
+                                      title={project.publicUrl || project.url || projName}
+                                    >
                                       {projName}
                                     </span>
+                                    {project.id && (
+                                      <span className="text-[9px] text-slate-500 font-mono">
+                                        ID: {project.id}
+                                      </span>
+                                    )}
                                     {project.pwaVersion && (
                                       <span className="text-[9px] bg-slate-800 border border-slate-700 text-slate-400 rounded-sm px-1 py-0.2 mt-0.5 w-max">
                                         PWA v{project.pwaVersion}
@@ -1008,7 +1031,13 @@ export default function CloudRunTab({ state }: { state: any }) {
                               {/* Deployment type column */}
                               <td className="p-3">
                                 <span className="inline-flex items-center gap-1 text-slate-300">
-                                  {project.type === 'Repository' ? 'GitHub' : 'Direct Source'}
+                                  {project.studioName === "PHRS SDK Integrated" || project.techStack?.includes("SDK")
+                                    ? "PHRS Crowd SDK"
+                                    : project.studioName === "PHRS Master"
+                                      ? "PHRS Master SDK"
+                                      : project.githubUrl?.includes("github.com")
+                                        ? "GitHub"
+                                        : project.studioName || "AI Master Studio"}
                                 </span>
                               </td>
 

@@ -1,4 +1,6 @@
 import express from "express";
+import http from "http";
+import https from "https";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
@@ -17,6 +19,16 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+// Body Parsers for JSON and URL-encoded payloads (Large limit for Studio app code)
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// Safety Middleware: Ensure req.body is at least an empty object to prevent destructuring errors
+app.use((req, res, next) => {
+  if (!req.body) req.body = {};
+  next();
+});
 
 // Enable Trust Proxy to correctly parse 'x-forwarded-*' headers from Cloudflare / Nginx
 app.set("trust proxy", true);
@@ -51,54 +63,7 @@ app.use((req, res, next) => {
 // Store the active public tunnel URL globally
 let activeTunnelUrl: string | null = null;
 
-const HOSTED_DIR = path.join(process.cwd(), "dist", "hosted");
-if (!fs.existsSync(HOSTED_DIR)) {
-  fs.mkdirSync(HOSTED_DIR, { recursive: true });
-}
-
-// Ensure default dashboard directory exists
-const defaultDashboardDir = path.join(HOSTED_DIR, "dashboard");
-if (!fs.existsSync(defaultDashboardDir)) {
-  fs.mkdirSync(defaultDashboardDir, { recursive: true });
-  fs.writeFileSync(path.join(defaultDashboardDir, "index.html"), `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>PHRS Dashboard</title>
-      <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; items-center; justify-content: center; height: 100vh; margin: 0; background: #f1f5f9; color: #1e293b; }
-        .card { background: white; padding: 2rem; border-radius: 1rem; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; max-width: 400px; border: 1px solid #e2e8f0; }
-        h1 { color: #4f46e5; margin-bottom: 0.5rem; }
-        p { color: #64748b; line-height: 1.5; }
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <h1>PHRS Active Node</h1>
-        <p>This is the default dashboard view for your PHRS node. Start deploying your custom applications to see them here.</p>
-      </div>
-    </body>
-    </html>
-  `, "utf-8");
-}
-
-// --- STORAGE & BACKUP METRICS HELPERS ---
-function getDirSize(dirPath: string): number {
-  let totalSize = 0;
-  if (!fs.existsSync(dirPath)) return 0;
-  const files = fs.readdirSync(dirPath);
-  for (const file of files) {
-    const filePath = path.join(dirPath, file);
-    const stats = fs.statSync(filePath);
-    if (stats.isDirectory()) {
-      totalSize += getDirSize(filePath);
-    } else {
-      totalSize += stats.size;
-    }
-  }
-  return totalSize;
-}
+import { HOSTED_DIR, defaultDashboardDir, getDirSize } from "./src/server/storage.js";
 
 const BACKUPS_DIR = path.join(process.cwd(), "dist", "hosted", "backups");
 if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
@@ -163,114 +128,8 @@ function safeReadJson(filePath: string, defaultValue: any): any {
   }
 }
 
-// --- REAL DOMAIN ROUTING LOGIC ---
-const DOMAIN_MAPPINGS_FILE = path.join(process.cwd(), "dist", "domainMappings.json");
-
-function getDomainMappings(): Record<string, string> {
-  return safeReadJson(DOMAIN_MAPPINGS_FILE, {});
-}
-
-function saveDomainMappings(mappings: Record<string, string>) {
-  try {
-    if (!fs.existsSync(path.dirname(DOMAIN_MAPPINGS_FILE))) {
-      fs.mkdirSync(path.dirname(DOMAIN_MAPPINGS_FILE), { recursive: true });
-    }
-    fs.writeFileSync(DOMAIN_MAPPINGS_FILE, JSON.stringify(mappings, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Failed to save domain mappings:", e);
-  }
-}
-
-// --- CORS & CROSS-ORIGIN SYNC HEADERS FOR AI MASTER STUDIO & REMOTE APPS ---
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-let currentDomainMappings = getDomainMappings();
-
-app.use(express.json({ limit: '1gb' }));
-app.use(express.urlencoded({ extended: true, limit: '1gb' }));
-
-// 1A. DISPATCHER MIDDLEWARE: Real Domain Routing
-app.use((req, res, next) => {
-  // Parse true host from Cloudflare/Proxy headers if present
-  const forwardedHost = req.headers['x-forwarded-host'] as string;
-  const rawHost = forwardedHost || req.headers.host || req.hostname;
-  const host = rawHost.split(':')[0].toLowerCase();
-  
-  let targetProject = currentDomainMappings[host];
-  
-  if (!targetProject && host.startsWith("www.")) {
-    const baseHost = host.slice(4);
-    targetProject = currentDomainMappings[baseHost];
-  }
-  
-  // NATIVE WILDCARD SUBDOMAIN ROUTING for phrscrowd.online
-  // e.g., if host is my-app.phrscrowd.online, targetProject becomes "my-app"
-  if (!targetProject && host.endsWith(".phrscrowd.online")) {
-    targetProject = host.replace(".phrscrowd.online", "");
-  }
-  
-  if (targetProject) {
-    console.log(`[ROUTER] Direct Custom/Sub Domain Serving: Mapped ${host} -> /hosted/${targetProject}`);
-    const projectDir = path.join(HOSTED_DIR, targetProject);
-    
-    // Check if project actually exists to prevent crash (404 fallback)
-    if (!fs.existsSync(projectDir)) {
-      console.log(`[ROUTER] Target project not found on disk: ${targetProject}`);
-      return res.status(404).send(`<h2>Project Not Found</h2><p>The application <b>${targetProject}</b> is not deployed on this server.</p>`);
-    }
-    
-    // Serve static files for this project directly
-    return express.static(projectDir)(req, res, (err) => {
-      if (err) return next(err);
-      
-      // If the file is not found, fallback to the project's own index.html (SPA fallback for custom domain)
-      const indexFile = path.join(projectDir, "index.html");
-      if (fs.existsSync(indexFile)) {
-        return res.sendFile(indexFile);
-      }
-      next();
-    });
-  }
-  
-  next();
-});
-
-// 1B. API: Domain Mappings Management
-app.get("/api/domain-mappings", (req, res) => res.json(currentDomainMappings));
-
-app.post("/api/domain-mappings", (req, res) => {
-  const { domain, project } = req.body;
-  if (!domain || !project) return res.status(400).json({ error: "Domain and project are required." });
-  
-  // Normalize domain mapping keys
-  let cleanDomain = domain.trim().toLowerCase();
-  cleanDomain = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, "");
-  cleanDomain = cleanDomain.split("/")[0].split(":")[0];
-  
-  currentDomainMappings[cleanDomain] = project.trim().toLowerCase();
-  saveDomainMappings(currentDomainMappings);
-  res.json({ success: true, mappings: currentDomainMappings });
-});
-
-app.delete("/api/domain-mappings/:domain", (req, res) => {
-  let cleanDomain = req.params.domain.trim().toLowerCase();
-  cleanDomain = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, "");
-  cleanDomain = cleanDomain.split("/")[0].split(":")[0];
-  
-  if (currentDomainMappings[cleanDomain]) {
-    delete currentDomainMappings[cleanDomain];
-    saveDomainMappings(currentDomainMappings);
-  }
-  res.json({ success: true, mappings: currentDomainMappings });
-});
+import { routingRouter } from "./src/server/routing.js";
+app.use(routingRouter);
 
 // --- REAL CLOUD STORAGE LOGIC ---
 const STORAGE_DIR = path.join(process.cwd(), "dist", "cloud_storage");
@@ -421,300 +280,19 @@ if (!fs.existsSync(SA_FILE)) {
   ], null, 2));
 }
 
-app.get("/api/iam/service-accounts", (req, res) => {
-  try {
-    res.json({ success: true, accounts: safeReadJson(SA_FILE, []) });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
 
-app.post("/api/iam/service-accounts", (req, res) => {
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: "Name required" });
-  try {
-    const accounts = safeReadJson(SA_FILE, []);
-    const email = `${name.toLowerCase()}@phrs-crowd.iam.gserviceaccount.com`;
-    accounts.push({ id: Date.now(), name, email, created: new Date().toISOString().split('T')[0] });
-    fs.writeFileSync(SA_FILE, JSON.stringify(accounts, null, 2));
-    res.json({ success: true, accounts });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.delete("/api/iam/service-accounts/:id", (req, res) => {
-  try {
-    let accounts = safeReadJson(SA_FILE, []);
-    accounts = accounts.filter((a: any) => String(a.id) !== String(req.params.id));
-    fs.writeFileSync(SA_FILE, JSON.stringify(accounts, null, 2));
-    res.json({ success: true, accounts });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.get("/api/iam/service-accounts/:name/key", (req, res) => {
-  const { name } = req.params;
-  const mockKey = {
-    type: "service_account",
-    project_id: "phrs-crowd-prod",
-    private_key_id: Math.random().toString(16).substring(2, 10) + Date.now().toString(16),
-    private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDh4K...=== \n-----END PRIVATE KEY-----",
-    client_email: `${name}@phrs-crowd.iam.gserviceaccount.com`,
-    client_id: Math.floor(Math.random() * 1000000000000000).toString(),
-    auth_uri: "https://accounts.google.com/o/oauth2/auth",
-    token_uri: "https://oauth2.googleapis.com/token",
-    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-    client_x509_cert_url: `https://www.googleapis.com/metadata/x509/${name}%40phrs-crowd.iam.gserviceaccount.com`
-  };
-  res.setHeader('Content-disposition', `attachment; filename=${name}-key.json`);
-  res.setHeader('Content-type', 'application/json');
-  res.write(JSON.stringify(mockKey, null, 2));
-  res.end();
-});
-
-// --- GROUPS ---
-const GROUPS_FILE = path.join(process.cwd(), "dist", "iam_groups.json");
-if (!fs.existsSync(GROUPS_FILE)) {
-  fs.writeFileSync(GROUPS_FILE, JSON.stringify([
-    { id: 1, name: "phrs-developers", description: "Direct developer access to VPS orchestration", membersCount: 3, created: "2026-08-01" },
-    { id: 2, name: "phrs-admins", description: "Full root admin and credential access", membersCount: 1, created: "2026-08-10" }
-  ], null, 2));
-}
-
-app.get("/api/iam/groups", (req, res) => {
-  try {
-    res.json({ success: true, groups: safeReadJson(GROUPS_FILE, []) });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.post("/api/iam/groups", (req, res) => {
-  const { name, description } = req.body;
-  if (!name) return res.status(400).json({ error: "Group name is required" });
-  try {
-    const groups = safeReadJson(GROUPS_FILE, []);
-    groups.push({ id: Date.now(), name, description: description || "No description provided", membersCount: 0, created: new Date().toISOString().split('T')[0] });
-    fs.writeFileSync(GROUPS_FILE, JSON.stringify(groups, null, 2));
-    res.json({ success: true, groups });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.delete("/api/iam/groups/:id", (req, res) => {
-  try {
-    let groups = safeReadJson(GROUPS_FILE, []);
-    groups = groups.filter((g: any) => String(g.id) !== String(req.params.id));
-    fs.writeFileSync(GROUPS_FILE, JSON.stringify(groups, null, 2));
-    res.json({ success: true, groups });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-// --- CUSTOM ROLES ---
-const ROLES_FILE = path.join(process.cwd(), "dist", "iam_roles_custom.json");
-if (!fs.existsSync(ROLES_FILE)) {
-  fs.writeFileSync(ROLES_FILE, JSON.stringify([
-    { id: 1, name: "phrs.vpsManager", title: "VPS Administrator", permissions: "compute.instances.start, compute.instances.stop, compute.instances.reset", stage: "GA" },
-    { id: 2, name: "phrs.smsOperator", title: "SMS Service Operator", permissions: "sms.send, sms.template.update, sms.credits.read", stage: "GA" }
-  ], null, 2));
-}
-
-app.get("/api/iam/roles", (req, res) => {
-  try {
-    res.json({ success: true, roles: safeReadJson(ROLES_FILE, []) });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.post("/api/iam/roles", (req, res) => {
-  const { name, title, permissions } = req.body;
-  if (!name || !title) return res.status(400).json({ error: "Role name and title are required" });
-  try {
-    const roles = safeReadJson(ROLES_FILE, []);
-    roles.push({ id: Date.now(), name, title, permissions: permissions || "None", stage: "Beta" });
-    fs.writeFileSync(ROLES_FILE, JSON.stringify(roles, null, 2));
-    res.json({ success: true, roles });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.delete("/api/iam/roles/:id", (req, res) => {
-  try {
-    let roles = safeReadJson(ROLES_FILE, []);
-    roles = roles.filter((r: any) => String(r.id) !== String(req.params.id));
-    fs.writeFileSync(ROLES_FILE, JSON.stringify(roles, null, 2));
-    res.json({ success: true, roles });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-// --- PRIVILEGED ACCESS MANAGER (PAM) ---
-const PAM_FILE = path.join(process.cwd(), "dist", "iam_pam.json");
-if (!fs.existsSync(PAM_FILE)) {
-  fs.writeFileSync(PAM_FILE, JSON.stringify([
-    { id: 1, email: "developer@phrscrowd.local", role: "Owner", duration: "2 Hours", reason: "Database migration work", status: "Active", requestedAt: new Date().toISOString() }
-  ], null, 2));
-}
-
-app.get("/api/iam/pam", (req, res) => {
-  try {
-    res.json({ success: true, requests: safeReadJson(PAM_FILE, []) });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.post("/api/iam/pam", (req, res) => {
-  const { email, role, duration, reason } = req.body;
-  if (!email || !role || !duration) return res.status(400).json({ error: "Email, role, and duration required" });
-  try {
-    const requests = safeReadJson(PAM_FILE, []);
-    requests.push({ id: Date.now(), email, role, duration, reason: reason || "Urgent access needed", status: "Active", requestedAt: new Date().toISOString() });
-    fs.writeFileSync(PAM_FILE, JSON.stringify(requests, null, 2));
-    res.json({ success: true, requests });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.delete("/api/iam/pam/:id", (req, res) => {
-  try {
-    let requests = safeReadJson(PAM_FILE, []);
-    requests = requests.filter((r: any) => String(r.id) !== String(req.params.id));
-    fs.writeFileSync(PAM_FILE, JSON.stringify(requests, null, 2));
-    res.json({ success: true, requests });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-// --- IDENTITY FEDERATIONS ---
-const FEDERATIONS_FILE = path.join(process.cwd(), "dist", "iam_federations.json");
-if (!fs.existsSync(FEDERATIONS_FILE)) {
-  fs.writeFileSync(FEDERATIONS_FILE, JSON.stringify([
-    { id: 1, name: "aws-workload-federation", providerType: "OIDC", issuerUrl: "https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D", audience: "phrs-prod-client", status: "Active" },
-    { id: 2, name: "azure-ad-workforce", providerType: "SAML 2.0", issuerUrl: "https://sts.windows.net/37b9853c-1481-4200/", audience: "urn:phrs:azure:ad", status: "Active" }
-  ], null, 2));
-}
-
-app.get("/api/iam/federations", (req, res) => {
-  try {
-    res.json({ success: true, federations: safeReadJson(FEDERATIONS_FILE, []) });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.post("/api/iam/federations", (req, res) => {
-  const { name, providerType, issuerUrl, audience } = req.body;
-  if (!name || !providerType || !issuerUrl) return res.status(400).json({ error: "Name, providerType, and issuerUrl required" });
-  try {
-    const federations = safeReadJson(FEDERATIONS_FILE, []);
-    federations.push({ id: Date.now(), name, providerType, issuerUrl, audience: audience || "phrs-audience", status: "Active" });
-    fs.writeFileSync(FEDERATIONS_FILE, JSON.stringify(federations, null, 2));
-    res.json({ success: true, federations });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
-
-app.delete("/api/iam/federations/:id", (req, res) => {
-  try {
-    let federations = safeReadJson(FEDERATIONS_FILE, []);
-    federations = federations.filter((f: any) => String(f.id) !== String(req.params.id));
-    fs.writeFileSync(FEDERATIONS_FILE, JSON.stringify(federations, null, 2));
-    res.json({ success: true, federations });
-  } catch(e) { res.status(500).json({ error: "Storage error" }); }
-});
+import { iamRouter } from "./src/server/iam.js";
+app.use("/api/iam", iamRouter);
 
 // 1. Explicitly serve the 'hosted' directory FIRST
 app.use("/hosted", express.static(HOSTED_DIR));
 
 // In-memory fallback registry if filesystem is wiped or not persistent
-interface RealDeployment {
-  id: string;
-  name: string;
-  subdomain: string;
-  port: number;
-  techStack: string;
-  status: string;
-  cpu: number;
-  memory: number;
-  visitors: number;
-  githubUrl: string;
-  html?: string;
-  css?: string;
-  js?: string;
-}
 
 const REGISTRY_FILE = path.join(HOSTED_DIR, "registry.json");
 
-function getRegistry(): RealDeployment[] {
-  const defaults: RealDeployment[] = [
-    {
-      id: "dep-1",
-      name: "All-in-One Library (AIOL)",
-      subdomain: "aiol",
-      port: 3001,
-      techStack: "React & Node",
-      status: "ONLINE",
-      cpu: 1.2,
-      memory: 34,
-      visitors: 142,
-      githubUrl: "https://github.com/phrscrowd/aiol"
-    },
-    {
-      id: "dep-2",
-      name: "Civil Worker Book (CWRB)",
-      subdomain: "cwrb",
-      port: 3002,
-      techStack: "Next.js & PostgreSQL",
-      status: "ONLINE",
-      cpu: 0.4,
-      memory: 18,
-      visitors: 89,
-      githubUrl: "https://github.com/phrscrowd/cwrb"
-    },
-    {
-      id: "dep-3",
-      name: "AI Master Studio",
-      subdomain: "aims",
-      port: 3003,
-      techStack: "React & Gemini AI",
-      status: "ONLINE",
-      cpu: 0.8,
-      memory: 24,
-      visitors: 57,
-      githubUrl: "https://github.com/phrscrowd/aims"
-    }
-  ];
-
-  const current = safeReadJson(REGISTRY_FILE, defaults);
-  let updated = false;
-  const merged = [...current];
-  defaults.forEach(def => {
-    if (!merged.some(item => item.id === def.id || item.subdomain === def.subdomain)) {
-      merged.push(def);
-      updated = true;
-    }
-  });
-
-  // Force update existing registry entries to have the correct name and techstack
-  merged.forEach(item => {
-    if (item.id === "dep-1") {
-      item.name = "All-in-One Library (AIOL)";
-      item.subdomain = "aiol";
-      item.techStack = "React & Node";
-      item.githubUrl = "https://github.com/phrscrowd/aiol";
-      updated = true;
-    } else if (item.id === "dep-2") {
-      item.name = "Civil Worker Book (CWRB)";
-      item.subdomain = "cwrb";
-      item.techStack = "Next.js & PostgreSQL";
-      item.githubUrl = "https://github.com/phrscrowd/cwrb";
-      updated = true;
-    } else if (item.id === "dep-3") {
-      item.name = "AI Master Studio";
-      item.subdomain = "aims";
-      item.techStack = "React & Gemini AI";
-      item.githubUrl = "https://github.com/phrscrowd/aims";
-      updated = true;
-    }
-  });
-
-  if (updated || current.length < defaults.length) {
-    saveRegistry(merged);
-  }
-  return merged;
-}
-
-function saveRegistry(registry: RealDeployment[]) {
-  try {
-    fs.writeFileSync(REGISTRY_FILE, JSON.stringify(registry, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Failed to save registry:", e);
-  }
-}
+import { getRegistry, saveRegistry, RealDeployment } from "./src/server/registry.js";
+import { getDatabase, saveDatabase } from "./src/server/db.js";
 
 // 1. API: Get all active deployments
 app.get("/api/deployments", (req, res) => {
@@ -729,48 +307,77 @@ app.options("/api/deployments/register", (req, res) => {
   res.sendStatus(200);
 });
 
-app.post("/api/deployments/register", express.json(), (req, res) => {
+app.post("/api/deployments/register", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
-    const { id, name, subdomain, port, techStack, githubUrl } = req.body;
-    if (!name || !subdomain) {
-      return res.status(400).json({ error: "Missing required fields: name, subdomain" });
-    }
+    let { id, name, studioName, studio, subdomain, port, techStack, githubUrl, url, publicUrl, status, projectId } = req.body;
+    
+    // Auto-generate and resolve required fields dynamically
+    const resolvedName = name || req.body.serviceName || req.body.projectName || "Untitled Project";
+    const resolvedSubdomain = (subdomain || resolvedName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')).trim().toLowerCase();
+    const resolvedId = id || req.body.deploymentId || `dep-${resolvedSubdomain}-${Date.now().toString(36)}`;
+    const resolvedProjectId = projectId || req.body.project_id || resolvedId;
+    const resolvedPublicUrl = publicUrl || url || `https://phrscrowd.online/${resolvedSubdomain}`;
+    const resolvedStatus = (status || "ONLINE").toUpperCase();
 
     const registry = getRegistry();
-    const existingIdx = registry.findIndex(d => d.subdomain === subdomain || d.id === id);
-    
+    const existingIdx = registry.findIndex(d => d.subdomain === resolvedSubdomain || d.id === resolvedId);
+
     const newEntry: RealDeployment = {
-      id: id || `dep-sdk-${Date.now()}`,
-      name,
-      subdomain,
+      id: resolvedId,
+      name: resolvedName,
+      projectId: resolvedProjectId,
+      studioName: studioName || studio || "AI Master Studio",
+      subdomain: resolvedSubdomain,
       port: port || 3000,
-      techStack: techStack || "Unknown SDK",
-      status: "ONLINE",
-      cpu: Number((Math.random() * 2).toFixed(1)),
-      memory: Math.floor(Math.random() * 50) + 10,
-      visitors: Math.floor(Math.random() * 100) + 1,
-      githubUrl: githubUrl || ""
+      techStack: techStack || "React / Vite (AI Master Studio)",
+      status: resolvedStatus,
+      cpu: Number((Math.random() * 1.5).toFixed(1)),
+      memory: Math.floor(Math.random() * 40) + 10,
+      visitors: Math.floor(Math.random() * 50) + 1,
+      githubUrl: githubUrl || "AI Master Studio Published",
+      url: resolvedPublicUrl,
+      publicUrl: resolvedPublicUrl
     };
 
     if (existingIdx >= 0) {
-      // Update existing
-      registry[existingIdx] = { ...registry[existingIdx], ...newEntry, id: registry[existingIdx].id };
+      registry[existingIdx] = { ...registry[existingIdx], ...newEntry };
     } else {
       registry.push(newEntry);
     }
     
     saveRegistry(registry);
 
+    // Automatically register slug mapping in links.json so production URL works instantly
+    try {
+      const links = getLinks();
+      const linkIdx = links.findIndex(l => l.slug === resolvedSubdomain);
+      if (linkIdx >= 0) {
+        links[linkIdx].target = resolvedSubdomain;
+      } else {
+        links.push({
+          slug: resolvedSubdomain,
+          target: resolvedSubdomain,
+          clicks: 0,
+          created: new Date().toISOString().split("T")[0]
+        });
+      }
+      saveLinks(links);
+    } catch (linkErr) {
+      console.error("Failed to sync deployment slug to links:", linkErr);
+    }
+
     // Also update the database representation
     const db = getDatabase();
     const depTable = db.find(t => t.name === "deployments");
     if (depTable) {
-      const dbIdx = depTable.rows.findIndex(r => r.subdomain === subdomain || r.id === newEntry.id);
+      const dbIdx = depTable.rows.findIndex(r => r.subdomain === resolvedSubdomain || r.id === newEntry.id);
       const rowEntry = {
         id: newEntry.id,
         name: newEntry.name,
+        projectId: newEntry.projectId,
         subdomain: newEntry.subdomain,
+        publicUrl: newEntry.publicUrl,
         port: newEntry.port,
         techStack: newEntry.techStack,
         status: newEntry.status
@@ -783,239 +390,31 @@ app.post("/api/deployments/register", express.json(), (req, res) => {
       saveDatabase(db);
     }
 
-    res.json({ success: true, message: "Deployment registered successfully", deployment: newEntry });
+    res.json({
+      success: true,
+      message: "Deployment registered successfully",
+      service: {
+        id: newEntry.id,
+        name: newEntry.name,
+        projectId: newEntry.projectId,
+        publicUrl: newEntry.publicUrl,
+        status: newEntry.status
+      },
+      deployment: newEntry,
+      url: resolvedPublicUrl,
+      publicUrl: resolvedPublicUrl
+    });
   } catch (error) {
     console.error("SDK Registration Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// Dynamic projects persistence file
-const PROJECTS_FILE = path.join(HOSTED_DIR, "projects.json");
+import { projectsRouter } from "./src/server/projects.js";
+app.use("/api/projects", projectsRouter);
 
-function getProjectsList() {
-  const defaultProjects = [
-    {
-      id: 'phrs-master-cloud',
-      name: 'PHRS Crowd',
-      status: 'active',
-      created_at: new Date().toISOString(),
-      api_hits: 8742,
-      project_number: '398230688462',
-      url: 'https://phrscrowd.online'
-    },
-    {
-      id: '159a1f68-dbdb-45af-aa36-1f7019ccb5e3',
-      name: 'Old Money Traders',
-      status: 'active',
-      created_at: new Date().toISOString(),
-      api_hits: 2450,
-      url: 'https://ais-dev-it3r6x7jg7pp4gq2c7gvfw-398230688462.asia-southeast1.run.app'
-    }
-  ];
-  try {
-    if (!fs.existsSync(PROJECTS_FILE)) {
-      if (!fs.existsSync(HOSTED_DIR)) {
-        fs.mkdirSync(HOSTED_DIR, { recursive: true });
-      }
-      fs.writeFileSync(PROJECTS_FILE, JSON.stringify(defaultProjects, null, 2), "utf-8");
-      return defaultProjects;
-    }
-    const data = fs.readFileSync(PROJECTS_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch (e) {
-    return defaultProjects;
-  }
-}
+// Note: DbTable, getDatabase, and saveDatabase are imported from ./src/server/db.js to prevent duplicate storage logic and ensure a single authoritative data source.
 
-function saveProjectsList(list: any[]) {
-  try {
-    if (!fs.existsSync(HOSTED_DIR)) {
-      fs.mkdirSync(HOSTED_DIR, { recursive: true });
-    }
-    fs.writeFileSync(PROJECTS_FILE, JSON.stringify(list, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Failed to save projects:", e);
-  }
-}
-
-// 1.2 GET: Retrieve projects
-app.get("/api/projects", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.json(getProjectsList());
-});
-
-// 1.3 POST: Dynamic project registration / telemetry ping
-app.options("/api/projects", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.sendStatus(200);
-});
-
-app.post("/api/projects", express.json(), (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  try {
-    const { id, name, domain, port, url, status } = req.body;
-    if (!name) {
-      return res.status(400).json({ error: "Missing required field: name" });
-    }
-    
-    const projectsList = getProjectsList();
-    const targetId = id || `sdk-${Math.floor(1000 + Math.random() * 9000)}`;
-    const existingIdx = projectsList.findIndex((p: any) => p.id === targetId || (p.name && p.name.toLowerCase() === name.toLowerCase()));
-    
-    const resolvedUrl = url || (domain ? `https://${domain}` : `http://localhost:${port || 3000}`);
-    
-    const newEntry = {
-      id: targetId,
-      name,
-      status: status ? status.toLowerCase() : "active",
-      created_at: new Date().toISOString(),
-      api_hits: existingIdx >= 0 ? (projectsList[existingIdx].api_hits || 0) + 1 : 1,
-      url: resolvedUrl
-    };
-
-    if (existingIdx >= 0) {
-      projectsList[existingIdx] = { ...projectsList[existingIdx], ...newEntry };
-    } else {
-      projectsList.push(newEntry);
-    }
-    
-    saveProjectsList(projectsList);
-    res.json({ success: true, message: "Project registered successfully", project: newEntry });
-  } catch (error) {
-    console.error("Project Telemetry Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-// Added heartbeat endpoint
-app.post("/api/projects/heartbeat", express.json(), (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.json({ success: true, message: "Heartbeat received" });
-});
-
-// Real database file path
-const DB_FILE = path.join(HOSTED_DIR, "phrscrowd.db.json");
-
-// Helper to load and save DB
-interface DbTable {
-  name: string;
-  columns: string; // comma-separated
-  rows: any[];
-}
-
-function getDatabase(): DbTable[] {
-  const defaults = [
-    {
-      name: "users",
-      columns: "id, name, role, verified, phone",
-      rows: [
-        { id: "1", name: "Ramesh Kumar", role: "Administrator", verified: "Yes", phone: "+919876543210" },
-        { id: "2", name: "Suresh Babu", role: "Operator", verified: "Yes", phone: "+919876543211" }
-      ]
-    },
-    {
-      name: "deployments",
-      columns: "id, name, subdomain, port, techStack, status",
-      rows: [
-        { id: "dep-1", name: "All-in-One Library (AIOL)", subdomain: "aiol", port: 3001, techStack: "React & Node", status: "ONLINE" },
-        { id: "dep-2", name: "Civil Worker Book (CWRB)", subdomain: "cwrb", port: 3002, techStack: "Next.js & PostgreSQL", status: "ONLINE" },
-        { id: "dep-3", name: "AI Master Studio", subdomain: "aims", port: 3003, techStack: "React & Gemini AI", status: "ONLINE" }
-      ]
-    }
-  ];
-
-  const current = safeReadJson(DB_FILE, defaults);
-  let updated = false;
-
-  current.forEach(table => {
-    if (table.name === "deployments") {
-      const defaultRows = [
-        { id: "dep-1", name: "All-in-One Library (AIOL)", subdomain: "aiol", port: 3001, techStack: "React & Node", status: "ONLINE" },
-        { id: "dep-2", name: "Civil Worker Book (CWRB)", subdomain: "cwrb", port: 3002, techStack: "Next.js & PostgreSQL", status: "ONLINE" },
-        { id: "dep-3", name: "AI Master Studio", subdomain: "aims", port: 3003, techStack: "React & Gemini AI", status: "ONLINE" }
-      ];
-      
-      // Ensure the default apps exist and have correct names
-      defaultRows.forEach(defRow => {
-        const existingIdx = table.rows.findIndex(r => r.id === defRow.id);
-        if (existingIdx >= 0) {
-          if (table.rows[existingIdx].name !== defRow.name || table.rows[existingIdx].subdomain !== defRow.subdomain) {
-             table.rows[existingIdx] = { ...table.rows[existingIdx], ...defRow };
-             updated = true;
-          }
-        } else {
-          table.rows.push(defRow);
-          updated = true;
-        }
-      });
-    }
-  });
-
-  if (updated) {
-    saveDatabase(current);
-  }
-  return current;
-}
-
-function saveDatabase(db: DbTable[]) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Failed to save database:", e);
-  }
-}
-
-// 5. API: Trigger Local Android APK Build
-import { exec } from "child_process";
-
-app.post("/api/build-apk", (req, res) => {
-  console.log("[BUILDER] Received request to compile APK.");
-  
-  // This command assumes the user's server has Android SDK (Gradle, Java) or Capacitor installed.
-  // For the sake of providing a working fallback on empty servers, we will simulate a real build
-  // if the real 'gradlew' or 'cap' doesn't exist, by generating a genuine placeholder APK file 
-  // that is at least a few MBs to avoid the "34 bytes" parse error, until they install the real SDK.
-  
-  const apkDir = path.join(process.cwd(), "dist", "apk");
-  if (!fs.existsSync(apkDir)) {
-    fs.mkdirSync(apkDir, { recursive: true });
-  }
-  
-  const realApkPath = path.join(apkDir, "PHRS-Crowd-Original-Release.apk");
-  
-  // The actual command that a real server would run:
-  const buildCommand = `
-    echo "Checking for Android SDK..."
-    # npx cap sync android
-    # cd android && ./gradlew assembleRelease
-  `;
-
-  exec(buildCommand, { cwd: process.cwd() }, (error, stdout, stderr) => {
-    if (error) {
-      console.error("[BUILDER] Native SDK missing or failed:", error.message);
-      // Optional: return res.status(500).json({ error: "Android SDK / Gradle not found on server." });
-    }
-
-    // Generate a placeholder APK file of ~3 MB if a real one wasn't produced by the SDK yet
-    if (!fs.existsSync(realApkPath) || fs.statSync(realApkPath).size < 1000) {
-      console.log("[BUILDER] Generating fallback APK container...");
-      const dummyContent = Buffer.alloc(3 * 1024 * 1024, "PHRS_REAL_SERVER_GENERATED_APK_CONTAINER_V1.0.0_"); // 3MB file
-      fs.writeFileSync(realApkPath, dummyContent);
-    }
-
-    // Send the APK file back to the browser
-    res.download(realApkPath, "PHRS-Crowd-Original-Release.apk", (err) => {
-      if (err) {
-        console.error("[BUILDER] Download failed:", err);
-      } else {
-        console.log("[BUILDER] APK successfully downloaded to client.");
-      }
-    });
-  });
-});
 
 // 5B. API: Trigger Local Android AAB Build
 app.post("/api/build-aab", (req, res) => {
@@ -1077,73 +476,8 @@ app.post("/api/terminal-run", (req, res) => {
   });
 });
 
-// 6. API: Get all database tables
-app.get("/api/db/tables", (req, res) => {
-  res.json(getDatabase());
-});
-
-// 7. API: Create database table
-app.post("/api/db/create-table", (req, res) => {
-  const { name, columns } = req.body;
-  if (!name || !columns) {
-    return res.status(400).json({ error: "Table name and columns are required." });
-  }
-
-  const db = getDatabase();
-  const existing = db.find(t => t.name.toLowerCase() === name.toLowerCase());
-  if (existing) {
-    return res.status(400).json({ error: `Table "${name}" already exists.` });
-  }
-
-  const newTable: DbTable = {
-    name: name.toLowerCase().replace(/[^a-z0-9_]/g, ""),
-    columns: columns,
-    rows: []
-  };
-
-  db.push(newTable);
-  saveDatabase(db);
-
-  res.json({ success: true, table: newTable });
-});
-
-// 8. API: Insert row into table
-app.post("/api/db/insert-row", (req, res) => {
-  const { tableName, rowData } = req.body;
-  if (!tableName || !rowData) {
-    return res.status(400).json({ error: "Table name and row data are required." });
-  }
-
-  const db = getDatabase();
-  const table = db.find(t => t.name.toLowerCase() === tableName.toLowerCase());
-  if (!table) {
-    return res.status(404).json({ error: `Table "${tableName}" not found.` });
-  }
-
-  table.rows.push(rowData);
-  saveDatabase(db);
-
-  res.json({ success: true, table });
-});
-
-// 9. API: Truncate / Clear table
-app.post("/api/db/clear-table", (req, res) => {
-  const { tableName } = req.body;
-  if (!tableName) {
-    return res.status(400).json({ error: "Table name is required." });
-  }
-
-  const db = getDatabase();
-  const table = db.find(t => t.name.toLowerCase() === tableName.toLowerCase());
-  if (!table) {
-    return res.status(404).json({ error: `Table "${tableName}" not found.` });
-  }
-
-  table.rows = [];
-  saveDatabase(db);
-
-  res.json({ success: true, table });
-});
+import { databaseRouter } from "./src/server/database.js";
+app.use("/api/db", databaseRouter);
 
 // 2. API: Deploy a real user-submitted custom website
 app.post("/api/deploy", (req, res) => {
@@ -1268,12 +602,63 @@ app.post("/api/receive-studio-app", (req, res) => {
   }
 
   saveRegistry(registry);
+  console.log(`[PHRS CROWD] Registry updated for: ${cleanSubdomain}`);
+
+  // Automatically register slug mapping in links.json so production URL works instantly
+  try {
+    const links = getLinks();
+    const linkIdx = links.findIndex(l => l.slug === cleanSubdomain);
+    if (linkIdx >= 0) {
+      links[linkIdx].target = cleanSubdomain;
+      console.log(`[PHRS CROWD] Updated existing link slug: ${cleanSubdomain}`);
+    } else {
+      links.push({
+        slug: cleanSubdomain,
+        target: cleanSubdomain,
+        clicks: 0,
+        created: new Date().toISOString().split("T")[0]
+      });
+      console.log(`[PHRS CROWD] Registered new link slug: ${cleanSubdomain}`);
+    }
+    saveLinks(links);
+  } catch (linkErr) {
+    console.error("[PHRS CROWD ERROR] Failed to sync studio app slug to links:", linkErr);
+  }
+
+  // Also update the database representation so it appears in the Console Services list
+  try {
+    const db = getDatabase();
+    const depTable = db.find(t => t.name === "deployments");
+    if (depTable) {
+      const dbIdx = depTable.rows.findIndex(r => r.subdomain === cleanSubdomain || r.id === newDeployment.id);
+      const rowEntry = {
+        id: newDeployment.id,
+        name: newDeployment.name,
+        subdomain: newDeployment.subdomain,
+        port: newDeployment.port,
+        techStack: newDeployment.techStack,
+        status: newDeployment.status
+      };
+      if (dbIdx >= 0) {
+        depTable.rows[dbIdx] = { ...depTable.rows[dbIdx], ...rowEntry };
+        console.log(`[PHRS CROWD] Updated database record for: ${cleanSubdomain}`);
+      } else {
+        depTable.rows.push(rowEntry);
+        console.log(`[PHRS CROWD] Inserted new database record for: ${cleanSubdomain}`);
+      }
+      saveDatabase(db);
+    } else {
+      console.warn("[PHRS CROWD WARNING] 'deployments' table not found in database.");
+    }
+  } catch (dbErr) {
+    console.error("[PHRS CROWD ERROR] Failed to sync studio app to database:", dbErr);
+  }
 
   res.json({
     success: true,
     message: `App received and deployed successfully!`,
     deployment: newDeployment,
-    url: `https://${cleanSubdomain}.phrscrowd.online/`
+    url: `https://phrscrowd.online/${cleanSubdomain}`
   });
 });
 
@@ -1321,18 +706,26 @@ interface ShortUrl {
 }
 const LINKS_FILE = path.join(HOSTED_DIR, "links.json");
 function getLinks(): ShortUrl[] {
+  const defaults = [
+    { slug: "main", target: "/", clicks: 124, created: "2026-08-25" },
+    { slug: "home", target: "/", clicks: 50, created: "2026-08-25" },
+    { slug: "numberpad-pro-smart-number-entry-ai-master-studio", target: "numberpad-pro-smart-number-entry-ai-master-studio", clicks: 1, created: new Date().toISOString().split("T")[0] }
+  ];
   try {
     if (fs.existsSync(LINKS_FILE)) {
       const data = fs.readFileSync(LINKS_FILE, "utf-8");
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (!parsed.some((l: any) => l.slug === "numberpad-pro-smart-number-entry-ai-master-studio")) {
+        parsed.push({ slug: "numberpad-pro-smart-number-entry-ai-master-studio", target: "numberpad-pro-smart-number-entry-ai-master-studio", clicks: 1, created: new Date().toISOString().split("T")[0] });
+        saveLinks(parsed);
+      }
+      return parsed;
     }
   } catch (e) {
     console.error("Error reading links:", e);
   }
-  return [
-    { slug: "main", target: "/", clicks: 124, created: "2026-08-25" },
-    { slug: "home", target: "/", clicks: 50, created: "2026-08-25" }
-  ];
+  saveLinks(defaults);
+  return defaults;
 }
 function saveLinks(links: ShortUrl[]) {
   try {
@@ -1654,25 +1047,8 @@ app.post("/api/sms/verify-otp", (req, res) => {
   }
 });
 
-app.get("/api/test-gemini", async (req, res) => {
-  try {
-    const ai = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-    const r = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: "Say hello and confirm you are working",
-    });
-    res.json({ success: true, text: r.text });
-  } catch (err: any) {
-    res.json({ success: false, error: err.message, stack: err.stack });
-  }
-});
+import { aiRouter } from "./src/server/ai.js";
+app.use("/api", aiRouter);
 
 // REAL-TIME DEEPSEEK API INTEGRATION ENDPOINT
 app.post("/api/agent/chat", async (req, res) => {
@@ -3272,13 +2648,103 @@ async function startServer() {
     // Serve core app assets
     app.use(express.static(distPath));
     
-    // API and specialized routes are handled above. 
-    // Fallback for SPA navigation:
+    // --- PHRS PUBLIC PROJECT ROUTING ENGINE (SLUG RESOLVER) ---
     app.use((req, res, next) => {
-      // If it starts with /api or /hosted, don't serve index.html
-      if (req.path.startsWith('/api') || req.path.startsWith('/hosted') || req.path.startsWith('/go') || req.path.startsWith('/p')) {
+      // 1. Exclude root and common system paths early
+      if (req.path === "/" || req.path === "") return next();
+      
+      const parts = req.path.split('/').filter(Boolean);
+      if (parts.length === 0) return next();
+      
+      const slug = parts[0];
+      
+      // 2. Ignore internal system paths
+      const systemSlugs = ['api', 'hosted', 'go', 'p', 'admin', 'static', 'assets', 'favicon.ico', 'manifest.json'];
+      if (systemSlugs.includes(slug)) {
         return next();
       }
+
+      // Special case for the console's own routes to ensure they fall through to the SPA handler
+      const consoleRoutes = ['services', 'iam', 'compute', 'storage', 'billing', 'settings', 'database', 'networks', 'monitoring', 'apis', 'cloudrun', 'cloudhub', 'maps', 'bigquery', 'firebase'];
+      if (consoleRoutes.includes(slug)) {
+        return next();
+      }
+
+      // 3. Resolve Project Directory (Check direct folder then links database)
+      let targetProject = slug;
+      let projectDir = path.join(HOSTED_DIR, targetProject);
+      let linkFound = false;
+
+      if (!fs.existsSync(projectDir) || !fs.statSync(projectDir).isDirectory()) {
+        const links = getLinks();
+        const link = links.find(l => l.slug === slug);
+        if (link) {
+          linkFound = true;
+          if (link.target.startsWith('http')) {
+            const subPath = parts.slice(1).join('/');
+            let targetUrl = link.target;
+            if (subPath) {
+              targetUrl = targetUrl.endsWith('/') ? targetUrl + subPath : targetUrl + '/' + subPath;
+            }
+            console.log(`[PUBLIC ROUTER] Proxying /${slug} -> ${targetUrl}`);
+            return proxyRequest(targetUrl, req, res);
+          } else {
+            targetProject = link.target;
+            projectDir = path.join(HOSTED_DIR, targetProject);
+          }
+        }
+      } else {
+        linkFound = true;
+      }
+
+      // 4. Serve Project Files
+      if (linkFound && fs.existsSync(projectDir) && fs.statSync(projectDir).isDirectory()) {
+        // Enforce trailing slash for the base slug URL to ensure relative assets work
+        if (parts.length === 1 && !req.path.endsWith('/')) {
+          return res.redirect(301, req.path + '/');
+        }
+
+        const subPath = parts.slice(1).join('/');
+        const filePath = path.join(projectDir, subPath || 'index.html');
+
+        // Security check: Prevent path traversal
+        const resolvedPath = path.resolve(filePath);
+        if (!resolvedPath.startsWith(path.resolve(projectDir))) {
+          console.error(`[PUBLIC ROUTER] Security Block: Path traversal attempt: ${filePath}`);
+          return res.status(403).send("Access Denied");
+        }
+
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          return res.sendFile(filePath);
+        } else {
+          // SPA Fallback: If file not found but project exists, serve its index.html
+          const projectIndex = path.join(projectDir, "index.html");
+          if (fs.existsSync(projectIndex)) {
+            return res.sendFile(projectIndex);
+          }
+        }
+      }
+
+      // 5. Fallback for unknown slugs (Only if not a static file request)
+      if (req.path.includes('.')) return next();
+      
+      console.log(`[PUBLIC ROUTER] No project found for slug: /${slug}. Falling back to 404.`);
+      res.status(404).send(`
+        <div style="font-family: sans-serif; text-align: center; padding: 50px; background: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+          <div style="max-width: 500px; width: 100%; background: #1e293b; padding: 40px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid #334155;">
+            <div style="background: #ef4444; width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+            </div>
+            <h1 style="font-size: 24px; font-bold: 800; margin-bottom: 8px;">404 - Path Not Registered</h1>
+            <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 32px;">The application slug <b>/${slug}</b> is not active on PHRS Crowd Cluster.</p>
+            <a href="/" style="display: block; background: #6366f1; color: white; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: 700; transition: all 0.2s;">Return to Control Tower</a>
+          </div>
+        </div>
+      `);
+    });
+
+    // Final Fallback for PHRS Console SPA
+    app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

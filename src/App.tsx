@@ -30,7 +30,7 @@ import {
   Cpu, HardDrive, Wifi, Layers, Globe, ExternalLink, Link, Lock, Settings, 
   Phone, ArrowRight, ChevronRight, ChevronDown, ChevronUp, Moon, Sun, FileCode, CheckCircle2,
   Copy, Shield, CreditCard, LayoutGrid, Sliders, BarChart2, Clock, ShoppingCart,
-  Compass, Sparkles, Activity, MapPin, MoreVertical, Send, HelpCircle, Network, Terminal as TerminalIcon,
+  Compass, Sparkles, Activity, MapPin, MoreVertical, Send, HelpCircle, Network, Terminal as TerminalIcon, LogOut,
   Cloud, WifiOff, Code2, Terminal, ShieldCheck, Zap, Smartphone, QrCode, X, Upload, Filter, Megaphone, Image, Code, Flame
 } from 'lucide-react';
 import { Project, Deployment, SystemMetric } from './types';
@@ -54,26 +54,29 @@ export default function App() {
   const [shaFingerprint, setShaFingerprint] = useState('03:5E:59:45:3B:C0:77:9B:27:16:D5:E5:C3:54:1C:A7:EC:94:9E:BE:72:F7:F9:09:94:00:6A:B9:00:01:4A:E3');
 
   // Navigation and active project
+  // Navigation and active project
   const [activeTab, setActiveTab] = useState<'home' | 'app_studio' | 'database' | 'sms' | 'api_board' | 'export' | 'solutions' | 'recently_visited' | 'billing' | 'iam' | 'marketplace' | 'agent_platform' | 'kubernetes' | 'cloud_storage' | 'security' | 'bigquery' | 'monitoring' | 'cloud_run' | 'vpc_network' | 'network_config' | 'sms_gateway' | 'cloud_sql' | 'phrs_maps' | 'cloud_share' | 'integration_code' | 'secret_manager' | 'cloud_build' | 'console' | 'vps_engine'>('home');
   const [snippetFormat, setSnippetFormat] = useState('Module');
-    const [projects, setProjects] = useState<Project[]>(() => {
-    const defaultMaster: Project = {
-      id: 'phrs-master-cloud',
-      name: 'PHRS Crowd',
-      status: 'active',
-      created_at: new Date().toISOString(),
-      api_hits: 8742,
-      project_number: '398230688462',
-      url: 'https://phrscrowd.online'
-    };
-    const defaultOldMoney: Project = {
-      id: '159a1f68-dbdb-45af-aa36-1f7019ccb5e3',
-      name: 'Old Money Traders',
-      status: 'active',
-      created_at: new Date().toISOString(),
-      api_hits: 2450,
-      url: 'https://ais-dev-it3r6x7jg7pp4gq2c7gvfw-398230688462.asia-southeast1.run.app'
-    };
+
+  const defaultMaster: Project = {
+    id: 'phrs-master-cloud',
+    name: 'PHRS Crowd',
+    status: 'active',
+    created_at: new Date().toISOString(),
+    api_hits: 8742,
+    project_number: '398230688462',
+    url: 'https://phrscrowd.online'
+  };
+  const defaultOldMoney: Project = {
+    id: '159a1f68-dbdb-45af-aa36-1f7019ccb5e3',
+    name: 'Old Money Traders',
+    status: 'active',
+    created_at: new Date().toISOString(),
+    api_hits: 2450,
+    url: 'https://ais-dev-it3r6x7jg7pp4gq2c7gvfw-398230688462.asia-southeast1.run.app'
+  };
+
+  const [projects, setProjects] = useState<Project[]>(() => {
     try {
       const saved = localStorage.getItem('phrs_projects');
       if (saved) {
@@ -232,50 +235,16 @@ export default function App() {
 
   // Deployments / App Studio
   const [deployments, setDeployments] = useState<Deployment[]>(() => {
-    const defaults: Deployment[] = [
-      { id: 'dep-1', name: 'All-in-One Library (AIOL)', subdomain: 'aiol', port: 3001, techStack: 'React & Node', status: 'ONLINE', cpu: 1.2, memory: 34, visitors: 142, githubUrl: 'https://github.com/phrscrowd/aiol' },
-      { id: 'dep-2', name: 'Civil Worker Book (CWRB)', subdomain: 'cwrb', port: 3002, techStack: 'Next.js & PostgreSQL', status: 'ONLINE', cpu: 0.4, memory: 18, visitors: 89, githubUrl: 'https://github.com/phrscrowd/cwrb' },
-      { id: 'dep-3', name: 'AI Master Studio', subdomain: 'aims', port: 3003, techStack: 'React & Gemini AI', status: 'ONLINE', cpu: 0.8, memory: 24, visitors: 57, githubUrl: 'https://github.com/phrscrowd/aims' }
-    ];
-
     try {
       const saved = localStorage.getItem('phrs_deployments');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Merge defaults to ensure all 3 apps exist
-          const merged = [...parsed];
-          defaults.forEach(def => {
-            if (!merged.some(item => item.id === def.id || item.subdomain === def.subdomain)) {
-              merged.push(def);
-            }
-          });
-          // Force update to the 3 custom apps requested by the user
-          merged.forEach(item => {
-            if (item.id === 'dep-1') {
-              item.name = 'All-in-One Library (AIOL)';
-              item.subdomain = 'aiol';
-              item.techStack = 'React & Node';
-              item.githubUrl = 'https://github.com/phrscrowd/aiol';
-            } else if (item.id === 'dep-2') {
-              item.name = 'Civil Worker Book (CWRB)';
-              item.subdomain = 'cwrb';
-              item.techStack = 'Next.js & PostgreSQL';
-              item.githubUrl = 'https://github.com/phrscrowd/cwrb';
-            } else if (item.id === 'dep-3') {
-              item.name = 'AI Master Studio';
-              item.subdomain = 'aims';
-              item.techStack = 'React & Gemini AI';
-              item.githubUrl = 'https://github.com/phrscrowd/aims';
-            }
-          });
-          return merged;
-        }
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
-      console.error("Deployment sync interrupted. Using internal registry.");
+      console.error("Deployment recovery failed.");
     }
-    return defaults;
+    return [];
   });
   const [githubUrl, setGithubUrl] = useState('');
   const [appName, setAppName] = useState('');
@@ -1065,26 +1034,32 @@ export default function App() {
   }, [deployments]);
 
   useEffect(() => {
-    fetch('/api/deployments')
-      .then(async res => {
-        if (!res.ok) throw new Error("HTTP error " + res.status);
-        const text = await res.text();
-        const trimmed = text.trim();
-        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-          return null;
-        }
-        try {
-          return JSON.parse(trimmed);
-        } catch (e) {
-          return null;
-        }
-      })
-      .then(data => {
-        if (data && Array.isArray(data) && data.length > 0) {
-          setDeployments(data);
-        }
-      })
-      .catch(err => console.warn("Notice: deployments load skipped", err));
+    const loadDeployments = () => {
+      fetch('/api/deployments')
+        .then(async res => {
+          if (!res.ok) throw new Error("HTTP error " + res.status);
+          const text = await res.text();
+          const trimmed = text.trim();
+          if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+            return null;
+          }
+          try {
+            return JSON.parse(trimmed);
+          } catch (e) {
+            return null;
+          }
+        })
+        .then(data => {
+          if (data && Array.isArray(data) && data.length > 0) {
+            setDeployments(data);
+          }
+        })
+        .catch(err => console.warn("Notice: deployments load skipped", err));
+    };
+
+    loadDeployments();
+    const interval = setInterval(loadDeployments, 6000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -1157,26 +1132,63 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // 1. Sync Deployments from Server Registry
+    fetch('/api/deployments')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setDeployments(prev => {
+            // Merge: Prefer server data for matching IDs/subdomains, but keep local ones if they aren't on server yet
+            const merged = [...data];
+            prev.forEach(p => {
+              if (!merged.some(m => m.id === p.id || m.subdomain === p.subdomain)) {
+                merged.push(p);
+              }
+            });
+            return merged;
+          });
+        }
+      })
+      .catch(err => console.warn("Notice: Deployments sync skipped", err));
+
+    // 2. Sync DB Tables from Server Database
     fetch('/api/db/tables')
       .then(async res => {
         if (!res.ok) throw new Error("HTTP error " + res.status);
         const text = await res.text();
         const trimmed = text.trim();
-        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-          return null;
-        }
-        try {
-          return JSON.parse(trimmed);
-        } catch (e) {
-          return null;
-        }
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
+        try { return JSON.parse(trimmed); } catch { return null; }
       })
       .then(data => {
         if (data && Array.isArray(data)) {
           setSqlTables(data);
+          
+          // Also sync deployments from the DB table if found
+          const depTable = data.find((t: any) => t.name === 'deployments');
+          if (depTable && Array.isArray(depTable.rows)) {
+             setDeployments(prev => {
+               const updated = [...prev];
+               depTable.rows.forEach((dbRow: any) => {
+                 const idx = updated.findIndex(u => u.subdomain === dbRow.subdomain || u.id === dbRow.id);
+                 if (idx >= 0) {
+                   updated[idx] = { ...updated[idx], ...dbRow };
+                 } else {
+                   updated.push({
+                     ...dbRow,
+                     cpu: 0.15,
+                     memory: 32,
+                     visitors: 0,
+                     githubUrl: 'Registered via DB'
+                   });
+                 }
+               });
+               return updated;
+             });
+          }
         }
       })
-      .catch(err => console.warn("Notice: DB tables load skipped", err));
+      .catch(err => console.warn("Notice: DB tables sync skipped", err));
   }, []);
 
   useEffect(() => {
@@ -1373,7 +1385,15 @@ export default function App() {
   const handleSyncDatabase = () => {
     setIsSyncingDb(true);
     setVpsLogStream(prev => [...prev, '[SQLITE] Syncing cloud replicas to VPS SQLite container...']);
-    setTimeout(() => {
+    
+    // Real sync from server
+    Promise.all([
+      fetch('/api/deployments').then(res => res.json()),
+      fetch('/api/db/tables').then(res => res.json())
+    ]).then(([deps, tables]) => {
+      if (Array.isArray(deps)) setDeployments(deps);
+      if (Array.isArray(tables)) setSqlTables(tables);
+      
       setIsSyncingDb(false);
       setVpsLogStream(prev => [...prev, '[SQLITE] ✓ Sync completed. Index optimization verified.']);
       setDbSuccessMessage('✓ Database engine fully synchronized and healthy!');
@@ -1382,7 +1402,11 @@ export default function App() {
         setDbSuccessMessage('');
         setHomeToast(null);
       }, 3000);
-    }, 1200);
+    }).catch(err => {
+      console.error("Sync failed:", err);
+      setIsSyncingDb(false);
+      setHomeToast('⚠ Sync failed. Please check server logs.');
+    });
   };
 
   // Deployment simulation
@@ -1736,7 +1760,7 @@ export default function App() {
       id: 'databases',
       label: 'PHRS DB',
       icon: Database,
-      subMenus: ['Overview', 'Database Center', 'Cloud SQL', 'AlloyDB for PostgreSQL', 'Spanner', 'Bigtable', 'Firestore', 'Memorystore']
+      subMenus: ['Overview', 'Database Center', 'Deployments', 'Cloud SQL', 'AlloyDB for PostgreSQL', 'Spanner', 'Bigtable', 'Firestore', 'Memorystore']
     },
     {
       id: 'cloud_sql',
@@ -1848,6 +1872,7 @@ export default function App() {
       setTimeout(() => setHomeToast(null), 2500);
     } else if (sectionId === 'databases') {
       setActiveTab('database');
+      setPhrsDbSubTab(subMenu);
     } else if (sectionId === 'cloud_sql') {
       setActiveTab('cloud_sql');
     } else if (sectionId === 'phrs_maps') {
@@ -2063,6 +2088,19 @@ export default function App() {
             title="More actions"
           >
             <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {/* Logout Button */}
+          <button 
+            onClick={() => {
+              setIsAuthenticated(false);
+              setHomeToast("✓ Logged out successfully");
+              setTimeout(() => setHomeToast(null), 2000);
+            }}
+            className={`p-2 rounded-full transition ${isDarkMode ? 'hover:bg-rose-900/20 text-rose-400 hover:text-rose-300' : 'hover:bg-rose-50 text-rose-500 hover:text-rose-600'}`}
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
           </button>
 
           {/* Optional Profile Badge for Desktop only */}

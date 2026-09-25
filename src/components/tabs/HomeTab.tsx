@@ -305,7 +305,7 @@ export default function HomeTab({ state }: { state: any }) {
 <head>
   <meta charset="UTF-8">
   <title>${customSubdomain} - Live AI Sandbox</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"><` + `/script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
@@ -317,13 +317,13 @@ export default function HomeTab({ state }: { state: any }) {
       <h2 class="text-xl font-bold mb-4 text-slate-800">AI Master App Sandbox</h2>
       <div id="output-sandbox"></div>
     </div>
-    <script>
+    <` + `script>
       try {
         ${msg.codeContent}
       } catch(err) {
         document.getElementById('output-sandbox').innerHTML = '<div class="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg"><strong>Execution Error:</strong> ' + err.message + '</div>';
       }
-    </script>
+    <` + `/script>
   </main>
   <footer class="p-4 bg-white border-t border-slate-100 text-center text-xs text-slate-400">
     Powered by <strong>PHRS AI Master Studio</strong> & <strong>PHRS Crowd Console</strong>

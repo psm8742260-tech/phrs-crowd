@@ -70,17 +70,47 @@ export const PWAInstallButton: React.FC = () => {
     );
   }
 
+  const [showGenericGuide, setShowGenericGuide] = useState(false);
+
   // Fallback default installer button to prompt user or show status if they click
   return (
-    <button
-      onClick={() => {
-        alert("To install, tap your browser's menu (⋮ or share icon) and select 'Install app' or 'Add to Home Screen'.");
-      }}
-      className="flex items-center gap-2 rounded-lg border border-slate-200 hover:bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition-all font-mono"
-      title="How to install"
-    >
-      <Smartphone className="w-3.5 h-3.5 text-slate-400" />
-      <span>INSTALL INFO</span>
-    </button>
+    <>
+      <button
+        onClick={() => setShowGenericGuide(true)}
+        className="flex items-center gap-2 rounded-lg border border-slate-200 hover:bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition-all font-mono"
+        title="How to install"
+      >
+        <Smartphone className="w-3.5 h-3.5 text-slate-400" />
+        <span>INSTALL INFO</span>
+      </button>
+
+      {showGenericGuide && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-slate-200">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b">
+              <h3 className="text-sm font-bold text-slate-800 font-mono tracking-wider flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-indigo-500" />
+                INSTALL APP GUIDE
+              </h3>
+              <button
+                onClick={() => setShowGenericGuide(false)}
+                className="text-slate-400 hover:text-slate-600 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed font-sans mb-4">
+              To install this application on your device, tap your browser menu icon (⋮ or Share) and select <strong>Install App</strong> or <strong>Add to Home Screen</strong>.
+            </p>
+            <button
+              onClick={() => setShowGenericGuide(false)}
+              className="w-full rounded-lg bg-slate-900 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 transition font-mono"
+            >
+              GOT IT
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

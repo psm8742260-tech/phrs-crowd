@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 
 export default function DatabaseTab({ state }: { state: any }) {
   const { isAutoInternetEnabled, setIsAutoInternetEnabled, isDarkMode, setIsDarkMode, isAuthenticated, setIsAuthenticated, loginView, setLoginView, appIconUrl, setAppIconUrl, pkgName, setPkgName, shaFingerprint, setShaFingerprint, activeTab, setActiveTab, snippetFormat, setSnippetFormat, projects, setProjects, selectedProjectId, setSelectedProjectId, newProjName, setNewProjName, showNewProjModal, setShowNewProjModal, showUpiModal, setShowUpiModal, searchQuery, setSearchQuery, notifications, setNotifications, showNotifications, setShowNotifications, metrics, setMetrics, cpuHistory, setCpuHistory, vpsLogStream, setVpsLogStream, isMiniServerRunning, setIsMiniServerRunning, miniServerPort, setMiniServerPort, miniServerIp, setMiniServerIp, terminalHistory, setTerminalHistory, terminalInput, setTerminalInput, stealthDataBalanceMb, setStealthDataBalanceMb, stealthSmsCredits, setStealthSmsCredits, stealthWalletRupees, setStealthWalletRupees, showStandaloneBanner, setShowStandaloneBanner, localServerIpInput, setLocalServerIpInput, dbData, setDbData, dbRawText, setDbRawText, isRawDbView, setIsRawDbView, dbSuccessMessage, setDbSuccessMessage, isSyncingDb, setIsSyncingDb, dbKeyPath, setDbKeyPath, dbNewVal, setDbNewVal, deployments, setDeployments, githubUrl, setGithubUrl, appName, setAppName, appPort, setAppPort, appTech, setAppTech, buildLogs, setBuildLogs, isBuilding, setIsBuilding, buildProgress, setBuildProgress, activeVirtualApp, setActiveVirtualApp, simulatedVisitorCount, setSimulatedVisitorCount, smartRouteModal, setSmartRouteModal, shortLinks, setShortLinks, linkSlug, setLinkSlug, linkTarget, setLinkTarget, hostFileName, setHostFileName, hostContent, setHostContent, deployedUrl, setDeployedUrl, isDeploying, setIsDeploying, hostedHtml, setHostedHtml, smsGateway, setSmsGateway, smsApiKey, setSmsApiKey, smsAccountSid, setSmsAccountSid, smsSenderId, setSmsSenderId, smsTemplate, setSmsTemplate, testPhoneNumber, setTestPhoneNumber, isSendingOtp, setIsSendingOtp, lastGeneratedOtp, setLastGeneratedOtp, verificationInput, setVerificationInput, verificationStatus, setVerificationStatus, virtualPhoneNotification, setVirtualPhoneNotification, phoneScreenOn, setPhoneScreenOn, apiKeys, setApiKeys, isRoutingActive, setIsRoutingActive, routingHistory, setRoutingHistory, activeRouterPrompt, setActiveRouterPrompt, activeRouterModel, setActiveRouterModel, isRoutingLoading, setIsRoutingLoading, activeExportFile, setActiveExportFile, billingBudget, setBillingBudget, billingAlertAmount, setBillingAlertAmount, billingAlertEmail, setBillingAlertEmail, billingSubTab, setBillingSubTab, envTranslationMappings, setEnvTranslationMappings, secretManagerSubTab, setSecretManagerSubTab, iamMembers, setIamMembers, newMemberEmail, setNewMemberEmail, newMemberRole, setNewMemberRole, selectedMarketplaceApp, setSelectedMarketplaceApp, customSystemPrompt, setCustomSystemPrompt, agentChatInput, setAgentChatInput, agentChatHistory, setAgentChatHistory, k8sPods, setK8sPods, buckets, setBuckets, newBucketName, setNewBucketName, storageFiles, setStorageFiles, uploadFileName, setUploadFileName, uploadTargetBucket, setUploadTargetBucket, isUploading, setIsUploading, firewallPolicy, setFirewallPolicy, sslStatus, setSslStatus, generatedKeyPair, setGeneratedKeyPair, bqQuery, setBqQuery, bqResults, setBqResults, bqRunning, setBqRunning, monitorUptime, setMonitorUptime, activeAlerts, setActiveAlerts, isHybridDevMode, setIsHybridDevMode, isAiServerBypassed, setIsAiServerBypassed, remoteNodeIp, setRemoteNodeIp, deviceSerial, setDeviceSerial, deepseekApiKey, setDeepseekApiKey, showAdminPortal, setShowAdminPortal, isAdminGmailVerified, setIsAdminGmailVerified, adminGmail, setAdminGmail, isVerifyingGmail, setIsVerifyingGmail, uploadedZipName, setUploadedZipName, zipFile, setZipFile, isUploadingZip, setIsUploadingZip, zipUploadProgress, setZipUploadProgress, isCompiling, setIsCompiling, compilationProgress, setCompilationProgress, compilationLogs, setCompilationLogs, tempRemoteNodeIp, setTempRemoteNodeIp, tempDeviceSerial, setTempDeviceSerial, tempDeepseekApiKey, setTempDeepseekApiKey, cloudRunImage, setCloudRunImage, cloudRunEnvVars, setCloudRunEnvVars, revisionTraffic, setRevisionTraffic, subnets, setSubnets, firewallRules, setFirewallRules, newSubnetName, setNewSubnetName, newSubnetRange, setNewSubnetRange, newFireRuleName, setNewFireRuleName, newFireRulePort, setNewFireRulePort, newFireRuleRange, setNewFireRuleRange, newFireRuleAction, setNewFireRuleAction, vpcSubTab, setVpcSubTab, ipInventory, setIpInventory, deviceCarrierIp, setDeviceCarrierIp, networkLatency, setNetworkLatency, mobileIp, setMobileIp, isBridgeActive, setIsBridgeActive, isAdminAuthorized, setIsAdminAuthorized, adminPasswordInput, setAdminPasswordInput, showAuthModal, setShowAuthModal, modificationCount, setModificationCount, showSystemRules, setShowSystemRules, ruleCountdown, setRuleCountdown, protocolStep, setProtocolStep, sqlTables, setSqlTables, newTableName, setNewTableName, newTableCols, setNewTableCols, sqlBackups, setSqlBackups, mapsApiKey, setMapsApiKey, mapsSelectedEndpoint, setMapsSelectedEndpoint, mapsActiveTrackingId, setMapsActiveTrackingId, isSidebarOpen, setIsSidebarOpen, expandedSection, setExpandedSection, selectedSubMenu, setSelectedSubMenu, agents, setAgents, selectedAgentId, setSelectedAgentId, newAgentName, setNewAgentName, newAgentModel, setNewAgentModel, newAgentPrompt, setNewAgentPrompt, agentPlatformSubTab, setAgentPlatformSubTab, securitySubTab, setSecuritySubTab, cloudStorageSubTab, setCloudStorageSubTab, monitoringSubTab, setMonitoringSubTab, iamSubTab, setIamSubTab, apisSubTab, setApisSubTab, cloudRunSubTab, setCloudRunSubTab, cloudHubSubTab, setCloudHubSubTab, phrsMapsSubTab, setPhrsMapsSubTab, bigQuerySubTab, setBigQuerySubTab, phrsDbSubTab, setPhrsDbSubTab, cloudRunJobs, setCloudRunJobs, isCreatingJob, setIsCreatingJob, newJobName, setNewJobName, newJobSchedule, setNewJobSchedule, workerPools, setWorkerPools, isCreatingPool, setIsCreatingPool, newPoolName, setNewPoolName, domainMappings, setDomainMappings, selectedDomain, setSelectedDomain, domainFilterQuery, setDomainFilterQuery, isCreatingDomain, setIsCreatingDomain, newDomainName, setNewDomainName, newDomainService, setNewDomainService, newDomainType, setNewDomainType, isFleetBannerVisible, setIsFleetBannerVisible, isFleetBannerExpanded, setIsFleetBannerExpanded, dbProductFilter, setDbProductFilter, dbLocationFilter, setDbLocationFilter, isProductFilterOpen, setIsProductFilterOpen, isLocationFilterOpen, setIsLocationFilterOpen, phrsUsers, setPhrsUsers, newAuthEmail, setNewAuthEmail, newAuthPassword, setNewAuthPassword, firestoreCollections, setFirestoreCollections, selectedCollection, setSelectedCollection, selectedDocId, setSelectedDocId, isCreatingCollection, setIsCreatingCollection, newCollectionName, setNewCollectionName, isCreatingDoc, setIsCreatingDoc, newDocId, setNewDocId, phrsStorageFiles, setPhrsStorageFiles, isDraggingFile, setIsDraggingFile, deepScanTimer, setDeepScanTimer, isAtomicScanning, setIsAtomicScanning, atomicLogs, setAtomicLogs, homeSubTab, setHomeSubTab, isWelcomeBoardOpen, setIsWelcomeBoardOpen, homeToast, setHomeToast, agentSearchQuery, setAgentSearchQuery, dashboardAgentChatHistory, setDashboardAgentChatHistory, isAgentPanelOpen, setIsAgentPanelOpen, isAgentThinking, setIsAgentThinking, agentModuleMode, setAgentModuleMode, agentImagePrompt, setAgentImagePrompt, agentCodeLanguage, setAgentCodeLanguage, handleTerminalSubmit, handleNetworkChange, handleAgentSubmit, handlePhotoGeneratorClick, handleCodeGeneratorClick, handleCreateProject, handleUpdateRawDb, handleAddDbNode, handleDeleteDbNode, handleSyncDatabase, handleStartDeployment, handleCreateShortLink, handleSendTestSms, handleVerifyOtp, handleSectionClick, handleSubMenuClick, handleDeployFile, isFirebaseSection } = state;
-    const { ArrowRight, CheckCircle2, ChevronDown, ChevronUp, Cloud, Database, ExternalLink, FileCode, Filter, Flame, Link, Megaphone, MoreVertical, Plus, RefreshCw, Save, Sparkles, Terminal, Trash2, Upload, X } = LucideIcons;
+    const { ArrowRight, CheckCircle2, ChevronDown, ChevronUp, Cloud, Database, ExternalLink, FileCode, Filter, Flame, Link, Megaphone, MoreVertical, Plus, RefreshCw, Save, Sparkles, Terminal, Trash2, Upload, X, Zap, Copy } = LucideIcons;
 
   const [realCollections, setRealCollections] = useState<string[]>([]);
   const [realDocsData, setRealDocsData] = useState<any>({});
@@ -144,7 +144,18 @@ export default function DatabaseTab({ state }: { state: any }) {
     } catch (e) { console.error(e); }
   };
 
+  const fetchDeployments = async () => {
+    try {
+      const res = await fetch('/api/deployments');
+      const data = await res.json();
+      if (Array.isArray(data)) setDeployments(data);
+    } catch (e) { console.warn("Deployments sync skipped:", e); }
+  };
+
   useEffect(() => {
+    if (phrsDbSubTab === 'Deployments' || phrsDbSubTab === 'Project Overview') {
+      fetchDeployments();
+    }
     if (phrsDbSubTab === 'Firestore Database' || phrsDbSubTab === 'Project Overview') {
       fetchCollections();
     }
@@ -534,7 +545,7 @@ export default function DatabaseTab({ state }: { state: any }) {
               </div>
             )}
 
-            {(selectedSubMenu === 'Database Center' || !['Overview', 'Cloud SQL', 'AlloyDB for PostgreSQL', 'Spanner', 'Bigtable', 'Firestore', 'Memorystore'].includes(selectedSubMenu)) && (
+            {(selectedSubMenu === 'Database Center' || !['Overview', 'Deployments', 'Cloud SQL', 'AlloyDB for PostgreSQL', 'Spanner', 'Bigtable', 'Firestore', 'Memorystore'].includes(selectedSubMenu)) && (
               <div className="space-y-6">
                 
             {/* DB Tree Status Preview (Moved from Welcome) */}
@@ -679,7 +690,7 @@ export default function DatabaseTab({ state }: { state: any }) {
               </div>
               
               <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-4 border-b border-slate-100">
-                {['Project Overview', 'Authentication', 'Firestore Database', 'Realtime Database', 'Storage', 'Hosting', 'Cloud Functions'].map(tab => (
+                {['Project Overview', 'Deployments', 'Authentication', 'Firestore Database', 'Realtime Database', 'Storage', 'Hosting', 'Cloud Functions'].map(tab => (
                   <button
                     key={tab}
                     onClick={() => setPhrsDbSubTab(tab)}
@@ -834,6 +845,103 @@ export default function DatabaseTab({ state }: { state: any }) {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB: Deployments (Studio Apps Table) */}
+            {(phrsDbSubTab === 'Deployments' || selectedSubMenu === 'Deployments') && (
+              <div className="space-y-6 animate-fade-in">
+                {/* API Registration Info Card */}
+                <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors ${isDarkMode ? 'bg-indigo-950/20 border-indigo-900/40' : 'bg-indigo-50 border-indigo-100'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                      <Zap className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Registration API Endpoint</h4>
+                      <p className="text-[10px] font-mono text-indigo-700 mt-0.5">POST https://phrscrowd.online/api/deployments/register</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText("https://phrscrowd.online/api/deployments/register");
+                      setHomeToast("✓ Endpoint copied to clipboard!");
+                      setTimeout(() => setHomeToast(null), 2000);
+                    }}
+                    className="px-3 py-1.5 bg-white text-indigo-600 rounded-lg text-[10px] font-bold border border-indigo-100 hover:bg-indigo-100 transition shadow-xs flex items-center gap-1.5"
+                  >
+                    <Copy className="w-3 h-3" />
+                    COPY ENDPOINT
+                  </button>
+                </div>
+
+                <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-mono font-bold text-xs tracking-wider text-slate-800 uppercase flex items-center gap-2">
+                      <LucideIcons.GitBranch className="w-4 h-4 text-blue-500" />
+                      REGISTERED STUDIO PROJECTS (DATABASE TABLE: deployments)
+                    </h3>
+                    <button 
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/deployments');
+                          const data = await res.json();
+                          if (Array.isArray(data)) setDeployments(data);
+                          setHomeToast("✓ Refreshed deployments table");
+                          setTimeout(() => setHomeToast(null), 2000);
+                        } catch (e) { console.error(e); }
+                      }}
+                      className="p-1.5 hover:bg-slate-100 rounded text-indigo-600 transition"
+                      title="Sync table"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  
+                  <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                    <table className="w-full text-left text-xs font-mono">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-100 text-slate-500">
+                          <th className="p-3 font-bold">PROJECT ID / SLUG</th>
+                          <th className="p-3 font-bold">NAME</th>
+                          <th className="p-3 font-bold">API GATEWAY / ENDPOINT</th>
+                          <th className="p-3 font-bold text-right">STATUS</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-slate-700 divide-y divide-slate-50">
+                        {deployments.length > 0 ? (
+                          deployments.map((dep, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50/50">
+                              <td className="p-3 font-bold text-blue-600">{dep.id}</td>
+                              <td className="p-3">{dep.name}</td>
+                              <td className="p-3">
+                                <div className="flex flex-col gap-1">
+                                  <a 
+                                    href={dep.url || (dep.subdomain ? `https://${dep.subdomain}.phrscrowd.online` : `/${dep.id}`)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-indigo-500 hover:underline flex items-center gap-1 font-bold"
+                                  >
+                                    {dep.url || (dep.subdomain ? `${dep.subdomain}.phrscrowd.online` : `/${dep.id}`)}
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                  <span className="text-[9px] text-slate-400">Endpoint Type: REST / Public Web</span>
+                                </div>
+                              </td>
+                              <td className="p-3 text-right">
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-[9px] font-bold">REGISTERED</span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="p-8 text-center text-slate-400 italic">No registered deployments found. Projects published from AI Master Studio will appear here.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
