@@ -4,6 +4,40 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PHRS Crowd Console</title>
+    <script>
+      // 1. Immediately wipe any stuck Service Workers or stale caches causing white screens
+      try {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            for (var i = 0; i < regs.length; i++) {
+              regs[i].unregister();
+            }
+          });
+        }
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (var i = 0; i < names.length; i++) {
+              caches.delete(names[i]);
+            }
+          });
+        }
+      } catch (e) {}
+
+      // 2. Safe localStorage shim in case cookies or storage are partitioned/blocked in preview iframe
+      try {
+        var testKey = '__test_ls__';
+        window.localStorage.setItem(testKey, '1');
+        window.localStorage.removeItem(testKey);
+      } catch (e) {
+        var memoryStore = {};
+        window.localStorage = {
+          getItem: function(k) { return memoryStore[k] || null; },
+          setItem: function(k, v) { memoryStore[k] = String(v); },
+          removeItem: function(k) { delete memoryStore[k]; },
+          clear: function() { memoryStore = {}; }
+        };
+      }
+    </script>
     <meta name="description" content="PHRS Crowd - Lightweight VPS Self-Hosted Cloud Platform Console." />
     <meta property="og:title" content="PHRS Crowd Console" />
     <meta property="og:description" content="PHRS Crowd - Lightweight VPS Self-Hosted Cloud Platform Console." />
@@ -15,6 +49,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PHRSCrowd" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>

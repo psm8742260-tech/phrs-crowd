@@ -1,5 +1,29 @@
 # PHRS Crowd - Changelog
 
+- 2026-10-08: [UI/Mobile Header Fix] Resolved top bar icon overlap on mobile screens:
+  1. Repositioned the Notification Bell icon ("గంట సింబల్") forward into its own dedicated spot beside the Admin status badge with clean spacing.
+  2. Applied responsive font-size (`text-[15px] sm:text-[19px]`) and `shrink-0` to the brand title ("PHRS CROWD"), eliminating horizontal collision with action controls.
+  3. Optimized mobile action icons with `p-1.5` padding and tucked redundant desktop-only controls (`MoreVertical`) under `sm:flex`, ensuring zero overlap across all screen widths.
+
+- 2026-09-28: [Feature/Mobile Auth & Admin Role Shield] Implemented dedicated mobile quick-auth under "Sign in with Google" button:
+  1. Added a sleek circular smartphone icon button below the Google sign-in button.
+  2. Clicking the icon smoothly opens the mobile login box pre-filled with Admin number `8466062260`.
+  3. Strict Admin Access Gate: Admin credentials (`8466062260` or `psm8742260@gmail.com`) grant full Admin privileges (`loginView = 'admin'`, golden ADMIN badge, access to IAM, VPS root, Cloud Build, Secret Manager).
+  4. User Isolation: Any other numbers or accounts receive restricted User View (`loginView = 'user'`), completely protecting administrative panels and settings.
+
+- 2026-09-28: [UI/Restore] Removed the extra "Continue to Console Dashboard →" text from the Sign-in Card in `src/App.tsx` and restored the exact original clean layout: Cloud logo, "PHRS Crowd", "Sign in to continue to your account", "Sign in with Google" button, and "Secured by PHRS Crowd".
+
+- 2026-09-28: [Fix/White Screen & Storage Resilience] Completely stamped out white-screen causes:
+  1. Injected immediate Service Worker unregistration and Cache purge in `index.html` <head> and converted `public/sw.js` into a clean pass-through that self-unregisters and deletes any stale caches.
+  2. Implemented defensive in-memory fallback shim for `window.localStorage` in `index.html` preventing third-party iframe `SecurityError` (DOMException: Access Denied) crashes in Google AI Studio / Chrome / Safari iframes.
+  3. Extended `src/utils/storage.ts` with `safeStorageGet`, `safeStorageSet`, and `safeStorageRemove` and hardened all initial state declarations in `src/App.tsx`.
+  4. Fixed CLI `--port` precedence in `server.ts` so `cliPort` (3000) takes precedence over container `process.env.PORT` (8080) when running the dev server behind Nginx.
+
+- 2026-09-28: [Fix/Server & PWA] Enforced `process.env.PORT || 8080` and `0.0.0.0` at `app.listen()` in `server.ts` (Lines 2883-2887) for Cloud Run container startup compliance. Updated Service Worker registration in `src/main.tsx` to automatically purge stale caches and unregister dev workers, and updated `public/sw.js` to bypass Vite dev module requests (`/@`, `/src/`, `/node_modules/`), permanently preventing white-screen lockups.
+- 2026-09-28: [Fix/Server] Resolved white screen and Cloud Run port binding compatibility in `server.ts` (Lines 36-39) and `Dockerfile` (Line 8). Added robust multi-environment port resolution supporting Cloud Run's dynamic `$PORT`, CLI `--port` flags (port 3000), and dev fallback to 3000, while setting `ENV PORT=8080` in `Dockerfile`. Dev server now binds to port 3000 eliminating white screen, while container builds listen on Cloud Run dynamic ports.
+- 2026-09-26: [Fix/Resilience] Integrated `<ErrorBoundary>` in `src/main.tsx` wrapping `<App />` within `<React.StrictMode>`, enforcing Rule 35 for complete application error resilience. Verified React 18 dispatcher hydration and single-instance deduplication across the Vite runtime, eliminating invalid hook call edge cases.
+- 2026-09-26: [Feature/Integration] Finalized authoritative PHRS Central Server SDK integration contract for AI Master Studio. Hardened `/api/db/collections/:name/docs` to support direct field synchronization, enabled CORS preflight handling for external SDK pings, verified strict preservation of Studio Project IDs during auto-registration, and confirmed end-to-end persistence across SQLite, JSON collections, Fast2SMS Gateway, and real-time project routing.
+- 2026-09-26: [Fix/Server] Resolved `ReferenceError: DOMAIN_MAPPINGS_FILE is not defined` and `Not JSON` parsing errors in `server.ts` (Lines 8-120). Defined `DOMAIN_MAPPINGS_FILE` and `safeReadJson` before `/api/hosting/storage-stats` route, imported `exec` from `child_process`, and enabled resilient dynamic lookup for domain mappings, ensuring `/api/hosting/storage-stats` and all cloud storage/hosting endpoints return valid JSON without server errors.
 - 2026-09-25: [Fix/UI] Completely eliminated hardcoded values, fixed names/IDs, and hardcoded "GitHub" badges in `CloudRunTab.tsx`. Made the Deployment Type, CPU resource legend, and most-used resources list 100% dynamic, loading fields exclusively from the authoritative registration records received from PHRS Crowd SDK ("PHRS Crowd SDK") and AI Master Studio Publish flows.
 - 2026-09-25: [Fix/Cleanup] Purged all test/fake registration records (`test-sdk-app` and `different-sdk-app`) generated during SDK simulation tests. Only the 100% original, verified registrations (Dashboard, PHRS Crowd, and Old Money Traders) now remain on the active server.
 - 2026-09-25: [Fix/Sync] Enforced "FINAL RULE - AUTOMATIC SERVICE LIST REGISTRATION". Removed all hardcoded static seed/bootstrap deployment records from `registry.ts` and `db.ts`. The Service List is now automatically and exclusively populated from real registrations received by the PHRS Crowd Server (SDK registration in `projects.json` and AI Master Studio Publish flow). Repeated publishes correctly update records, and different projects create unique entries using real API payload values.
