@@ -1,0 +1,33 @@
+name: Deploy to cPanel via FTP
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  web-deploy:
+    name: cPanel Deployment
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get latest code
+      uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies & build
+      run: |
+        npm install
+        npm run build
+
+    - name: Sync files to cPanel via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: phrscrowd.online
+        username: phrscrow
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: public_html/
+        local-dir: dist/
