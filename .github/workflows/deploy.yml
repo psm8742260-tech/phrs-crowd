@@ -1,4 +1,4 @@
-name: Deploy to cPanel via FTP
+name: Deploy to cPanel via FTP (Direct Credentials)
 
 on:
   push:
@@ -28,6 +28,6 @@ jobs:
       with:
         server: phrscrowd.online
         username: phrscrow
-        password: ${{ secrets.FTP_PASSWORD }}
+        password: K80abi7c+EU9R@
         server-dir: public_html/
         local-dir: dist/
