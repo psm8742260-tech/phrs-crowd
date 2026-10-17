@@ -1,5 +1,10 @@
 # PHRS Crowd - Changelog
 
+- 2026-10-17: [Audit/Real Server Endpoints & Dummy Elimination] Completed deep scan and real backend synchronization (`6606.ok`):
+  1. Added persistent backend API routes in `server.ts` (Lines 466-652) for `/api/domain-mappings`, `/api/cloudrun/jobs`, `/api/cloudrun/worker-pools`, `/api/k8s/pods`, `/api/security/audit`, `/api/security/resolve`, `/api/security/export-csv`, and `/api/maps/tickets`.
+  2. Refactored `src/components/tabs/SecurityTab.tsx` (Lines 1-318) to eliminate all dummy `alert()` popups, inline `style={{...}}` attributes, and unused state props, wiring all security controls directly to live `/api/security/*` endpoints.
+  3. Updated `src/components/tabs/NetworkConfigTab.tsx` (Lines 14-160) to replace dummy ping alerts with real `/api/health` round-trip latency measurements and live toast notifications.
+
 - 2026-10-17: [Feature/Services List & SDK Projects Board] Perfected Cloud Run / Services list representation:
   1. Guaranteed that exactly the 4 genuine SDK-integrated projects appear in the Services list: Old Money Traders, All-in-One Library (AIOL), Civil Worker Book (CWRB), and AI Master Studio.
   2. Excluded the host server ("PHRS Crowd") itself and internal dashboard from the deployed services list so the board strictly displays deployed client applications.
