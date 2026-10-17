@@ -76,14 +76,33 @@ export default function SmsTab({ state }: { state: any }) {
                       />
                     </div>
 
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="checkbox" 
+                        id="autoSms"
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <label htmlFor="autoSms" className="text-[10px] font-mono text-slate-500">ENABLE AUTO-SMS ON APP REGISTRATION</label>
+                    </div>
+
                     <button 
                       onClick={() => {
-                        setVpsLogStream((prev: any) => [...prev, `[SMS] Saved SMS config parameters for: ${smsGateway.toUpperCase()}`]);
-                        alert('✓ SMS Config Saved to VPS state!');
+                        const autoSms = (document.getElementById('autoSms') as HTMLInputElement).checked;
+                        const config = { provider: smsGateway, apiKey: smsApiKey, sid: smsAccountSid, sender: smsSenderId, autoSms };
+                        
+                        fetch('/api/sms/config', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(config)
+                        }).then(r => r.json()).then(res => {
+                          localStorage.setItem('phrs_sms_config', JSON.stringify(config));
+                          setVpsLogStream((prev: any) => [...prev, `[SMS] Gateway config saved persistently to VPS: ${smsGateway.toUpperCase()} (AutoSMS: ${autoSms})`]);
+                          alert('✓ SMS Gateway configuration saved successfully!');
+                        });
                       }}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2 rounded-lg font-semibold shadow-lg transition-all"
+                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs py-2 rounded-lg font-semibold shadow-lg transition-all"
                     >
-                      SAVE GATEWAY CREDENTIALS
+                      SAVE GATEWAY SETTINGS
                     </button>
                   </div>
                 </div>

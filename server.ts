@@ -11,20 +11,6 @@ import multer from "multer";
 import AdmZip from "adm-zip";
 import { GoogleGenAI } from "@google/genai";
 import { Database as PureDatabase } from "./src/utils/pureSqlite.js";
-import admin from "firebase-admin";
-
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-  try {
-    const serviceAccount = JSON.parse(fs.readFileSync(path.join(process.cwd(), "dist", "iam_sa.json"), "utf8"));
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-  } catch (e) {
-    console.error("Firebase Admin initialization failed:", e);
-  }
-}
-const dbAdmin = admin.firestore();
 
 const app = express();
 
@@ -374,6 +360,17 @@ app.post("/api/deployments/register", (req, res) => {
     
     saveRegistry(registry);
 
+    // Auto-SMS Trigger
+    const smsConfigPath = path.join(process.cwd(), "dist", "sms_config.json");
+    if (fs.existsSync(smsConfigPath)) {
+      const smsConfig = JSON.parse(fs.readFileSync(smsConfigPath, "utf8"));
+      if (smsConfig.autoSms) {
+        import("./src/server/sms.js").then(({ sendSms }) => {
+          sendSms("8466062260", `PHRS Crowd: New application '${resolvedName}' registered successfully!`);
+        });
+      }
+    }
+
     // Automatically register slug mapping in links.json so production URL works instantly
     try {
       const links = getLinks();
@@ -456,6 +453,14 @@ app.post("/api/deployments/register", (req, res) => {
     console.error("SDK Registration Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
+});
+
+// API: Save SMS Gateway Configuration
+app.post("/api/sms/config", (req, res) => {
+  const config = req.body;
+  const configPath = path.join(process.cwd(), "dist", "sms_config.json");
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  res.json({ success: true, message: "SMS configuration saved successfully." });
 });
 
 import { projectsRouter } from "./src/server/projects.js";
@@ -2931,3 +2936,21 @@ async function startServer() {
 }
 
 startServer();
+
+// --- PERMANENT VPS SERVER CONFIGURATION ---
+export const PHRS_VPS_CONFIG = {
+  smtp: {
+    host: 'mail.phrscrowd.online',
+    user: 'info@phrscrowd.online', // Default info email
+    pass: 'K80abi7c+EU9R@'        // As provided in cPanel screenshot
+  },
+  sms: {
+    provider: 'fast2sms',
+    sender_id: 'PHRSCR',
+    api_key: process.env.FAST2SMS_API_KEY || 'YOUR_KEY_HERE'
+  },
+  storage: {
+    baseDir: '/home/phrscrow/public_html/phrscrowd.online/'
+  }
+};
+console.log("[VPS CONFIG] Permanent VPS configuration loaded for phrscrowd.online");

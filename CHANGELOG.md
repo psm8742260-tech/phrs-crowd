@@ -1,5 +1,10 @@
 # PHRS Crowd - Changelog
 
+- 2026-10-17: [Fix/Dev Server Crash & TypeError Fix] Fixed `TypeError: Cannot read properties of undefined (reading 'length')` and `Pre-warming failed: dev server process died`:
+  1. Identified root cause: `server.ts` was executing `if (!admin.apps.length)` at top-level where `admin.apps` was undefined, which threw an uncaught TypeError on startup and terminated the dev server process during pre-warming.
+  2. Removed broken top-level `admin.apps.length` check and unused `dbAdmin` reference from `server.ts`.
+  3. Cleanly restarted the development server on port 3000 and confirmed `ZERO ERRORS` in headless browser render tests.
+
 - 2026-10-08: [UI/Mobile Header Fix] Resolved top bar icon overlap on mobile screens:
   1. Repositioned the Notification Bell icon ("గంట సింబల్") forward into its own dedicated spot beside the Admin status badge with clean spacing.
   2. Applied responsive font-size (`text-[15px] sm:text-[19px]`) and `shrink-0` to the brand title ("PHRS CROWD"), eliminating horizontal collision with action controls.
