@@ -11,6 +11,20 @@ import multer from "multer";
 import AdmZip from "adm-zip";
 import { GoogleGenAI } from "@google/genai";
 import { Database as PureDatabase } from "./src/utils/pureSqlite.js";
+import admin from "firebase-admin";
+
+// Initialize Firebase Admin
+if (!admin.apps.length) {
+  try {
+    const serviceAccount = JSON.parse(fs.readFileSync(path.join(process.cwd(), "dist", "iam_sa.json"), "utf8"));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+  } catch (e) {
+    console.error("Firebase Admin initialization failed:", e);
+  }
+}
+const dbAdmin = admin.firestore();
 
 const app = express();
 
@@ -67,7 +81,11 @@ app.use((req, res, next) => {
 // Store the active public tunnel URL globally
 let activeTunnelUrl: string | null = null;
 
-import { HOSTED_DIR, defaultDashboardDir, getDirSize } from "./src/server/storage.js";
+import { HOSTED_DIR, defaultDashboardDir, getDirSize, backupDatabase } from "./src/server/storage.js";
+
+// Daily Database Backup
+setInterval(backupDatabase, 24 * 60 * 60 * 1000);
+backupDatabase(); // Initial backup on start
 
 // --- SAFE JSON PARSING HELPER ---
 function safeReadJson(filePath: string, defaultValue: any): any {

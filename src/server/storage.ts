@@ -63,3 +63,22 @@ export function safeReadJson(filePath: string, defaultValue: any) {
     return defaultValue;
   }
 }
+
+export function backupDatabase() {
+  const BACKUPS_DIR = path.join(HOSTED_DIR, 'backups');
+  if (!fs.existsSync(BACKUPS_DIR)) {
+    fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+  }
+  
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filesToBackup = ['phrscrowd.db.json', 'registry.json', 'projects.json'];
+  
+  filesToBackup.forEach(file => {
+    const srcPath = path.join(HOSTED_DIR, file);
+    if (fs.existsSync(srcPath)) {
+      const destPath = path.join(BACKUPS_DIR, `${file}-${timestamp}.bak`);
+      fs.copyFileSync(srcPath, destPath);
+    }
+  });
+  console.log(`[BACKUP] Databases backed up to ${BACKUPS_DIR} at ${timestamp}`);
+}
