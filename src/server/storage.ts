@@ -1,8 +1,10 @@
 import fs from "fs";
 import path from "path";
+import { offloadToVps } from "./vpsOffloader.js";
 
 // PHRS CLOUD HOSTING ENGINE: Directory
 export const HOSTED_DIR = path.join(process.cwd(), "dist", "hosted");
+// ... existing code
 
 if (!fs.existsSync(HOSTED_DIR)) {
   fs.mkdirSync(HOSTED_DIR, { recursive: true });

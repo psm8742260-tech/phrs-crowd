@@ -1245,20 +1245,6 @@ export default function App() {
         };
       });
 
-      // Flashing background event logs once in a while
-      if (Math.random() > 0.6) {
-        const mockVpsEvents = [
-          `[ENGINE] PHRS Standalone Ubuntu Engine running smoothly on PORT 3000.`,
-          `[AI-AGENT] Smart Search Board listening for photo/app generation prompts.`,
-          `[COMPILER] Android SDK & Java environments verified. Ready for APK build.`,
-          `[SQLITE] Database cluster synchronization completed in ${Math.round(Math.random() * 20 + 5)}ms.`,
-          `[SECURITY] Zero-Bug Policy active. All routing and APIs are secured.`,
-          `[PROXY] Dynamic routing balanced between AI Studio & Local Server.`,
-          `[SYSTEM] Heartbeat OK. PHRS Cloud Node operational and healthy.`
-        ];
-        const randomEvent = mockVpsEvents[Math.floor(Math.random() * mockVpsEvents.length)];
-        setVpsLogStream(prev => [...prev.slice(-20), randomEvent]);
-      }
     }, 4000);
     return () => clearInterval(interval);
   }, []);

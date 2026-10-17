@@ -178,7 +178,7 @@ export default function ComputeEngineTab({ state }: { state: any }) {
                         <tr key={idx} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                           <td className="py-3 px-2 font-bold">{app.name}</td>
                           <td className="py-3 px-2 text-indigo-500">http://{app.subdomain}.phrs.local</td>
-                          <td className="py-3 px-2 text-emerald-500">{idx === 0 ? simulatedVisitorCount : 0}</td>
+                          <td className="py-3 px-2 text-emerald-500 font-mono">{app.visitors || 0}</td>
                           <td className="py-3 px-2 text-right">
                             <button onClick={() => setActiveVirtualApp(app)} className="text-indigo-600 hover:underline">VIEW LIVE</button>
                           </td>

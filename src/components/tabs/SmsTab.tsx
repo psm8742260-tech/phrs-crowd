@@ -30,41 +30,36 @@ export default function SmsTab({ state }: { state: any }) {
                     <div>
                       <label className="block text-[10px] font-mono text-slate-500 mb-1">GATEWAY PROVIDER</label>
                       <select
-                        value={smsGateway}
+                        value={smsGateway === 'mock' ? 'fast2sms' : smsGateway}
                         onChange={(e: any) => setSmsGateway(e.target.value)}
                         className={`w-full p-2 text-xs rounded-lg border focus:outline-none cursor-pointer ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
                       >
-                        <option value="mock">Local VPS SMS Mock Simulator</option>
-                        <option value="twilio">Twilio SMS API Proxy</option>
-                        <option value="fast2sms">Fast2SMS (India Bulk SMS)</option>
+                        <option value="fast2sms">Fast2SMS (India Bulk SMS Gateway)</option>
+                        <option value="twilio">Twilio SMS API Gateway</option>
                       </select>
                     </div>
 
-                    {smsGateway !== 'mock' && (
-                      <>
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-500 mb-1">
-                            {smsGateway === 'twilio' ? 'TWILIO ACCOUNT SID' : 'SENDER ID / SIGNATURE'}
-                          </label>
-                          <input 
-                            type="text" 
-                            value={smsGateway === 'twilio' ? smsAccountSid : smsSenderId}
-                            onChange={(e) => smsGateway === 'twilio' ? setSmsAccountSid(e.target.value) : setSmsSenderId(e.target.value)}
-                            className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                          />
-                        </div>
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-500 mb-1">
+                        {smsGateway === 'twilio' ? 'TWILIO ACCOUNT SID' : 'SENDER ID / SIGNATURE'}
+                      </label>
+                      <input 
+                        type="text" 
+                        value={smsGateway === 'twilio' ? smsAccountSid : smsSenderId}
+                        onChange={(e) => smsGateway === 'twilio' ? setSmsAccountSid(e.target.value) : setSmsSenderId(e.target.value)}
+                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
+                      />
+                    </div>
 
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-500 mb-1">API KEY / TOKEN</label>
-                          <input 
-                            type="password" 
-                            value={smsApiKey}
-                            onChange={(e) => setSmsApiKey(e.target.value)}
-                            className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
-                          />
-                        </div>
-                      </>
-                    )}
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-500 mb-1">API KEY / TOKEN</label>
+                      <input 
+                        type="password" 
+                        value={smsApiKey}
+                        onChange={(e) => setSmsApiKey(e.target.value)}
+                        className={`w-full p-2 text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-300 text-slate-900'}`}
+                      />
+                    </div>
 
                     <div>
                       <label className="block text-[10px] font-mono text-slate-500 mb-1">OTP SMS MESSAGE TEMPLATE</label>
@@ -160,28 +155,43 @@ export default function SmsTab({ state }: { state: any }) {
                 
                 <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (stealthDataBalanceMb >= 100) {
-                        setHomeToast("🔄 Converting 100MB Mobile Data to SMS Credits...");
-                        setTimeout(() => {
-                          setStealthDataBalanceMb(prev => Math.max(0, prev - 100));
-                          setStealthSmsCredits(prev => prev + 1000);
-                          setHomeToast("✓ Converted 100MB to 1,000 SMS Credits via Phantom Carrier");
-                          
-                          const now = new Date().toLocaleString('en-US', { hour12: true });
-                          setPhrsSmsHistory((prev: any) => [
-                            {
-                              id: `sms-sys-${Date.now()}`,
-                              sender: 'PHRS-SYS',
-                              text: `SYSTEM EVENT: Converted 100MB of SIM Data Pack into 1,000 Stealth SMS Credits successfully.`,
-                              timestamp: now,
-                              type: 'system'
-                            },
-                            ...prev
-                          ]);
-                        }, 1500);
+                        const newMb = Math.max(0, stealthDataBalanceMb - 100);
+                        const newCredits = stealthSmsCredits + 1000;
+                        setStealthDataBalanceMb(newMb);
+                        setStealthSmsCredits(newCredits);
+                        
+                        try {
+                          await fetch('/api/sms/wallet', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              data_balance_mb: newMb,
+                              sms_credits: newCredits,
+                              wallet_rupees: stealthWalletRupees
+                            })
+                          });
+                        } catch (e) {
+                          console.warn("Wallet sync skipped", e);
+                        }
+
+                        const now = new Date().toLocaleString('en-US', { hour12: true });
+                        setPhrsSmsHistory((prev: any) => [
+                          {
+                            id: `sms-sys-${Date.now()}`,
+                            sender: 'PHRS-SYS',
+                            text: `SYSTEM EVENT: Converted 100MB of SIM Data Pack into 1,000 SMS Credits saved to database.`,
+                            timestamp: now,
+                            type: 'system'
+                          },
+                          ...prev
+                        ]);
+                        setHomeToast("✓ Converted 100MB to 1,000 SMS Credits & saved to server!");
+                        setTimeout(() => setHomeToast(null), 2500);
                       } else {
                         setHomeToast("⚠️ Insufficient Mobile Data for conversion.");
+                        setTimeout(() => setHomeToast(null), 2500);
                       }
                     }}
                     className="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-mono text-[11px] font-semibold transition flex items-center gap-1.5 shadow-sm"

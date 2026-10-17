@@ -14,7 +14,8 @@ export default function NetworkConfigTab({ state }: { state: any }) {
     isHybridDevMode,
     setIsHybridDevMode,
     remoteNodeIp,
-    setRemoteNodeIp
+    setRemoteNodeIp,
+    setHomeToast
   } = state;
 
   const { Cpu, Lock, Network, RefreshCw, Layers, ShieldCheck, HelpCircle } = LucideIcons;
@@ -68,7 +69,10 @@ export default function NetworkConfigTab({ state }: { state: any }) {
       `[DDNS-TUNNEL] Re-bound Dual-Stack IPv4 (${ipv4Address}) and IPv6 (${ipv6Address}) safely.`
     ]);
     
-    alert(`⚡ ${activeCarrier.toUpperCase()} IP Rotated successfully!\n\nOld IP: ${oldIp}\nNew IP: ${newIp}\n\nHost bound globally to '0.0.0.0' successfully absorbed this change! Connection remains active.`);
+    if (typeof setHomeToast === 'function') {
+      setHomeToast(`⚡ ${activeCarrier.toUpperCase()} IP Rotated: ${oldIp} → ${newIp}`);
+      setTimeout(() => setHomeToast(null), 3000);
+    }
   };
 
   return (
@@ -138,7 +142,22 @@ export default function NetworkConfigTab({ state }: { state: any }) {
                   className="flex-1 p-2.5 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800"
                 />
                 <button 
-                  onClick={() => alert(`Ping to ${remoteNodeIp} successful! Route: ${activeCarrier.toUpperCase()} -> Host: 0.0.0.0`)}
+                  onClick={async () => {
+                    const t0 = performance.now();
+                    try {
+                      await fetch('/api/health');
+                      const rtt = Math.round(performance.now() - t0);
+                      if (typeof setHomeToast === 'function') {
+                        setHomeToast(`✓ Ping to ${remoteNodeIp || 'local'}: ${rtt}ms (Route: ${activeCarrier.toUpperCase()})`);
+                        setTimeout(() => setHomeToast(null), 3000);
+                      }
+                    } catch (e: any) {
+                      if (typeof setHomeToast === 'function') {
+                        setHomeToast(`⚠ Ping failed: ${e.message}`);
+                        setTimeout(() => setHomeToast(null), 3000);
+                      }
+                    }
+                  }}
                   className="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition font-mono"
                 >
                   PING NODE
@@ -276,7 +295,12 @@ export default function NetworkConfigTab({ state }: { state: any }) {
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button 
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-[10px] py-2 rounded-lg font-bold shadow-sm transition-all" 
-                  onClick={() => alert(`Server broadcast updated. Listening on http://${localServerIpInput}:3000`)}
+                  onClick={() => {
+                    if (typeof setHomeToast === 'function') {
+                      setHomeToast(`✓ Broadcast updated: http://${localServerIpInput || '0.0.0.0'}:3000`);
+                      setTimeout(() => setHomeToast(null), 3000);
+                    }
+                  }}
                 >
                   UPDATE BROADCAST
                 </button>
@@ -303,7 +327,17 @@ export default function NetworkConfigTab({ state }: { state: any }) {
                 <div className="text-[10px] font-mono text-slate-500 mb-1">NODE STATUS</div>
                 <div className="font-mono text-sm text-indigo-600 font-bold">● STANDBY (Ready)</div>
               </div>
-              <button className="w-full bg-slate-800 text-white font-mono text-xs py-2 rounded-lg font-bold" onClick={() => alert('Activating Laptop Node load balancer...')}>ACTIVATE LAPTOP NODE</button>
+              <button 
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs py-2 rounded-lg font-bold transition" 
+                onClick={() => {
+                  if (typeof setHomeToast === 'function') {
+                    setHomeToast('✓ Laptop Node load balancer activated in standby mode.');
+                    setTimeout(() => setHomeToast(null), 3000);
+                  }
+                }}
+              >
+                ACTIVATE LAPTOP NODE
+              </button>
             </div>
           </div>
 
@@ -320,7 +354,15 @@ export default function NetworkConfigTab({ state }: { state: any }) {
                 <div className="text-[10px] font-mono text-slate-500 mb-1">COMPUTE STATUS</div>
                 <div className="font-mono text-sm text-slate-400 font-bold">LOCKED</div>
               </div>
-              <button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs py-2 rounded-lg flex items-center justify-center gap-2 font-bold" onClick={() => alert('Requires Tier 3 Authorization Key to unlock Supercomputer routing.')}>
+              <button 
+                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs py-2 rounded-lg flex items-center justify-center gap-2 font-bold transition" 
+                onClick={() => {
+                  if (typeof setHomeToast === 'function') {
+                    setHomeToast('🔒 Requires Tier 3 Authorization Key to unlock Supercomputer routing.');
+                    setTimeout(() => setHomeToast(null), 3000);
+                  }
+                }}
+              >
                 <Lock className="w-3 h-3" /> UNLOCK SUPERCOMPUTER
               </button>
             </div>

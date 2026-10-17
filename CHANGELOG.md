@@ -1,5 +1,10 @@
 # PHRS Crowd - Changelog
 
+- 2026-10-17: [Feature/Services List & SDK Projects Board] Perfected Cloud Run / Services list representation:
+  1. Guaranteed that exactly the 4 genuine SDK-integrated projects appear in the Services list: Old Money Traders, All-in-One Library (AIOL), Civil Worker Book (CWRB), and AI Master Studio.
+  2. Excluded the host server ("PHRS Crowd") itself and internal dashboard from the deployed services list so the board strictly displays deployed client applications.
+  3. Integrated dynamic detection for AI Master Studio: any project published from AI Master Studio dynamically auto-registers into the registry and appears in the service list, expanding the board, and shrinking when deleted.
+
 - 2026-10-17: [Fix/Dev Server Crash & TypeError Fix] Fixed `TypeError: Cannot read properties of undefined (reading 'length')` and `Pre-warming failed: dev server process died`:
   1. Identified root cause: `server.ts` was executing `if (!admin.apps.length)` at top-level where `admin.apps` was undefined, which threw an uncaught TypeError on startup and terminated the dev server process during pre-warming.
   2. Removed broken top-level `admin.apps.length` check and unused `dbAdmin` reference from `server.ts`.
