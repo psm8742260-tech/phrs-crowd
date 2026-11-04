@@ -34,6 +34,9 @@ import JSZip from 'jszip';
 import { setupDevServer } from './server/dev-server-manager.ts';
 import { registerPhrsCloudRoutes } from './server/phrsCloudConnector.ts';
 import { buildRemoteApkFromZip } from './server/services/phrsRemoteWorker.ts';
+import compression from 'compression';
+
+// 🚀 అడ్మిన్ గారు! సర్వర్ నుండి డేటా వేగంగా పంపడానికి 'compression' వాడుతున్నాము.
 
 // 💡 తెలుగు వివరణ: బ్రహ్మాస్త్రం ఏజెంట్ కోడ్ మొత్తాన్ని ఒకే PDF గా మార్చి డౌన్‌లోడ్ చేయడానికి 'pdfkit' ని ఇంపోర్ట్ చేసుకుంటున్నాము.
 
@@ -67,6 +70,7 @@ const __dirname = path.dirname(__filename);
 
 // 💡 Express App Initialization - ఎక్స్‌ప్రెస్ అప్లికేషన్ (సర్వర్) ను ప్రారంభించడానికి ఈ వేరియబుల్ వాడుతున్నాం.
 const app = express();
+app.use(compression());
 // 💡 Server Port Configuration - మన సర్వర్ రన్ అవ్వాల్సిన పోర్ట్ నంబర్ 3000 అని సెట్ చేస్తున్నాం.
 const PORT = 3000;
 
