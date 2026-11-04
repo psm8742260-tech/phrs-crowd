@@ -29,8 +29,14 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             referrerPolicy="no-referrer"
             onError={(e) => {
-              // Final fallback to a themed letter icon if everything fails
               const target = e.currentTarget as HTMLImageElement;
+              // 🚀 అడ్మిన్ గారు! గూగుల్ ఫెవికాన్ ఫెయిల్ అయితే 'IconHorse' అనే మరో పవర్‌ఫుల్ సర్వీస్ ద్వారా ఫోటోను లోడ్ చేస్తున్నాము.
+              if (!target.src.includes('icon.horse')) {
+                const domain = report.hostname || (report.url ? (report.url.startsWith('http') ? new URL(report.url).hostname : report.url) : 'phrscrowd.online');
+                target.src = `https://icon.horse/icon/${domain}`;
+                return;
+              }
+              // Final fallback to a themed letter icon
               target.onerror = null;
               const fallbackName = report.manifest?.name || report.hostname || 'A';
               target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=4f46e5&color=fff&size=256`;

@@ -2480,14 +2480,32 @@ app.post('/api/app/analyze', async (req, res) => {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const siteRes = await fetch(formattedUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Android; Mobile; PWAInspector/2.0)' },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
+      const standardUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+      
+      let html = '';
+      let siteRes: any = null;
+      
+      try {
+        siteRes = await fetch(formattedUrl, {
+          headers: { 'User-Agent': standardUA },
+          signal: controller.signal,
+        });
+        if (siteRes.ok) html = await siteRes.text();
+      } catch (fetchErr) {
+        console.warn('Node fetch failed, trying curl fallback:', fetchErr);
+      }
+      
+      // 🚀 అడ్మిన్ గారు! ఒకవేళ Node fetch ఫెయిల్ అయితే, VPS లో పవర్‌ఫుల్ 'curl' కమాండ్ ద్వారా వెబ్‌సైట్ స్కాన్ చేస్తున్నాము.
+      if (!html || !siteRes?.ok) {
+        try {
+          const { stdout } = await execPromise(`curl -L -s -m 8 -A "${standardUA}" "${formattedUrl}"`);
+          if (stdout) html = stdout;
+        } catch (curlErr) {
+          console.error('Curl fallback also failed:', curlErr);
+        }
+      }
 
-      if (siteRes.ok) {
-        const html = await siteRes.text();
+      if (html) {
         if (html.includes('serviceWorker.register') || 
             html.includes('navigator.serviceWorker') ||
             html.includes('sw.js')) {

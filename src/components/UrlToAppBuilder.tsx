@@ -1122,6 +1122,12 @@ self.addEventListener('fetch', (e) => {
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       const target = e.currentTarget as HTMLImageElement;
+                      // 🚀 అడ్మిన్ గారు! గూగుల్ ఫెయిల్ అయితే ఐకాన్ హార్స్ ద్వారా ఫోటోను లోడ్ చేస్తున్నాము.
+                      if (!target.src.includes('icon.horse')) {
+                        const domain = targetUrl.startsWith('http') ? new URL(targetUrl).hostname : targetUrl;
+                        target.src = `https://icon.horse/icon/${domain}`;
+                        return;
+                      }
                       target.onerror = null;
                       target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(appName || 'A')}&background=4f46e5&color=fff&size=256`;
                     }}
