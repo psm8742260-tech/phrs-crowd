@@ -1,0 +1,21 @@
+export const FLUENT_EMOJIS = {
+  SPARKLES: '✨',
+  ZAP: '⚡',
+  ROCKET: '🚀',
+  WAND: '🪄',
+  SHIELD: '🛡️',
+  GLOBE: '🌐',
+  TERMINAL: '💻',
+  HARD_DRIVE: '💾',
+  FOLDER: '📁',
+  FILE: '📄',
+  CODE: '📜',
+  IMAGE: '🖼️',
+  CHECK: '✅',
+  CROSS: '❌',
+  INFO: 'ℹ️',
+  ALERT: '⚠️',
+  SETTINGS: '⚙️',
+  USER: '👤',
+  ADMIN: '🔑'
+};

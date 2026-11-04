@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function() {
+        var NativeWebSocket = window.WebSocket;
+        if (NativeWebSocket) {
+          function SafeWebSocket(url, protocols) {
+            if (protocols === 'vite-hmr' || (typeof url === 'string' && (url.indexOf('token=') !== -1 || url.indexOf('@vite') !== -1))) {
+              return {
+                readyState: 1,
+                addEventListener: function(event, cb) {
+                  if (event === 'open') setTimeout(cb, 0);
+                },
+                removeEventListener: function() {},
+                send: function() {},
+                close: function() {}
+              };
+            }
+            return new NativeWebSocket(url, protocols);
+          }
+          SafeWebSocket.prototype = NativeWebSocket.prototype;
+          SafeWebSocket.CONNECTING = 0;
+          SafeWebSocket.OPEN = 1;
+          SafeWebSocket.CLOSING = 2;
+          SafeWebSocket.CLOSED = 3;
+          window.WebSocket = SafeWebSocket;
+        }
+        function isIgnorable(msg) {
+          if (!msg) return false;
+          var m = String(msg).toLowerCase();
+          return m.indexOf('websocket') !== -1 || m.indexOf('vite') !== -1 || m.indexOf('hmr') !== -1 || m.indexOf('createwebsocketmodulerunner') !== -1 || m.indexOf('error 0:') !== -1;
+        }
+        window.addEventListener('error', function(e) {
+          if (isIgnorable(e && (e.message || (e.error && e.error.message))) || isIgnorable(e && e.filename)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+          if (isIgnorable(e && e.reason && (e.reason.message || e.reason))) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
+    <script type="module">
+      import RefreshRuntime from "/@react-refresh"
+      RefreshRuntime.injectIntoGlobalHook(window)
+      window.$RefreshReg$ = () => {}
+      window.$RefreshSig$ = () => (type) => type
+      window.__vite_plugin_react_preamble_installed__ = true
+    </script>
+    <script>
+      (function() {
+        function checkAndPolyfill(storageName) {
+          try {
+            var storage = window[storageName];
+            var testKey = '__test_storage_access_v1__';
+            storage.setItem(testKey, 'ok');
+            storage.removeItem(testKey);
+          } catch (e) {
+            console.warn("[Storage-Polyfill] " + storageName + " is blocked. Injecting memory-based fallback.", e);
+            var memoryStore = {};
+            var storageMock = {
+              getItem: function(key) {
+                return key in memoryStore ? memoryStore[key] : null;
+              },
+              setItem: function(key, value) {
+                memoryStore[key] = String(value);
+              },
+              removeItem: function(key) {
+                delete memoryStore[key];
+              },
+              clear: function() {
+                memoryStore = {};
+              },
+              key: function(index) {
+                var keys = Object.keys(memoryStore);
+                return keys[index] || null;
+              },
+              get length() {
+                return Object.keys(memoryStore).length;
+              }
+            };
+            try {
+              Object.defineProperty(window, storageName, {
+                value: storageMock,
+                writable: true,
+                configurable: true
+              });
+              console.log("[Storage-Polyfill] Successfully polyfilled " + storageName);
+            } catch (err) {
+              console.error("[Storage-Polyfill] Failed to polyfill " + storageName, err);
+            }
+          }
+        }
+        checkAndPolyfill('localStorage');
+        checkAndPolyfill('sessionStorage');
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d1117" />
+    <!-- 📱 తెలుగు వివరణ: మొబైల్ ఆండ్రాయిడ్ సిస్టమ్‌లో అడ్రస్ బార్ లేకుండా 100% నేటివ్ ఫుల్ స్క్రీన్‌గా ఓపెన్ అవ్వడానికి అవసరమైన మెటా కాన్ఫిగరేషన్ -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AI Master Studio" />
+    <title>AI Master Studio</title>
+    <meta name="description" content="Developer-grade client-side AI studio, live web app previewer, source ZIP extractor, and 6-Section Secure Admin Panel with embedded Brahmastram AI Studio." />
+    <meta property="og:title" content="AI Master Studio" />
+    <meta property="og:description" content="Developer-grade client-side AI studio, live web app previewer, source ZIP extractor, and 6-Section Secure Admin Panel with embedded Brahmastram AI Studio." />
+    <link rel="icon" type="image/png" sizes="192x192" href="https://aims.phrscrowd.online/icon-192.png?v=hybrid" />
+    <link rel="shortcut icon" type="image/png" href="https://aims.phrscrowd.online/icon-192.png?v=hybrid" />
+    <link rel="apple-touch-icon" sizes="512x512" href="https://aims.phrscrowd.online/icon-512.png?v=hybrid" />
+    <link rel="manifest" href="https://aims.phrscrowd.online/manifest.json?v=hybrid" />
+  </head>
+  <body>
+    <div id="root">
+      <div style="height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #020617; flex-direction: column;">
+        <div style="width: 4rem; height: 4rem; border: 4px solid #6366f1; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="color: #818cf8; font-family: sans-serif; font-weight: bold; margin-top: 1rem; animation: pulse 2s infinite;">Initializing AI Master Engine...</p>
+        <style>@keyframes spin { to { transform: rotate(360deg); } } @keyframes pulse { 50% { opacity: 0.5; } } body { margin: 0; background: #020617; }</style>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js?mode=hybrid').catch((err) => {
+            console.log('SW registration note: ', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
